@@ -122,19 +122,17 @@ class LeaveController extends Controller
     */
     public function adminIndex(Request $request)
 {
-    $query = \App\Models\LeaveTransaction::with(['user', 'leave']);
+    $query = Leave::with('user')->orderBy('created_at', 'desc');
 
+    // Optional filter by month
     if ($request->month) {
-        $query->whereMonth('created_at', $request->month);
+        $query->whereMonth('start_date', date('m', strtotime($request->month)))
+              ->whereYear('start_date', date('Y', strtotime($request->month)));
     }
 
-    if ($request->year) {
-        $query->whereYear('created_at', $request->year);
-    }
+    $leaves = $query->get();   // ✅ THIS LINE IS IMPORTANT
 
-    $transactions = $query->orderBy('created_at', 'desc')->get();
-
-    return view('leave.admin', compact('transactions'));
+    return view('leave.admin', compact('leaves'));
 }
 
     /*
