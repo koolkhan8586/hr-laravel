@@ -64,6 +64,28 @@
                 <td class="p-2 border">{{ $leave->days }}</td>
                 <td class="p-2 border">{{ ucfirst($leave->status) }}</td>
                 <td class="p-2 border">
+                <td class="p-2 border">
+    @if($leave->status == 'pending')
+
+        <form method="POST" action="{{ route('leave.approve', $leave->id) }}" class="inline">
+            @csrf
+            <button class="bg-green-600 text-white px-3 py-1 rounded">
+                Approve
+            </button>
+        </form>
+
+        <form method="POST" action="{{ route('leave.reject', $leave->id) }}" class="inline">
+            @csrf
+            <button class="bg-red-600 text-white px-3 py-1 rounded">
+                Reject
+            </button>
+        </form>
+
+    @else
+        <span class="text-gray-500">No Action</span>
+    @endif
+</td>
+
                     @if($leave->status == 'pending')
                         <form method="POST" action="{{ route('leave.approve', $leave->id) }}" class="inline">
                             @csrf
