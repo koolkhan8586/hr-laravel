@@ -24,6 +24,13 @@
    class="bg-green-600 text-white px-4 py-2 rounded mb-4 inline-block">
     Export to Excel
 </a>
+  @if($leave->status == 'approved')
+    <span class="text-green-600 font-bold">Approved</span>
+@elseif($leave->status == 'pending')
+    <span class="text-yellow-600 font-bold">Pending</span>
+@else
+    <span class="text-red-600 font-bold">Rejected</span>
+@endif
 
 
     <table class="w-full border">
