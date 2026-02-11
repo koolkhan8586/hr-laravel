@@ -1,9 +1,11 @@
 <?php
 
 namespace App\Http\Controllers;
-use App\Notifications\LeaveApproved;
+
 use App\Models\Leave;
 use App\Models\User;
+use App\Models\LeaveTransaction;
+use App\Notifications\LeaveApproved;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -17,7 +19,7 @@ class LeaveController extends Controller
     public function index()
     {
         $leaves = Leave::where('user_id', auth()->id())
-            ->orderBy('created_at', 'desc')
+            ->latest()
             ->get();
 
         $balance = auth()->user()->annual_leave_balance;
@@ -53,18 +55,11 @@ class LeaveController extends Controller
 
         $start = Carbon::parse($request->start_date);
 
-        /*
-        |--------------------------------------------------------------------------
-        | Calculate Days
-        |--------------------------------------------------------------------------
-        */
+        // Calculate Days
         if ($request->duration_type === 'half_day') {
-
             $end = $start;
             $calculatedDays = 0.5;
-
         } else {
-
             $request->validate([
                 'end_date' => 'required|date|after_or_equal:start_date',
             ]);
@@ -73,11 +68,7 @@ class LeaveController extends Controller
             $calculatedDays = $start->diffInDays($end) + 1;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Prevent Overlapping Leave
-        |--------------------------------------------------------------------------
-        */
+        // Prevent overlapping leave
         $overlap = Leave::where('user_id', auth()->id())
             ->where('status', '!=', 'rejected')
             ->where(function ($query) use ($start, $end) {
@@ -94,25 +85,16 @@ class LeaveController extends Controller
             return back()->with('error', 'You already have leave during this period.');
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Check Annual Leave Balance
-        |--------------------------------------------------------------------------
-        */
+        // Check annual leave balance
         if ($request->type === 'annual') {
-
             $user = auth()->user();
 
-            if ($user->annual_leave_balance < $calculatedDays) {
+            if ((float) $user->annual_leave_balance < (float) $calculatedDays) {
                 return back()->with('error', 'Insufficient Leave Balance.');
             }
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Create Leave
-        |--------------------------------------------------------------------------
-        */
+        // Create Leave
         Leave::create([
             'user_id'         => auth()->id(),
             'type'            => $request->type,
@@ -132,13 +114,13 @@ class LeaveController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Admin Panel - View All Leaves
+    | Admin - View All Leaves
     |--------------------------------------------------------------------------
     */
     public function adminIndex()
     {
         $leaves = Leave::with('user')
-            ->orderBy('created_at', 'desc')
+            ->latest()
             ->get();
 
         return view('leave.admin', compact('leaves'));
@@ -149,79 +131,53 @@ class LeaveController extends Controller
     | Approve Leave
     |--------------------------------------------------------------------------
     */
+    public function approve($id)
+    {
+        $leave = Leave::findOrFail($id);
 
-      public function approve($id)
-{
-    $leave = Leave::findOrFail($id);
-
-    if ($leave->status === 'approved') {
-        return back()->with('error', 'Leave already approved.');
-    }
-
-    if ($leave->type === 'annual') {
+        // Prevent double approval
+        if ($leave->status === 'approved') {
+            return back()->with('info', 'Leave already approved.');
+        }
 
         $user = User::findOrFail($leave->user_id);
 
-        $balanceBefore = $user->annual_leave_balance;
+        $balanceBefore = (float) $user->annual_leave_balance;
+        $balanceAfter  = $balanceBefore;
 
-        if ($balanceBefore < $leave->calculated_days) {
-            return back()->with('error', 'Insufficient Leave Balance.');
+        if ($leave->type === 'annual') {
+
+            if ($balanceBefore < (float) $leave->calculated_days) {
+                return back()->with('error', 'Insufficient Leave Balance.');
+            }
+
+            $balanceAfter = $balanceBefore - (float) $leave->calculated_days;
+
+            $user->update([
+                'annual_leave_balance' => $balanceAfter
+            ]);
+
+            LeaveTransaction::create([
+                'user_id'        => $user->id,
+                'leave_id'       => $leave->id,
+                'days'           => $leave->calculated_days,
+                'balance_before' => $balanceBefore,
+                'balance_after'  => $balanceAfter,
+                'action'         => 'approved',
+                'processed_by'   => auth()->id(),
+            ]);
         }
 
-        $balanceAfter = $balanceBefore - $leave->calculated_days;
-
-        // Update user balance
-        $user->update([
-            'annual_leave_balance' => $balanceAfter
+        $leave->update([
+            'status' => 'approved'
         ]);
 
-        // Create transaction record
-        \App\Models\LeaveTransaction::create([
-            'user_id'        => $user->id,
-            'leave_id'       => $leave->id,
-            'days'           => $leave->calculated_days,
-            'balance_before' => $balanceBefore,
-            'balance_after'  => $balanceAfter,
-            'action'         => 'approved',
-            'processed_by'   => auth()->id(),
-        ]);
+        // ✅ Send Email Notification
+        $user->notify(new LeaveApproved($leave));
+
+        return back()->with('success', 'Leave Approved Successfully');
     }
 
-    $leave->update([
-        'status' => 'approved'
-    ]);
-
-    return back()->with('success', 'Leave Approved Successfully');
-}
-     
-/* public function approve($id)
-   {
-    $leave = Leave::findOrFail($id);
-
-    if ($leave->status === 'approved') {
-        return back()->with('error', 'Already approved');
-    }
-
-    if ($leave->type === 'annual') {
-
-        $user = \App\Models\User::findOrFail($leave->user_id);
-
-        $newBalance = (float) $user->annual_leave_balance - (float) $leave->calculated_days;
-
-        // Force assign new value
-        \DB::table('users')
-            ->where('id', $user->id)
-            ->update([
-                'annual_leave_balance' => $newBalance
-            ]);
-    }
-
-    $leave->status = 'approved';
-    $leave->save();
-
-    return back()->with('success', 'Leave Approved Successfully');
-    }
- 
     /*
     |--------------------------------------------------------------------------
     | Reject Leave
@@ -235,9 +191,25 @@ class LeaveController extends Controller
             return back()->with('error', 'Cannot reject an approved leave.');
         }
 
-        $leave->status = 'rejected';
-        $leave->save();
+        $leave->update([
+            'status' => 'rejected'
+        ]);
 
         return back()->with('success', 'Leave Rejected Successfully');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Leave Transaction History
+    |--------------------------------------------------------------------------
+    */
+    public function history()
+    {
+        $transactions = LeaveTransaction::where('user_id', auth()->id())
+            ->with('processor')
+            ->latest()
+            ->get();
+
+        return view('leave.history', compact('transactions'));
     }
 }
