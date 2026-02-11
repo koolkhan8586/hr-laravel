@@ -7,13 +7,20 @@
 <div class="max-w-7xl mx-auto py-6 px-4">
 
     <div class="flex justify-between mb-4">
-        <h2 class="text-2xl font-bold">My Leaves</h2>
+    <h2 class="text-2xl font-bold">My Leaves</h2>
+
+    <div class="space-x-2">
+        <a href="{{ route('leave.history') }}"
+           class="bg-gray-700 text-white px-4 py-2 rounded">
+            View History
+        </a>
+
         <a href="{{ route('leave.create') }}"
            class="bg-blue-600 text-white px-4 py-2 rounded">
             Apply Leave
         </a>
     </div>
-
+</div>
     @if(session('success'))
         <div class="bg-green-100 text-green-700 p-3 rounded mb-4">
             {{ session('success') }}
