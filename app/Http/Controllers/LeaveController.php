@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+
+use App\Exports\LeaveTransactionsExport;
+use Maatwebsite\Excel\Facades\Excel;
 use App\Models\Leave;
 use App\Models\User;
 use App\Models\LeaveTransaction;
@@ -125,6 +128,14 @@ class LeaveController extends Controller
 
         return view('leave.admin', compact('leaves'));
     }
+
+      public function exportTransactions()
+{
+    return Excel::download(
+        new LeaveTransactionsExport,
+        'leave_transactions.xlsx'
+    );
+}
 
     /*
     |--------------------------------------------------------------------------

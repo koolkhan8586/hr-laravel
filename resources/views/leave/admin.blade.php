@@ -14,6 +14,11 @@
             {{ session('error') }}
         </div>
     @endif
+     
+    <a href="{{ route('leave.transactions.export') }}"
+   class="bg-green-600 text-white px-4 py-2 rounded">
+    Export Transactions
+</a>
 
     <table class="w-full border">
         <thead class="bg-gray-200">

@@ -50,6 +50,9 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/leave-transactions', 
     [LeaveController::class, 'adminTransactions'])
     ->name('leave.transactions');
+    Route::get('/admin/leave-transactions/export',
+    [LeaveController::class, 'exportTransactions']
+)->name('leave.transactions.export');
 
     Route::post('/leave/approve/{id}', [LeaveController::class, 'approve'])->name('leave.approve');
     Route::post('/leave/reject/{id}', [LeaveController::class, 'reject'])->name('leave.reject');

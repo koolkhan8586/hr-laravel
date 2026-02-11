@@ -22,15 +22,15 @@ class LeaveTransaction extends Model
         'balance_after' => 'float',
     ];
 
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
+public function user()
+{
+    return $this->belongsTo(\App\Models\User::class);
+}
 
-    public function leave()
-    {
-        return $this->belongsTo(Leave::class);
-    }
+public function leave()
+{
+    return $this->belongsTo(\App\Models\Leave::class);
+}
 
     public function processor()
     {
