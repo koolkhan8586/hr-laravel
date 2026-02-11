@@ -47,6 +47,10 @@ Route::middleware(['auth'])->group(function () {
 
 Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/leaves', [LeaveController::class, 'adminIndex'])->name('leave.admin');
+    Route::get('/admin/leave-transactions', 
+    [LeaveController::class, 'adminTransactions'])
+    ->name('leave.transactions');
+
     Route::post('/leave/approve/{id}', [LeaveController::class, 'approve'])->name('leave.approve');
     Route::post('/leave/reject/{id}', [LeaveController::class, 'reject'])->name('leave.reject');
 });
