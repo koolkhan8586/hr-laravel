@@ -120,21 +120,21 @@ class LeaveController extends Controller
     | Admin - View All Leaves
     |--------------------------------------------------------------------------
     */
-    public function adminIndex()
-    {
-        $leaves = Leave::with('user')
-            ->latest()
-            ->get();
+    public function adminIndex(Request $request)
+{
+    $query = \App\Models\LeaveTransaction::with(['user', 'leave']);
 
-        return view('leave.admin', compact('leaves'));
+    if ($request->month) {
+        $query->whereMonth('created_at', $request->month);
     }
 
-      public function exportTransactions()
-{
-    return Excel::download(
-        new LeaveTransactionsExport,
-        'leave_transactions.xlsx'
-    );
+    if ($request->year) {
+        $query->whereYear('created_at', $request->year);
+    }
+
+    $transactions = $query->orderBy('created_at', 'desc')->get();
+
+    return view('leave.admin', compact('transactions'));
 }
 
     /*
