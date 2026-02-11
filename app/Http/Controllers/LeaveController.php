@@ -210,6 +210,19 @@ class LeaveController extends Controller
     }
 
     /*
+|--------------------------------------------------------------------------
+| Export Leave Transactions
+|--------------------------------------------------------------------------
+*/
+public function exportTransactions(Request $request)
+{
+    return \Maatwebsite\Excel\Facades\Excel::download(
+        new \App\Exports\LeaveTransactionsExport($request->user_id),
+        'leave_transactions.xlsx'
+    );
+}
+
+    /*
     |--------------------------------------------------------------------------
     | Leave Transaction History
     |--------------------------------------------------------------------------
