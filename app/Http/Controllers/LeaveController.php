@@ -205,11 +205,11 @@ class LeaveController extends Controller
     */
     public function history()
     {
-        $transactions = LeaveTransaction::where('user_id', auth()->id())
-            ->with('processor')
-            ->latest()
-            ->get();
+    $transactions = \App\Models\LeaveTransaction::where('user_id', auth()->id())
+        ->orderBy('created_at', 'desc')
+        ->get();
 
-        return view('leave.history', compact('transactions'));
+    return view('leave.history', compact('transactions'));
     }
+
 }
