@@ -212,4 +212,25 @@ class LeaveController extends Controller
     return view('leave.history', compact('transactions'));
     }
 
+    public function adminTransactions(Request $request)
+{
+    $query = \App\Models\LeaveTransaction::with(['user'])
+        ->orderBy('created_at', 'desc');
+
+    // Month filter
+    if ($request->month) {
+        $query->whereMonth('created_at', $request->month);
+    }
+
+    // Year filter
+    if ($request->year) {
+        $query->whereYear('created_at', $request->year);
+    }
+
+    $transactions = $query->get();
+
+    return view('leave.admin_transactions', compact('transactions'));
+}
+
+
 }
