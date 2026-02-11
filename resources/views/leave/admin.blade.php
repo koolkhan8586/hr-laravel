@@ -30,6 +30,26 @@
                 <th class="p-2 border">Action</th>
             </tr>
         </thead>
+        <form method="GET" class="flex gap-2 mb-4">
+    <select name="month" class="border p-2">
+        <option value="">All Months</option>
+        @for($m=1; $m<=12; $m++)
+            <option value="{{ $m }}">{{ date('F', mktime(0,0,0,$m,1)) }}</option>
+        @endfor
+    </select>
+
+    <select name="year" class="border p-2">
+        <option value="">All Years</option>
+        @for($y=date('Y'); $y>=2023; $y--)
+            <option value="{{ $y }}">{{ $y }}</option>
+        @endfor
+    </select>
+
+    <button class="bg-blue-600 text-white px-4 py-2 rounded">
+        Filter
+    </button>
+</form>
+
         <tbody>
             @foreach($leaves as $leave)
             <tr>
