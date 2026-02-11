@@ -20,6 +20,12 @@
     Export Transactions
 </a>
 
+    <a href="{{ route('leave.export') }}"
+   class="bg-green-600 text-white px-4 py-2 rounded mb-4 inline-block">
+    Export to Excel
+</a>
+
+
     <table class="w-full border">
         <thead class="bg-gray-200">
             <tr>
