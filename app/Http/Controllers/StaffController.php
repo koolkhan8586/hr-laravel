@@ -7,41 +7,137 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
-use App\Imports\StaffImport;
-use Maatwebsite\Excel\Facades\Excel;
 
 class StaffController extends Controller
 {
-    public function import(Request $request)
-{
-    $request->validate([
-        'file' => 'required|mimes:xlsx,csv'
-    ]);
-
-    Excel::import(new StaffImport, $request->file('file'));
-
-    return back()->with('success', 'Staff Imported Successfully');
-}
+    /*
+    |--------------------------------------------------------------------------
+    | Staff List
+    |--------------------------------------------------------------------------
+    */
     public function index()
     {
         $staff = Staff::with('user')->get();
         return view('staff.index', compact('staff'));
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Show Create Form
+    |--------------------------------------------------------------------------
+    */
     public function create()
     {
         return view('staff.create');
     }
 
-    public function edit($id)
-{
-    $staff = Staff::with('user')->findOrFail($id);
-    return view('staff.edit', compact('staff'));
-}
+    /*
+    |--------------------------------------------------------------------------
+    | Store New Staff
+    |--------------------------------------------------------------------------
+    */
+    public function store(Request $request)
+    {
+        $request->validate([
+            'name' => 'required',
+            'email' => 'required|email|unique:users,email',
+            'employee_id' => 'required|unique:staff,employee_id',
+            'department' => 'required',
+            'designation' => 'required',
+            'salary' => 'required|numeric',
+            'joining_date' => 'required|date'
+        ]);
 
-public function update(Request $request, $id)
-{
-   public function resetPassword($id)
+        // Default password (NOT changing as you requested)
+        $password = '12345678';
+
+        // Create User
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($password),
+            'role' => 'employee',
+            'annual_leave_balance' => 14
+        ]);
+
+        // Create Staff Record
+        Staff::create([
+            'user_id' => $user->id,
+            'employee_id' => $request->employee_id,
+            'department' => $request->department,
+            'designation' => $request->designation,
+            'salary' => $request->salary,
+            'joining_date' => $request->joining_date
+        ]);
+
+        // Send Email with Credentials
+        Mail::raw(
+            "Welcome to HR Management System\n\n".
+            "Login URL: " . url('/login') . "\n".
+            "Email: {$user->email}\n".
+            "Password: {$password}\n\n".
+            "Please change your password after login.",
+            function ($message) use ($user) {
+                $message->to($user->email)
+                        ->subject('Your HR System Login Credentials');
+            }
+        );
+
+        return redirect()->route('staff.index')
+            ->with('success', 'Staff Created & Email Sent Successfully');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Edit Staff
+    |--------------------------------------------------------------------------
+    */
+    public function edit($id)
+    {
+        $staff = Staff::with('user')->findOrFail($id);
+        return view('staff.edit', compact('staff'));
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Update Staff
+    |--------------------------------------------------------------------------
+    */
+    public function update(Request $request, $id)
+    {
+        $staff = Staff::findOrFail($id);
+
+        $request->validate([
+            'name' => 'required',
+            'email' => 'required|email|unique:users,email,' . $staff->user_id,
+            'department' => 'required',
+            'designation' => 'required',
+            'salary' => 'required|numeric',
+        ]);
+
+        // Update User
+        $staff->user->update([
+            'name' => $request->name,
+            'email' => $request->email,
+        ]);
+
+        // Update Staff
+        $staff->update([
+            'department' => $request->department,
+            'designation' => $request->designation,
+            'salary' => $request->salary,
+        ]);
+
+        return redirect()->route('staff.index')
+            ->with('success', 'Staff Updated Successfully');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Reset Password
+    |--------------------------------------------------------------------------
+    */
+    public function resetPassword($id)
     {
         $staff = Staff::findOrFail($id);
         $user = $staff->user;
@@ -49,7 +145,7 @@ public function update(Request $request, $id)
         $newPassword = '12345678';
 
         $user->update([
-            'password' => bcrypt($newPassword)
+            'password' => Hash::make($newPassword)
         ]);
 
         Mail::raw(
@@ -64,90 +160,5 @@ public function update(Request $request, $id)
         );
 
         return back()->with('success', 'Password Reset & Email Sent');
-    }
-}
-    
-    $staff = Staff::findOrFail($id);
-    $user = $staff->user;
-
-    $request->validate([
-        'name' => 'required',
-        'email' => 'required|email',
-        'department' => 'required',
-        'designation' => 'required',
-        'salary' => 'required|numeric'
-    ]);
-
-    $user->update([
-        'name' => $request->name,
-        'email' => $request->email,
-    ]);
-
-    $staff->update([
-        'department' => $request->department,
-        'designation' => $request->designation,
-        'salary' => $request->salary
-    ]);
-
-    return redirect()->route('staff.index')
-        ->with('success', 'Staff Updated Successfully');
-}
-
-    
-    public function store(Request $request)
-    {
-        $request->validate([
-            'name' => 'required',
-            'email' => 'required|email|unique:users,email',
-            'employee_id' => 'required|unique:staff,employee_id',
-            'department' => 'required',
-            'designation' => 'required',
-            'salary' => 'required|numeric',
-            'joining_date' => 'required|date'
-        ]);
-
-        $password = '12345678'; // 🔒 your default password
-
-        // Create User
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($password),
-            'role' => 'employee',
-            'annual_leave_balance' => 14
-        ]);
-
-        // Create Staff
-        Staff::create([
-            'user_id' => $user->id,
-            'employee_id' => $request->employee_id,
-            'department' => $request->department,
-            'designation' => $request->designation,
-            'salary' => $request->salary,
-            'joining_date' => $request->joining_date
-        ]);
-
-        // Send Email
-        try {
-            Mail::raw(
-                "Welcome to HR Management System
-
-Login URL: " . url('/login') . "
-
-Email: {$request->email}
-Password: {$password}
-
-Please change your password after login.",
-                function ($message) use ($request) {
-                    $message->to($request->email)
-                            ->subject('Your HR Account Created');
-                }
-            );
-        } catch (\Exception $e) {
-            \Log::error($e->getMessage());
-        }
-
-        return redirect()->route('staff.index')
-            ->with('success', 'Staff Created Successfully');
     }
 }
