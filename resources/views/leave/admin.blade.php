@@ -3,28 +3,50 @@
 
     <h2 class="text-2xl font-bold mb-6">All Leave Requests</h2>
 
-    @if(session('success'))
-        <div class="bg-green-100 text-green-700 p-3 rounded mb-4">
-            {{ session('success') }}
-        </div>
-    @endif
+    {{-- Filter & Export Section --}}
+    <div class="flex items-center gap-3 mb-6">
 
-    @if(session('error'))
-        <div class="bg-red-100 text-red-700 p-3 rounded mb-4">
-            {{ session('error') }}
-        </div>
-    @endif
-     
-    <a href="{{ route('leave.transactions.export') }}"
-   class="bg-green-600 text-white px-4 py-2 rounded">
-    Export Transactions
-</a>
+        {{-- Export Transactions --}}
+        <a href="{{ route('leave.export.transactions') }}"
+           class="bg-green-600 text-white px-4 py-2 rounded">
+            Export Transactions
+        </a>
 
-    <a href="{{ route('leave.export') }}"
-   class="bg-green-600 text-white px-4 py-2 rounded mb-4 inline-block">
-    Export to Excel
-</a>
-  
+        {{-- Export Excel --}}
+        <a href="{{ route('leave.export') }}"
+           class="bg-green-700 text-white px-4 py-2 rounded">
+            Export to Excel
+        </a>
+
+        {{-- Filter Form --}}
+        <form method="GET" action="{{ route('leave.admin') }}" class="flex gap-2">
+
+            <select name="month" class="border p-2 rounded">
+                <option value="">All Months</option>
+                @for($m = 1; $m <= 12; $m++)
+                    <option value="{{ $m }}" {{ request('month') == $m ? 'selected' : '' }}>
+                        {{ date('F', mktime(0,0,0,$m,1)) }}
+                    </option>
+                @endfor
+            </select>
+
+            <select name="year" class="border p-2 rounded">
+                <option value="">All Years</option>
+                @for($y = date('Y'); $y >= 2024; $y--)
+                    <option value="{{ $y }}" {{ request('year') == $y ? 'selected' : '' }}>
+                        {{ $y }}
+                    </option>
+                @endfor
+            </select>
+
+            <button class="bg-blue-600 text-white px-4 py-2 rounded">
+                Filter
+            </button>
+        </form>
+
+    </div>
+
+    {{-- Leave Table --}}
     <table class="w-full border">
         <thead class="bg-gray-200">
             <tr>
@@ -35,91 +57,71 @@
                 <th class="p-2 border">Action</th>
             </tr>
         </thead>
-        <form method="GET" class="flex gap-2 mb-4">
-    <select name="month" class="border p-2">
-        <option value="">All Months</option>
-        @for($m=1; $m<=12; $m++)
-            <option value="{{ $m }}">{{ date('F', mktime(0,0,0,$m,1)) }}</option>
-        @endfor
-    </select>
-
-    <select name="year" class="border p-2">
-        <option value="">All Years</option>
-        @for($y=date('Y'); $y>=2023; $y--)
-            <option value="{{ $y }}">{{ $y }}</option>
-        @endfor
-    </select>
-
-    <button class="bg-blue-600 text-white px-4 py-2 rounded">
-        Filter
-    </button>
-</form>
 
         <tbody>
-            @foreach($leaves as $leave)
+        @foreach($leaves as $leave)
             <tr>
-                <td class="p-2 border">{{ $leave->user->name }}</td>
-                <td class="p-2 border capitalize">{{ str_replace('_',' ',$leave->type) }}</td>
-                <td class="p-2 border">{{ $leave->days }}</td>
                 <td class="p-2 border">
-    @if($leave->status == 'approved')
-        <span class="text-green-600 font-bold">Approved</span>
-    @elseif($leave->status == 'pending')
-        <span class="text-yellow-600 font-bold">Pending</span>
-    @else
-        <span class="text-red-600 font-bold">Rejected</span>
-    @endif
-</td>
+                    {{ $leave->user->name ?? 'N/A' }}
+                </td>
+
+                <td class="p-2 border capitalize">
+                    {{ str_replace('_',' ',$leave->type) }}
+                </td>
 
                 <td class="p-2 border">
+                    {{ $leave->days }}
+                </td>
+
+                {{-- Status Column --}}
                 <td class="p-2 border">
-    @if($leave->status == 'pending')
+                    @if($leave->status == 'approved')
+                        <span class="text-green-600 font-bold">
+                            Approved
+                        </span>
+                    @elseif($leave->status == 'pending')
+                        <span class="text-yellow-600 font-bold">
+                            Pending
+                        </span>
+                    @else
+                        <span class="text-red-600 font-bold">
+                            Rejected
+                        </span>
+                    @endif
+                </td>
 
-        <form method="POST" action="{{ route('leave.approve', $leave->id) }}" class="inline">
-            @csrf
-            <button class="bg-green-600 text-white px-3 py-1 rounded">
-                Approve
-            </button>
-        </form>
+                {{-- Action Column --}}
+                <td class="p-2 border">
 
-        <form method="POST" action="{{ route('leave.reject', $leave->id) }}" class="inline">
-            @csrf
-            <button class="bg-red-600 text-white px-3 py-1 rounded">
-                Reject
-            </button>
-        </form>
+                    @if($leave->status == 'pending')
 
-    @else
-        <span class="text-gray-500">No Action</span>
-    @endif
-</td>
+                        <form method="POST"
+                              action="{{ route('leave.approve', $leave->id) }}"
+                              class="inline">
+                            @csrf
+                            <button class="bg-green-600 text-white px-3 py-1 rounded">
+                                Approve
+                            </button>
+                        </form>
 
-                    <td class="p-2 border">
-    @if($leave->status == 'pending')
+                        <form method="POST"
+                              action="{{ route('leave.reject', $leave->id) }}"
+                              class="inline">
+                            @csrf
+                            <button class="bg-red-600 text-white px-3 py-1 rounded">
+                                Reject
+                            </button>
+                        </form>
 
-        <form method="POST" action="{{ route('leave.approve', $leave->id) }}" class="inline">
-            @csrf
-            <button class="bg-green-600 text-white px-3 py-1 rounded">
-                Approve
-            </button>
-        </form>
+                    @else
+                        <span class="text-gray-500 italic">
+                            No Action
+                        </span>
+                    @endif
 
-        <form method="POST" action="{{ route('leave.reject', $leave->id) }}" class="inline">
-            @csrf
-            <button class="bg-red-600 text-white px-3 py-1 rounded">
-                Reject
-            </button>
-        </form>
-
-    @else
-        <span class="text-gray-500 italic">
-            No Action
-        </span>
-    @endif
-</td>
-
+                </td>
             </tr>
-            @endforeach
+        @endforeach
         </tbody>
     </table>
 
