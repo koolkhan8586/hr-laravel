@@ -119,4 +119,8 @@ Route::middleware(['auth', 'admin'])->group(function () {
         [LeaveController::class, 'reject'])
         ->name('leave.reject');
 
+    Route::post('/staff/import', [StaffController::class, 'import'])
+    ->name('staff.import');
+
+
 });
