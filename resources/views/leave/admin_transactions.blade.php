@@ -22,7 +22,7 @@
             Filter
         </button>
 
-        <a href="{{ route('leave.transactions.export') }}"
+        <a href="{{ route('leave.export.transactions') }}"
            class="bg-green-600 text-white px-4 py-2 rounded">
             Export Excel
         </a>
