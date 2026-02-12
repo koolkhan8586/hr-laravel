@@ -9,6 +9,7 @@ use App\Models\Leave;
 use App\Models\User;
 use App\Models\LeaveTransaction;
 use App\Notifications\LeaveApproved;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -255,4 +256,57 @@ public function exportTransactions(Request $request)
 }
 
 
+}
+    public function payrollSummary(Request $request)
+{
+    $year = $request->year ?? now()->year;
+
+    // Annual Used
+    $annualUsed = Leave::where('type', 'annual')
+        ->where('status', 'approved')
+        ->whereYear('start_date', $year)
+        ->sum('calculated_days');
+
+    // Without Pay Used
+    $withoutPay = Leave::where('type', 'without_pay')
+        ->where('status', 'approved')
+        ->whereYear('start_date', $year)
+        ->sum('calculated_days');
+
+    // Sick Leave Used
+    $sickUsed = Leave::where('type', 'sick')
+        ->where('status', 'approved')
+        ->whereYear('start_date', $year)
+        ->sum('calculated_days');
+
+    // Monthly Breakdown
+    $monthly = Leave::select(
+            DB::raw('MONTH(start_date) as month'),
+            DB::raw('SUM(calculated_days) as total')
+        )
+        ->where('status', 'approved')
+        ->whereYear('start_date', $year)
+        ->groupBy(DB::raw('MONTH(start_date)'))
+        ->orderBy('month')
+        ->get();
+
+    // Per Employee Summary
+    $employees = Leave::select(
+            'user_id',
+            DB::raw('SUM(calculated_days) as total_used')
+        )
+        ->where('status', 'approved')
+        ->whereYear('start_date', $year)
+        ->groupBy('user_id')
+        ->with('user')
+        ->get();
+
+    return view('leave.payroll-summary', compact(
+        'year',
+        'annualUsed',
+        'withoutPay',
+        'sickUsed',
+        'monthly',
+        'employees'
+    ));
 }
