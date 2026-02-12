@@ -150,4 +150,9 @@ Route::middleware(['auth', 'admin'])->group(function () {
         [LeaveController::class, 'payrollSummary'])
         ->name('payroll.summary');
 
+    Route::get('/admin/loans', [LoanController::class, 'index'])->name('loan.index');
+Route::get('/admin/loans/create', [LoanController::class, 'create'])->name('loan.create');
+Route::post('/admin/loans/store', [LoanController::class, 'store'])->name('loan.store');
+
+
 });
