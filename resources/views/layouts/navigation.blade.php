@@ -12,7 +12,7 @@
     <a href="{{ route('dashboard') }}" class="flex items-center">
         <img src="{{ asset('UOL-Green-V1.png') }}"
              alt="University of Lahore"
-             class="h-8 w-auto object-contain">
+             class="h-4 w-auto object-contain">
     </a>
 </div>
 
