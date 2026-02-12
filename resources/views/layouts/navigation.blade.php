@@ -8,12 +8,12 @@
             <div class="flex items-center space-x-10">
 
                 <!-- Logo -->
-                <a href="{{ route('dashboard') }}" class="flex items-center">
-                    <img src="{{ asset('UOL-Green-V1.png') }}"
-                         alt="UOL Logo"
-                         class="h-8 w-auto object-contain">
-                </a>
-
+                <a href="{{ route('dashboard') }}" class="flex items-center space-x-2">
+    <img src="{{ asset('UOL-Green-V1.png') }}"
+         alt="UOL"
+         class="h-8 w-auto object-contain"
+         style="max-width: 140px;">
+</a>
                 <!-- Main Menu -->
                 <div class="hidden sm:flex items-center space-x-8 text-sm font-medium">
 
