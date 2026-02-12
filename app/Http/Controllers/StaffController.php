@@ -33,8 +33,7 @@ class StaffController extends Controller
             'joining_date' => 'required|date'
         ]);
 
-        // ✅ KEEPING YOUR DEFAULT PASSWORD
-        $password = '12345678';
+        $password = '12345678'; // 🔒 your default password
 
         // Create User
         $user = User::create([
@@ -45,7 +44,7 @@ class StaffController extends Controller
             'annual_leave_balance' => 14
         ]);
 
-        // Create Staff Record
+        // Create Staff
         Staff::create([
             'user_id' => $user->id,
             'employee_id' => $request->employee_id,
@@ -55,27 +54,27 @@ class StaffController extends Controller
             'joining_date' => $request->joining_date
         ]);
 
-        // ✅ SEND EMAIL WITH CREDENTIALS
-        Mail::raw(
-            "Welcome to HR Management System
+        // Send Email
+        try {
+            Mail::raw(
+                "Welcome to HR Management System
 
-Login URL: https://hrs.uolcc.edu.pk/login
+Login URL: " . url('/login') . "
 
 Email: {$request->email}
-Password: 12345678
+Password: {$password}
 
-Please login and change your password immediately.
+Please change your password after login.",
+                function ($message) use ($request) {
+                    $message->to($request->email)
+                            ->subject('Your HR Account Created');
+                }
+            );
+        } catch (\Exception $e) {
+            \Log::error($e->getMessage());
+        }
 
-Regards,
-HR Department",
-            function ($message) use ($request) {
-                $message->to($request->email)
-                        ->subject('HR System Login Credentials');
-            }
-        );
-
-        return redirect()
-            ->route('staff.index')
-            ->with('success', 'Staff Created Successfully & Email Sent');
+        return redirect()->route('staff.index')
+            ->with('success', 'Staff Created Successfully');
     }
 }
