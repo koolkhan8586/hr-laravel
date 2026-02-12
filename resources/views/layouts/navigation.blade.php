@@ -7,10 +7,11 @@
             <div class="flex items-center space-x-6">
 
                 <a href="{{ route('dashboard') }}" class="flex items-center">
-                    <img src="{{ asset('UOL-Green-V1.png') }}"
-                         alt="University of Lahore"
-                         class="h-12 w-auto object-contain">
-                </a>
+    <img src="{{ asset('UOL-Green-V1.png') }}"
+         alt="University of Lahore"
+         class="h-8 w-auto max-h-8 object-contain">
+</a>
+
 
                 {{-- Main Navigation --}}
                 <div class="hidden sm:flex space-x-6 text-sm font-medium">
