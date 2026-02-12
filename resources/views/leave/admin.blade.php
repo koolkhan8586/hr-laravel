@@ -1,4 +1,4 @@
-<a href="{{ route('leave.payroll.summary') }}"
+<a href="{{ route('payroll.summary') }}"
    class="bg-purple-600 text-white px-4 py-2 rounded mb-4 inline-block">
     Payroll Summary
 </a>
