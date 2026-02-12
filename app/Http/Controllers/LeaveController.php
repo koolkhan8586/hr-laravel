@@ -228,7 +228,7 @@ class LeaveController extends Controller
             ->groupBy('user_id')
             ->get();
 
-        return view('leave.payroll_summary', compact(
+        return view('leave.payroll-summary', compact(
             'annualUsed',
             'withoutPay',
             'sickLeave',
