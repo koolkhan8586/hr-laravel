@@ -235,12 +235,14 @@ class LeaveController extends Controller
 
 
     return view('leave.payroll-summary', compact(
-        'annualUsed',
-        'withoutPay',
-        'sickUsed',
-        'monthly',
-        'employeeSummary',
-        'year'
+    'annualUsed',
+    'withoutPay',
+    'sickUsed',
+    'monthly',
+    'employees',
+    'year'
+));
+
     ));
 }
 
