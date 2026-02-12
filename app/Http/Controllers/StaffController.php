@@ -161,4 +161,19 @@ class StaffController extends Controller
 
         return back()->with('success', 'Password Reset & Email Sent');
     }
+
+    public function destroy($id)
+{
+    $staff = Staff::findOrFail($id);
+
+    // Delete related user
+    $staff->user()->delete();
+
+    // Delete staff record
+    $staff->delete();
+
+    return redirect()->route('staff.index')
+        ->with('success', 'Staff Deleted Successfully');
+}
+
 }
