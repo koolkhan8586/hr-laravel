@@ -56,6 +56,14 @@
                 </tr>
             @empty
                 <tr>
+                    <td class="p-2 border">
+    <a href="{{ route('staff.edit', $member->id) }}"
+       class="bg-blue-500 text-white px-3 py-1 rounded">
+        Edit
+    </a>
+</td>
+
+                    
                     <td colspan="6" class="text-center p-4 text-gray-500">
                         No Staff Found
                     </td>
