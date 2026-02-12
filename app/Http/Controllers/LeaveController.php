@@ -241,7 +241,7 @@ class LeaveController extends Controller
     'monthly',
     'employees',
     'year'
-));
+
 
     ));
 }
