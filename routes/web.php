@@ -128,6 +128,11 @@ Route::middleware(['auth', 'admin'])->group(function () {
 Route::post('/staff/update/{id}', [StaffController::class, 'update'])
     ->name('staff.update');
 
+    Route::post('/staff/reset-password/{id}', 
+    [StaffController::class, 'resetPassword'])
+    ->name('staff.reset');
+
+
 
 
 });
