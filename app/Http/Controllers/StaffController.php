@@ -33,6 +33,41 @@ class StaffController extends Controller
         return view('staff.create');
     }
 
+    public function edit($id)
+{
+    $staff = Staff::with('user')->findOrFail($id);
+    return view('staff.edit', compact('staff'));
+}
+
+public function update(Request $request, $id)
+{
+    $staff = Staff::findOrFail($id);
+    $user = $staff->user;
+
+    $request->validate([
+        'name' => 'required',
+        'email' => 'required|email',
+        'department' => 'required',
+        'designation' => 'required',
+        'salary' => 'required|numeric'
+    ]);
+
+    $user->update([
+        'name' => $request->name,
+        'email' => $request->email,
+    ]);
+
+    $staff->update([
+        'department' => $request->department,
+        'designation' => $request->designation,
+        'salary' => $request->salary
+    ]);
+
+    return redirect()->route('staff.index')
+        ->with('success', 'Staff Updated Successfully');
+}
+
+    
     public function store(Request $request)
     {
         $request->validate([
