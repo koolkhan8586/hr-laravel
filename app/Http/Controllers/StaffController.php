@@ -7,9 +7,21 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use App\Imports\StaffImport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class StaffController extends Controller
 {
+    public function import(Request $request)
+{
+    $request->validate([
+        'file' => 'required|mimes:xlsx,csv'
+    ]);
+
+    Excel::import(new StaffImport, $request->file('file'));
+
+    return back()->with('success', 'Staff Imported Successfully');
+}
     public function index()
     {
         $staff = Staff::with('user')->get();
