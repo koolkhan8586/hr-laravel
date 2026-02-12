@@ -97,6 +97,10 @@ Route::middleware(['auth', 'admin'])->group(function () {
     */
     Route::get('/admin/leave-transactions/export', [LeaveController::class, 'exportTransactions'])
         ->name('leave.export.transactions');
+
+    Route::get('/admin/payroll-summary', [LeaveController::class, 'payrollSummary'])
+        ->name('leave.payroll.summary');
+
 });
 
 /*
