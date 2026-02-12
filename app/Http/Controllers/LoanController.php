@@ -42,4 +42,5 @@ class LoanController extends Controller
 
         return redirect()->route('loan.index')->with('success', 'Loan Assigned Successfully');
     }
+    //
 }
