@@ -41,6 +41,32 @@ class StaffController extends Controller
 
 public function update(Request $request, $id)
 {
+   public function resetPassword($id)
+    {
+        $staff = Staff::findOrFail($id);
+        $user = $staff->user;
+
+        $newPassword = '12345678';
+
+        $user->update([
+            'password' => bcrypt($newPassword)
+        ]);
+
+        Mail::raw(
+            "Your password has been reset.\n\n".
+            "Login URL: " . url('/login') . "\n".
+            "Email: {$user->email}\n".
+            "New Password: {$newPassword}",
+            function ($message) use ($user) {
+                $message->to($user->email)
+                        ->subject('Password Reset');
+            }
+        );
+
+        return back()->with('success', 'Password Reset & Email Sent');
+    }
+}
+    
     $staff = Staff::findOrFail($id);
     $user = $staff->user;
 
