@@ -65,7 +65,8 @@
                         </a>
 
                         {{-- Reset Password --}}
-                        <form action="{{ route('staff.reset', $item->id) }}"
+                        <form action="{{ route('staff.reset.password', $item->id) }}"
+
                               method="POST"
                               class="inline">
                             @csrf
