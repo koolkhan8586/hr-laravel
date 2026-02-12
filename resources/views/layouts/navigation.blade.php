@@ -8,12 +8,12 @@
             {{-- ================= Logo ================= --}}
             <div class="flex items-center space-x-6">
 
-                <a href="{{ route('dashboard') }}" class="flex items-center">
+                <<a href="{{ route('dashboard') }}" class="flex items-center space-x-2">
     <img src="{{ asset('UOL-Green-V1.png') }}"
-         alt="University of Lahore"
-         class="h-8 w-auto max-h-8 object-contain">
+         alt="UOL"
+         class="h-8 w-auto object-contain"
+         style="max-width: 140px;">
 </a>
-
 
                 {{-- Main Navigation --}}
                 <div class="hidden sm:flex space-x-6 text-sm font-medium">
