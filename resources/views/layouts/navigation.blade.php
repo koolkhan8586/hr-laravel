@@ -8,11 +8,12 @@
 
                 <!-- Logo -->
                 <div class="flex-shrink-0">
-                    <a href="{{ route('dashboard') }}">
-                        <img src="{{ asset('UOL-Green-V1.png') }}"
-                             alt="University of Lahore Logo"
-                             class="h-8 w-auto object-contain">
-                    </a>
+                    <a href="{{ route('dashboard') }}" class="flex items-center space-x-2">
+    <img src="{{ asset('UOL-Green-V1.png') }}"
+         alt="UOL"
+         class="h-8 w-auto object-contain"
+         style="max-width: 140px;">
+</a>
                 </div>
 
                 <!-- Navigation Links -->
