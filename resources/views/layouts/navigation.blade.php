@@ -35,6 +35,17 @@
                     </x-nav-link>
 
                     <!-- Admin Only Links -->
+                    @auth
+    @if(auth()->user()->role === 'admin')
+
+        <x-nav-link :href="route('staff.index')" 
+            :active="request()->routeIs('staff.*')">
+            Staff
+        </x-nav-link>
+
+    @endif
+@endauth
+
                     @if(auth()->user()->role === 'admin')
 
                         <x-nav-link :href="route('leave.admin')" 
@@ -130,7 +141,10 @@
 
             @if(auth()->user()->role === 'admin')
 
-                <x-responsive-nav-link :href="route('leave.admin')">
+            <x-responsive-nav-link :href="route('staff.index')">
+        Staff
+    </x-responsive-nav-link>    
+            <x-responsive-nav-link :href="route('leave.admin')">
                     Manage Leaves
                 </x-responsive-nav-link>
 
