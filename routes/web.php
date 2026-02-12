@@ -122,5 +122,12 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('/staff/import', [StaffController::class, 'import'])
     ->name('staff.import');
 
+    Route::get('/staff/edit/{id}', [StaffController::class, 'edit'])
+    ->name('staff.edit');
+
+Route::post('/staff/update/{id}', [StaffController::class, 'update'])
+    ->name('staff.update');
+
+
 
 });
