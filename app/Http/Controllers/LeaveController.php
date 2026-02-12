@@ -256,7 +256,6 @@ public function exportTransactions(Request $request)
 }
 
 
-}
     public function payrollSummary(Request $request)
 {
     $year = $request->year ?? now()->year;
@@ -309,4 +308,5 @@ public function exportTransactions(Request $request)
         'monthly',
         'employees'
     ));
+  }
 }
