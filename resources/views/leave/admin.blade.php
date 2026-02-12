@@ -61,7 +61,16 @@
                 <td class="p-2 border">{{ $leave->user->name }}</td>
                 <td class="p-2 border capitalize">{{ str_replace('_',' ',$leave->type) }}</td>
                 <td class="p-2 border">{{ $leave->days }}</td>
-                <td class="p-2 border">{{ ucfirst($leave->status) }}</td>
+                <td class="p-2 border">
+    @if($leave->status == 'approved')
+        <span class="text-green-600 font-bold">Approved</span>
+    @elseif($leave->status == 'pending')
+        <span class="text-yellow-600 font-bold">Pending</span>
+    @else
+        <span class="text-red-600 font-bold">Rejected</span>
+    @endif
+</td>
+
                 <td class="p-2 border">
                 <td class="p-2 border">
     @if($leave->status == 'pending')
