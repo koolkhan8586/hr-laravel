@@ -226,12 +226,13 @@ class LeaveController extends Controller
         ->get();
 
     // Per Employee Summary
-    $employeeSummary = Leave::selectRaw('user_id, SUM(calculated_days) as total')
-        ->where('status', 'approved')
-        ->whereYear('start_date', $year)
-        ->groupBy('user_id')
-        ->with('user')
-        ->get();
+    $employees = Leave::selectRaw('user_id, SUM(calculated_days) as total_used')
+    ->where('status', 'approved')
+    ->whereYear('start_date', $year)
+    ->groupBy('user_id')
+    ->with('user')
+    ->get();
+
 
     return view('leave.payroll-summary', compact(
         'annualUsed',
