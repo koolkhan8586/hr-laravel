@@ -5,33 +5,12 @@
         <h2 class="text-2xl font-bold">Staff List</h2>
 
         <div class="flex gap-3">
-
-            {{-- Import Form --}}
-            <form action="{{ route('staff.import') }}" method="POST" enctype="multipart/form-data">
-                @csrf
-                <input type="file" name="file" required
-                    class="border rounded px-2 py-1 text-sm">
-
-                <button type="submit"
-                    class="bg-green-600 text-white px-3 py-2 rounded">
-                    Import Staff
-                </button>
-            </form>
-
-            {{-- Add Staff Button --}}
             <a href="{{ route('staff.create') }}"
                class="bg-blue-600 text-white px-4 py-2 rounded">
                 Add Staff
             </a>
-
         </div>
     </div>
-
-    @if(session('success'))
-        <div class="bg-green-100 text-green-700 p-3 rounded mb-4">
-            {{ session('success') }}
-        </div>
-    @endif
 
     <table class="w-full border">
         <thead class="bg-gray-200">
@@ -42,33 +21,49 @@
                 <th class="p-2 border">Department</th>
                 <th class="p-2 border">Designation</th>
                 <th class="p-2 border">Salary</th>
+                <th class="p-2 border">Action</th>
             </tr>
         </thead>
-        <tbody>
-            @forelse($staff as $member)
-                <tr>
-                    <td class="p-2 border">{{ $member->employee_id }}</td>
-                    <td class="p-2 border">{{ $member->user->name ?? '' }}</td>
-                    <td class="p-2 border">{{ $member->user->email ?? '' }}</td>
-                    <td class="p-2 border">{{ $member->department }}</td>
-                    <td class="p-2 border">{{ $member->designation }}</td>
-                    <td class="p-2 border">{{ $member->salary }}</td>
-                </tr>
-            @empty
-                <tr>
-                    <td class="p-2 border">
-    <a href="{{ route('staff.edit', $member->id) }}"
-       class="bg-blue-500 text-white px-3 py-1 rounded">
-        Edit
-    </a>
-</td>
 
-                    
-                    <td colspan="6" class="text-center p-4 text-gray-500">
-                        No Staff Found
+        <tbody>
+            @foreach($staff as $item)
+                <tr>
+                    <td class="p-2 border">{{ $item->employee_id }}</td>
+                    <td class="p-2 border">{{ $item->user->name }}</td>
+                    <td class="p-2 border">{{ $item->user->email }}</td>
+                    <td class="p-2 border">{{ $item->department }}</td>
+                    <td class="p-2 border">{{ $item->designation }}</td>
+                    <td class="p-2 border">{{ number_format($item->salary, 2) }}</td>
+
+                    <td class="p-2 border space-x-2">
+
+                        {{-- Edit --}}
+                        <a href="{{ route('staff.edit', $item->id) }}"
+                           class="bg-yellow-500 text-white px-3 py-1 rounded">
+                            Edit
+                        </a>
+
+                        {{-- Reset Password --}}
+                        <a href="{{ route('staff.reset.password', $item->id) }}"
+                           class="bg-purple-600 text-white px-3 py-1 rounded">
+                            Reset
+                        </a>
+
+                        {{-- Delete --}}
+                        <form action="{{ route('staff.destroy', $item->id) }}"
+                              method="POST"
+                              class="inline"
+                              onsubmit="return confirm('Are you sure you want to delete this staff?')">
+                            @csrf
+                            @method('DELETE')
+                            <button class="bg-red-600 text-white px-3 py-1 rounded">
+                                Delete
+                            </button>
+                        </form>
+
                     </td>
                 </tr>
-            @endforelse
+            @endforeach
         </tbody>
     </table>
 
