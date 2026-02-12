@@ -2,19 +2,17 @@
 
 namespace App\Http\Controllers;
 
-
-use App\Exports\LeaveTransactionsExport;
-use Maatwebsite\Excel\Facades\Excel;
 use App\Models\Leave;
 use App\Models\User;
 use App\Models\LeaveTransaction;
-use App\Notifications\LeaveApproved;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\LeaveTransactionsExport;
 
 class LeaveController extends Controller
 {
+
     /*
     |--------------------------------------------------------------------------
     | Employee Leave List
@@ -23,93 +21,61 @@ class LeaveController extends Controller
     public function index()
     {
         $leaves = Leave::where('user_id', auth()->id())
-            ->latest()
+            ->orderBy('created_at', 'desc')
             ->get();
 
-        $balance = auth()->user()->annual_leave_balance;
-
-        return view('leave.index', compact('leaves', 'balance'));
+        return view('leave.index', compact('leaves'));
     }
 
     /*
     |--------------------------------------------------------------------------
-    | Show Apply Form
+    | Leave Apply Form
     |--------------------------------------------------------------------------
     */
     public function create()
     {
-        $balance = auth()->user()->annual_leave_balance;
-
-        return view('leave.create', compact('balance'));
+        return view('leave.create');
     }
 
     /*
     |--------------------------------------------------------------------------
-    | Store Leave Request
+    | Store Leave
     |--------------------------------------------------------------------------
     */
     public function store(Request $request)
     {
         $request->validate([
-            'type'          => 'required',
-            'start_date'    => 'required|date',
+            'type' => 'required',
+            'start_date' => 'required|date',
             'duration_type' => 'required',
-            'reason'        => 'required'
+            'reason' => 'required'
         ]);
 
         $start = Carbon::parse($request->start_date);
 
-        // Calculate Days
         if ($request->duration_type === 'half_day') {
             $end = $start;
-            $calculatedDays = 0.5;
+            $days = 0.5;
         } else {
             $request->validate([
                 'end_date' => 'required|date|after_or_equal:start_date',
             ]);
 
             $end = Carbon::parse($request->end_date);
-            $calculatedDays = $start->diffInDays($end) + 1;
+            $days = $start->diffInDays($end) + 1;
         }
 
-        // Prevent overlapping leave
-        $overlap = Leave::where('user_id', auth()->id())
-            ->where('status', '!=', 'rejected')
-            ->where(function ($query) use ($start, $end) {
-                $query->whereBetween('start_date', [$start, $end])
-                      ->orWhereBetween('end_date', [$start, $end])
-                      ->orWhere(function ($q) use ($start, $end) {
-                          $q->where('start_date', '<=', $start)
-                            ->where('end_date', '>=', $end);
-                      });
-            })
-            ->exists();
-
-        if ($overlap) {
-            return back()->with('error', 'You already have leave during this period.');
-        }
-
-        // Check annual leave balance
-        if ($request->type === 'annual') {
-            $user = auth()->user();
-
-            if ((float) $user->annual_leave_balance < (float) $calculatedDays) {
-                return back()->with('error', 'Insufficient Leave Balance.');
-            }
-        }
-
-        // Create Leave
         Leave::create([
-            'user_id'         => auth()->id(),
-            'type'            => $request->type,
-            'start_date'      => $start,
-            'end_date'        => $end,
-            'days'            => $calculatedDays,
-            'duration_type'   => $request->duration_type,
-            'half_day_type'   => $request->half_day_type,
-            'calculated_days' => $calculatedDays,
-            'reason'          => $request->reason,
-            'status'          => 'pending',
+            'user_id' => auth()->id(),
+            'type' => $request->type,
+            'start_date' => $start,
+            'end_date' => $end,
+            'days' => $days,
+            'duration_type' => $request->duration_type,
+            'half_day_type' => $request->half_day_type,
+            'calculated_days' => $days,
+            'reason' => $request->reason,
+            'status' => 'pending',
         ]);
 
         return redirect()->route('leave.index')
@@ -118,23 +84,17 @@ class LeaveController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Admin - View All Leaves
+    | Admin Leave List
     |--------------------------------------------------------------------------
     */
-    public function adminIndex(Request $request)
-{
-    $query = Leave::with('user')->orderBy('created_at', 'desc');
+    public function adminIndex()
+    {
+        $leaves = Leave::with('user')
+            ->orderBy('created_at', 'desc')
+            ->get();
 
-    // Optional filter by month
-    if ($request->month) {
-        $query->whereMonth('start_date', date('m', strtotime($request->month)))
-              ->whereYear('start_date', date('Y', strtotime($request->month)));
+        return view('leave.admin', compact('leaves'));
     }
-
-    $leaves = $query->get();   // ✅ THIS LINE IS IMPORTANT
-
-    return view('leave.admin', compact('leaves'));
-}
 
     /*
     |--------------------------------------------------------------------------
@@ -145,36 +105,34 @@ class LeaveController extends Controller
     {
         $leave = Leave::findOrFail($id);
 
-        // Prevent double approval
         if ($leave->status === 'approved') {
-            return back()->with('info', 'Leave already approved.');
+            return back()->with('error', 'Already approved');
         }
 
         $user = User::findOrFail($leave->user_id);
 
-        $balanceBefore = (float) $user->annual_leave_balance;
-        $balanceAfter  = $balanceBefore;
-
         if ($leave->type === 'annual') {
 
-            if ($balanceBefore < (float) $leave->calculated_days) {
-                return back()->with('error', 'Insufficient Leave Balance.');
+            $balanceBefore = $user->annual_leave_balance;
+
+            if ($balanceBefore < $leave->calculated_days) {
+                return back()->with('error', 'Insufficient Balance');
             }
 
-            $balanceAfter = $balanceBefore - (float) $leave->calculated_days;
+            $balanceAfter = $balanceBefore - $leave->calculated_days;
 
             $user->update([
                 'annual_leave_balance' => $balanceAfter
             ]);
 
             LeaveTransaction::create([
-                'user_id'        => $user->id,
-                'leave_id'       => $leave->id,
-                'days'           => $leave->calculated_days,
+                'user_id' => $user->id,
+                'leave_id' => $leave->id,
+                'days' => $leave->calculated_days,
                 'balance_before' => $balanceBefore,
-                'balance_after'  => $balanceAfter,
-                'action'         => 'approved',
-                'processed_by'   => auth()->id(),
+                'balance_after' => $balanceAfter,
+                'action' => 'approved',
+                'processed_by' => auth()->id(),
             ]);
         }
 
@@ -182,10 +140,7 @@ class LeaveController extends Controller
             'status' => 'approved'
         ]);
 
-        // ✅ Send Email Notification
-        $user->notify(new LeaveApproved($leave));
-
-        return back()->with('success', 'Leave Approved Successfully');
+        return back()->with('success', 'Leave Approved');
     }
 
     /*
@@ -198,115 +153,89 @@ class LeaveController extends Controller
         $leave = Leave::findOrFail($id);
 
         if ($leave->status === 'approved') {
-            return back()->with('error', 'Cannot reject an approved leave.');
+            return back()->with('error', 'Cannot reject approved leave.');
         }
 
         $leave->update([
             'status' => 'rejected'
         ]);
 
-        return back()->with('success', 'Leave Rejected Successfully');
+        return back()->with('success', 'Leave Rejected');
     }
 
     /*
-|--------------------------------------------------------------------------
-| Export Leave Transactions
-|--------------------------------------------------------------------------
-*/
-public function exportTransactions(Request $request)
-{
-    return \Maatwebsite\Excel\Facades\Excel::download(
-        new \App\Exports\LeaveTransactionsExport($request->user_id),
-        'leave_transactions.xlsx'
-    );
-}
-
-    /*
     |--------------------------------------------------------------------------
-    | Leave Transaction History
+    | Admin Transactions
     |--------------------------------------------------------------------------
     */
-    public function history()
+    public function adminTransactions()
     {
-    $transactions = \App\Models\LeaveTransaction::where('user_id', auth()->id())
-        ->orderBy('created_at', 'desc')
-        ->get();
+        $transactions = LeaveTransaction::with('user', 'leave')
+            ->orderBy('created_at', 'desc')
+            ->get();
 
-    return view('leave.history', compact('transactions'));
+        return view('leave.admin_transactions', compact('transactions'));
     }
 
-    public function adminTransactions(Request $request)
-{
-    $query = \App\Models\LeaveTransaction::with(['user'])
-        ->orderBy('created_at', 'desc');
-
-    // Month filter
-    if ($request->month) {
-        $query->whereMonth('created_at', $request->month);
+    /*
+    |--------------------------------------------------------------------------
+    | Export Transactions
+    |--------------------------------------------------------------------------
+    */
+    public function exportTransactions()
+    {
+        return Excel::download(
+            new LeaveTransactionsExport,
+            'leave_transactions.xlsx'
+        );
     }
 
-    // Year filter
-    if ($request->year) {
-        $query->whereYear('created_at', $request->year);
-    }
-
-    $transactions = $query->get();
-
-    return view('leave.admin_transactions', compact('transactions'));
-}
-
-
+    /*
+    |--------------------------------------------------------------------------
+    | Payroll Summary
+    |--------------------------------------------------------------------------
+    */
     public function payrollSummary(Request $request)
-{
-    $year = $request->year ?? now()->year;
+    {
+        $year = $request->year ?? now()->year;
 
-    // Annual Used
-    $annualUsed = Leave::where('type', 'annual')
-        ->where('status', 'approved')
-        ->whereYear('start_date', $year)
-        ->sum('calculated_days');
+        $annualUsed = Leave::where('type', 'annual')
+            ->where('status', 'approved')
+            ->whereYear('start_date', $year)
+            ->sum('calculated_days');
 
-    // Without Pay Used
-    $withoutPay = Leave::where('type', 'without_pay')
-        ->where('status', 'approved')
-        ->whereYear('start_date', $year)
-        ->sum('calculated_days');
+        $withoutPay = Leave::where('type', 'without_pay')
+            ->where('status', 'approved')
+            ->whereYear('start_date', $year)
+            ->sum('calculated_days');
 
-    // Sick Leave Used
-    $sickUsed = Leave::where('type', 'sick')
-        ->where('status', 'approved')
-        ->whereYear('start_date', $year)
-        ->sum('calculated_days');
+        $sickLeave = Leave::where('type', 'sick')
+            ->where('status', 'approved')
+            ->whereYear('start_date', $year)
+            ->sum('calculated_days');
 
-    // Monthly Breakdown
-    $monthly = Leave::select(
-            DB::raw('MONTH(start_date) as month'),
-            DB::raw('SUM(calculated_days) as total')
-        )
-        ->where('status', 'approved')
-        ->whereYear('start_date', $year)
-        ->groupBy(DB::raw('MONTH(start_date)'))
-        ->orderBy('month')
-        ->get();
+        $monthly = Leave::selectRaw('MONTH(start_date) as month, SUM(calculated_days) as total')
+            ->where('status', 'approved')
+            ->whereYear('start_date', $year)
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get();
 
-    // Per Employee Summary
-    $employees = Leave::select(
-            'user_id',
-            DB::raw('SUM(calculated_days) as total_used')
-        )
-        ->where('status', 'approved')
-        ->whereYear('start_date', $year)
-        ->groupBy('user_id')
-        ->with('user')
-        ->get();
+        $employeeSummary = Leave::with('user')
+            ->selectRaw('user_id, SUM(calculated_days) as total')
+            ->where('status', 'approved')
+            ->whereYear('start_date', $year)
+            ->groupBy('user_id')
+            ->get();
 
-    return view('leave.payroll-summary', compact(
-        'year',
-        'annualUsed',
-        'withoutPay',
-        'sickUsed',
-        'monthly',
-        'employees'
-    ));
-  }
+        return view('leave.payroll_summary', compact(
+            'annualUsed',
+            'withoutPay',
+            'sickLeave',
+            'monthly',
+            'employeeSummary',
+            'year'
+        ));
+    }
+
 }
