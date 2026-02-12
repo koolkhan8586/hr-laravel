@@ -1,19 +1,21 @@
 <nav x-data="{ open: false }" class="bg-white border-b border-gray-200 shadow">
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
+        <div class="flex justify-between items-center h-14">
+
 
             {{-- LEFT SECTION --}}
             <div class="flex items-center space-x-8">
 
                 {{-- LOGO --}}
                 <div class="shrink-0 flex items-center">
-                    <a href="{{ route('dashboard') }}">
-                        <img src="{{ asset('UOL-Green-V1.png') }}"
-                             alt="University of Lahore"
-                             class="h-12 w-auto">
-                    </a>
-                </div>
+    <a href="{{ route('dashboard') }}" class="flex items-center">
+        <img src="{{ asset('UOL-Green-V1.png') }}"
+             alt="University of Lahore"
+             class="h-10 w-auto object-contain">
+    </a>
+</div>
+
 
                 {{-- MAIN NAVIGATION --}}
                 <div class="hidden sm:flex space-x-6">
