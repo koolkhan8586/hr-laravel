@@ -1,33 +1,32 @@
-<nav class="bg-white border-b shadow-sm">
+<nav class="bg-white border-b shadow">
     <div class="max-w-7xl mx-auto px-6">
-        <div class="flex justify-between items-center h-14">
+        <div class="flex justify-between items-center h-16">
 
-            {{-- LEFT SIDE --}}
-            <div class="flex items-center space-x-10">
+            {{-- LEFT SECTION --}}
+            <div class="flex items-center space-x-8">
 
                 {{-- LOGO --}}
-                <a href="{{ route('dashboard') }}" class="flex items-center">
+                <a href="{{ route('dashboard') }}">
                     <img src="{{ asset('UOL-Green-V1.png') }}"
                          alt="UOL Logo"
-                         class="h-8 w-auto object-contain"
-                         style="max-width:140px;">
+                         class="h-10 w-auto object-contain">
                 </a>
 
-                {{-- MENU --}}
-                <div class="hidden md:flex items-center space-x-6 text-sm font-medium">
+                {{-- MENU LINKS --}}
+                <div class="flex items-center space-x-6 text-sm font-medium">
 
                     <a href="{{ route('dashboard') }}"
-                       class="text-gray-700 hover:text-green-700">
+                       class="hover:text-green-700">
                         Dashboard
                     </a>
 
                     <a href="{{ route('attendance.index') }}"
-                       class="text-gray-700 hover:text-green-700">
+                       class="hover:text-green-700">
                         Attendance
                     </a>
 
                     <a href="{{ route('leave.index') }}"
-                       class="text-gray-700 hover:text-green-700">
+                       class="hover:text-green-700">
                         Leave
                     </a>
 
@@ -35,27 +34,27 @@
                     @if(auth()->user()->role === 'admin')
 
                         <a href="{{ route('staff.index') }}"
-                           class="text-gray-700 hover:text-green-700">
+                           class="hover:text-green-700">
                             Staff
                         </a>
 
                         <a href="{{ route('leave.admin') }}"
-                           class="text-gray-700 hover:text-green-700">
+                           class="hover:text-green-700">
                             Manage Leaves
                         </a>
 
                         <a href="{{ route('leave.transactions') }}"
-                           class="text-gray-700 hover:text-green-700">
+                           class="hover:text-green-700">
                             Transactions
                         </a>
 
                         <a href="{{ route('payroll.summary') }}"
-                           class="text-gray-700 hover:text-green-700">
+                           class="hover:text-green-700">
                             Payroll
                         </a>
 
                         <a href="{{ route('loan.index') }}"
-                           class="text-gray-700 hover:text-green-700">
+                           class="hover:text-green-700">
                             Loans
                         </a>
 
@@ -64,15 +63,16 @@
                     {{-- EMPLOYEE LOAN --}}
                     @if(auth()->user()->role === 'employee')
                         <a href="{{ route('loan.my') }}"
-                           class="text-gray-700 hover:text-green-700">
+                           class="hover:text-green-700">
                             My Loan
                         </a>
                     @endif
 
                 </div>
+
             </div>
 
-            {{-- RIGHT SIDE --}}
+            {{-- RIGHT SECTION --}}
             <div class="flex items-center space-x-4">
 
                 <span class="text-sm text-gray-600">
