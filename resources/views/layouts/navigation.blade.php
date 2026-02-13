@@ -80,7 +80,7 @@
                 Staff Management
             </a>
 
-            <a href="{{ route('leave.admin') }}"
+            <a href="{{ route('admin.leave.index') }}"
                class="block px-4 py-2 hover:bg-gray-100">
                 Manage Leaves
             </a>
