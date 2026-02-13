@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Salary;
 use App\Models\User;
+use App\Models\Loan;
+use App\Models\LoanPayment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -13,54 +15,53 @@ class SalaryController extends Controller
 {
     /*
     |--------------------------------------------------------------------------
-    | Admin Salary List (With Filters + Summary)
+    | Admin Salary List (Filters + Summary Cards)
     |--------------------------------------------------------------------------
     */
     public function index(Request $request)
-{
-    $query = Salary::with('user');
+    {
+        $query = Salary::with('user');
 
-    // Filters (if any)
-    if ($request->month) {
-        $query->where('month', $request->month);
+        // Filters
+        if ($request->month) {
+            $query->where('month', $request->month);
+        }
+
+        if ($request->year) {
+            $query->where('year', $request->year);
+        }
+
+        if ($request->employee) {
+            $query->where('user_id', $request->employee);
+        }
+
+        $salaries = $query->orderByDesc('year')
+                          ->orderByDesc('month')
+                          ->get();
+
+        $employees = User::where('role', 'employee')->get();
+
+        // Summary Cards
+        $totalSalaries   = $salaries->count();
+        $totalNet        = $salaries->sum('net_salary');
+        $totalDeductions = $salaries->sum('total_deductions');
+        $totalPosted     = $salaries->where('is_posted', true)->count();
+        $draftCount      = $salaries->where('is_posted', false)->count();
+
+        return view('salary.admin-index', compact(
+            'salaries',
+            'employees',
+            'totalSalaries',
+            'totalNet',
+            'totalDeductions',
+            'totalPosted',
+            'draftCount'
+        ));
     }
-
-    if ($request->year) {
-        $query->where('year', $request->year);
-    }
-
-    if ($request->employee) {
-        $query->where('user_id', $request->employee);
-    }
-
-    $salaries = $query->orderByDesc('year')
-                       ->orderByDesc('month')
-                       ->get();
-
-    $employees = User::where('role', 'employee')->get();
-
-    // ================= SUMMARY CALCULATIONS =================
-    $totalSalaries   = $salaries->count();
-    $totalNet        = $salaries->sum('net_salary');
-    $totalDeductions = $salaries->sum('total_deductions');
-    $totalPosted     = $salaries->where('is_posted', true)->count();
-    $draftCount      = $salaries->where('is_posted', false)->count();
-
-    return view('salary.admin-index', compact(
-        'salaries',
-        'employees',
-        'totalSalaries',
-        'totalNet',
-        'totalDeductions',
-        'totalPosted',
-        'draftCount'
-    ));
-}
-
 
     /*
     |--------------------------------------------------------------------------
-    | Create Salary (Admin)
+    | Create Salary
     |--------------------------------------------------------------------------
     */
     public function create()
@@ -71,7 +72,7 @@ class SalaryController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Store Salary (Admin)
+    | Store Salary (With Auto Loan Deduction)
     |--------------------------------------------------------------------------
     */
     public function store(Request $request)
@@ -93,7 +94,11 @@ class SalaryController extends Controller
             return back()->with('error', 'Salary already exists for this month.');
         }
 
-        // Earnings
+        /*
+        |--------------------------------------------------------------------------
+        | Calculate Earnings
+        |--------------------------------------------------------------------------
+        */
         $gross =
             ($request->basic_salary ?? 0)
             + ($request->invigilation ?? 0)
@@ -102,16 +107,53 @@ class SalaryController extends Controller
             + ($request->increment ?? 0)
             + ($request->other_earnings ?? 0);
 
-        // Deductions
+        /*
+        |--------------------------------------------------------------------------
+        | Auto Loan Deduction
+        |--------------------------------------------------------------------------
+        */
+        $loan = Loan::where('user_id', $request->user_id)
+            ->where('status', 'approved')
+            ->where('remaining_balance', '>', 0)
+            ->first();
+
+        $loanDeduction = 0;
+
+        if ($loan) {
+
+            $loanDeduction = min(
+                $loan->monthly_deduction,
+                $loan->remaining_balance
+            );
+
+            $loan->remaining_balance -= $loanDeduction;
+
+            if ($loan->remaining_balance <= 0) {
+                $loan->remaining_balance = 0;
+            }
+
+            $loan->save();
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Deductions
+        |--------------------------------------------------------------------------
+        */
         $deductions =
             ($request->extra_leaves ?? 0)
             + ($request->income_tax ?? 0)
-            + ($request->loan_deduction ?? 0)
             + ($request->insurance ?? 0)
-            + ($request->other_deductions ?? 0);
+            + ($request->other_deductions ?? 0)
+            + $loanDeduction;
 
         $net = $gross - $deductions;
 
+        /*
+        |--------------------------------------------------------------------------
+        | Create Salary Record
+        |--------------------------------------------------------------------------
+        */
         $salary = Salary::create([
             'user_id' => $request->user_id,
             'month' => $request->month,
@@ -126,7 +168,7 @@ class SalaryController extends Controller
 
             'extra_leaves' => $request->extra_leaves ?? 0,
             'income_tax' => $request->income_tax ?? 0,
-            'loan_deduction' => $request->loan_deduction ?? 0,
+            'loan_deduction' => $loanDeduction,
             'insurance' => $request->insurance ?? 0,
             'other_deductions' => $request->other_deductions ?? 0,
 
@@ -136,7 +178,25 @@ class SalaryController extends Controller
             'is_posted' => true
         ]);
 
-        // Send Email Automatically
+        /*
+        |--------------------------------------------------------------------------
+        | Save Loan Payment History
+        |--------------------------------------------------------------------------
+        */
+        if ($loan && $loanDeduction > 0) {
+            LoanPayment::create([
+                'loan_id' => $loan->id,
+                'salary_id' => $salary->id,
+                'amount_paid' => $loanDeduction,
+                'remaining_balance' => $loan->remaining_balance
+            ]);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Send Email
+        |--------------------------------------------------------------------------
+        */
         Mail::to($salary->user->email)
             ->send(new SalaryPostedMail($salary));
 
@@ -146,7 +206,7 @@ class SalaryController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Show Salary (Admin View)
+    | Show Salary (Admin)
     |--------------------------------------------------------------------------
     */
     public function show($id)
@@ -173,16 +233,15 @@ class SalaryController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Download Payslip (PDF)
+    | Download Payslip
     |--------------------------------------------------------------------------
     */
     public function download($id)
     {
         $salary = Salary::with('user')->findOrFail($id);
 
-        // Security Check
-        if (auth()->user()->role !== 'admin' &&
-            $salary->user_id !== auth()->id()) {
+        if (auth()->user()->role !== 'admin'
+            && $salary->user_id !== auth()->id()) {
             abort(403);
         }
 
@@ -202,9 +261,7 @@ class SalaryController extends Controller
     {
         $salary = Salary::findOrFail($id);
 
-        $salary->update([
-            'is_posted' => true
-        ]);
+        $salary->update(['is_posted' => true]);
 
         Mail::to($salary->user->email)
             ->send(new SalaryPostedMail($salary));
