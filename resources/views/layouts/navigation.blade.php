@@ -14,7 +14,8 @@
                 </a>
 
                 <!-- MAIN MENU -->
-                <div class="hidden md:flex items-center space-x-6 text-sm font-medium">
+                <div class="flex items-center space-x-6 text-sm font-medium">
+
 
                     <a href="{{ route('dashboard') }}"
                        class="text-gray-700 hover:text-green-600 transition">
