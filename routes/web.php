@@ -6,6 +6,7 @@ use App\Http\Controllers\StaffController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\LoanController;
 use App\Http\Controllers\LeaveController;
+use App\Http\Controllers\SalaryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -70,6 +71,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/leave/apply', [LeaveController::class, 'create'])->name('leave.create');
     Route::post('/leave/store', [LeaveController::class, 'store'])->name('leave.store');
     Route::get('/leave/history', [LeaveController::class, 'history'])->name('leave.history');
+    Route::get('/salary', [SalaryController::class,'employeeIndex'])->name('salary.index');
+    Route::get('/salary/download/{id}', [SalaryController::class,'download'])->name('salary.download');
 
 });
 
@@ -97,6 +100,11 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::put('/staff/update/{id}', [StaffController::class, 'update'])->name('staff.update');
 
     Route::delete('/staff/delete/{id}', [StaffController::class, 'destroy'])->name('staff.destroy');
+
+    Route::get('/admin/salary', [SalaryController::class,'index'])->name('salary.admin');
+    Route::get('/admin/salary/create', [SalaryController::class,'create'])->name('salary.create');
+    Route::post('/admin/salary/store', [SalaryController::class,'store'])->name('salary.store');
+
 
     // ✅ Reset Password Route (IMPORTANT FIX)
     Route::get('/staff/reset-password/{id}', 
