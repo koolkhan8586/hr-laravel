@@ -42,44 +42,60 @@ class SalaryController extends Controller
     |--------------------------------------------------------------------------
     */
     public function store(Request $request)
-    {
-        $gross = $request->basic_salary
-            + $request->invigilation
-            + $request->t_payment
-            + $request->increment;
+{
+    $request->validate([
+        'user_id' => 'required|exists:users,id',
+        'month' => 'required|integer',
+        'year' => 'required|integer',
+        'basic_salary' => 'required|numeric'
+    ]);
 
-        $deductions = $request->extra_leaves
-            + $request->income_tax
-            + $request->loan_deduction
-            + $request->insurance
-            + $request->others;
+    // Earnings
+    $gross = 
+        $request->basic_salary +
+        ($request->invigilation ?? 0) +
+        ($request->t_payment ?? 0) +
+        ($request->eidi ?? 0) +
+        ($request->increment ?? 0) +
+        ($request->other_earnings ?? 0);
 
-        $net = $gross - $deductions;
+    // Deductions
+    $deductions =
+        ($request->extra_leaves ?? 0) +
+        ($request->income_tax ?? 0) +
+        ($request->loan_deduction ?? 0) +
+        ($request->insurance ?? 0) +
+        ($request->other_deductions ?? 0);
 
-        Salary::create([
-            'user_id' => $request->user_id,
-            'month' => $request->month,
-            'year' => $request->year,
-            'basic_salary' => $request->basic_salary,
-            'invigilation' => $request->invigilation,
-            't_payment' => $request->t_payment,
-            'others' => $request->others,
-            'Eidi' => $request->eidi,          
-            'increment' => $request->increment,
-            'extra_leaves' => $request->extra_leaves,
-            'income_tax' => $request->income_tax,
-            'loan_deduction' => $request->loan_deduction,
-            'insurance' => $request->insurance,
-            'others' => $request->others,
-            'gross_total' => $gross,
-            'total_deductions' => $deductions,
-            'net_salary' => $net,
-            'is_posted' => true,
-        ]);
+    $net = $gross - $deductions;
 
-        return redirect()->route('salary.admin')
-            ->with('success', 'Salary Posted Successfully');
-    }
+    Salary::create([
+        'user_id' => $request->user_id,
+        'month' => $request->month,
+        'year' => $request->year,
+
+        'basic_salary' => $request->basic_salary,
+        'invigilation' => $request->invigilation ?? 0,
+        't_payment' => $request->t_payment ?? 0,
+        'eidi' => $request->eidi ?? 0,
+        'increment' => $request->increment ?? 0,
+        'other_earnings' => $request->other_earnings ?? 0,
+
+        'extra_leaves' => $request->extra_leaves ?? 0,
+        'income_tax' => $request->income_tax ?? 0,
+        'loan_deduction' => $request->loan_deduction ?? 0,
+        'insurance' => $request->insurance ?? 0,
+        'other_deductions' => $request->other_deductions ?? 0,
+
+        'gross_total' => $gross,
+        'total_deductions' => $deductions,
+        'net_salary' => $net,
+        'is_posted' => true
+    ]);
+
+    return redirect()->route('salary.admin')
+        ->with('success', 'Salary Posted Successfully');
+}
 
     /*
     |--------------------------------------------------------------------------
