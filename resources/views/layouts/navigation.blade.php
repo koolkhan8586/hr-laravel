@@ -13,8 +13,8 @@
                          style="max-width:140px;">
                 </a>
 
-                <!-- Navigation Links -->
-                <div class="hidden md:flex items-center space-x-8 text-sm font-medium text-gray-700">
+                <!-- Main Menu -->
+                <div class="flex items-center space-x-8 text-sm font-medium text-gray-700">
 
                     <a href="{{ route('dashboard') }}"
                        class="hover:text-green-700 transition">
@@ -43,8 +43,8 @@
                                 <span class="text-xs">▼</span>
                             </button>
 
-                            <div class="absolute hidden group-hover:block bg-white shadow-lg rounded-md mt-2 w-48 z-50 border">
-                                
+                            <div class="absolute left-0 mt-2 w-48 bg-white border rounded-md shadow-lg hidden group-hover:block z-50">
+
                                 <a href="{{ route('staff.index') }}"
                                    class="block px-4 py-2 hover:bg-gray-100">
                                     Staff
@@ -79,16 +79,14 @@
             <!-- RIGHT SIDE -->
             <div class="flex items-center space-x-6">
 
-                <!-- Username -->
                 <span class="text-sm text-gray-700 font-medium">
                     {{ auth()->user()->name }}
                 </span>
 
-                <!-- Logout -->
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <button type="submit"
-                            class="bg-red-500 hover:bg-red-600 text-white text-sm px-4 py-2 rounded shadow transition">
+                            class="bg-red-500 hover:bg-red-600 text-white text-sm px-4 py-2 rounded shadow">
                         Logout
                     </button>
                 </form>
