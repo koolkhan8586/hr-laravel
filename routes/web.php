@@ -32,9 +32,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 require __DIR__.'/auth.php';
 
+
 /*
 |--------------------------------------------------------------------------
-| Authenticated Routes (All Users)
+| AUTHENTICATED USER ROUTES
 |--------------------------------------------------------------------------
 */
 
@@ -60,7 +61,7 @@ Route::middleware(['auth'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Employee Leave
+    | Leave (Employee)
     |--------------------------------------------------------------------------
     */
     Route::get('/leave', [LeaveController::class, 'index'])->name('leave.index');
@@ -70,7 +71,7 @@ Route::middleware(['auth'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Employee Loans
+    | Loans (Employee)
     |--------------------------------------------------------------------------
     */
     Route::get('/my-loans', [LoanController::class, 'myLoan'])->name('loan.my');
@@ -79,13 +80,11 @@ Route::middleware(['auth'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Employee Salary
+    | Salary (Employee)
     |--------------------------------------------------------------------------
     */
     Route::get('/salary', [SalaryController::class,'employeeIndex'])->name('salary.index');
     Route::get('/salary/download/{id}', [SalaryController::class,'download'])->name('salary.download');
-    
-
 });
 
 
@@ -95,7 +94,9 @@ Route::middleware(['auth'])->group(function () {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
+Route::middleware(['auth', 'admin'])
+    ->prefix('admin')
+    ->group(function () {
 
     /*
     |--------------------------------------------------------------------------
@@ -109,9 +110,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::get('/staff/edit/{id}', [StaffController::class, 'edit'])->name('admin.staff.edit');
     Route::put('/staff/update/{id}', [StaffController::class, 'update'])->name('admin.staff.update');
     Route::delete('/staff/delete/{id}', [StaffController::class, 'destroy'])->name('admin.staff.destroy');
-
-    Route::get('/staff/reset-password/{id}', 
-        [StaffController::class, 'resetPassword'])
+    Route::get('/staff/reset-password/{id}', [StaffController::class, 'resetPassword'])
         ->name('admin.staff.reset.password');
 
     /*
@@ -123,16 +122,13 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::post('/leave/approve/{id}', [LeaveController::class, 'approve'])->name('admin.leave.approve');
     Route::post('/leave/reject/{id}', [LeaveController::class, 'reject'])->name('admin.leave.reject');
 
-    Route::get('/leave-transactions',
-        [LeaveController::class, 'adminTransactions'])
+    Route::get('/leave-transactions', [LeaveController::class, 'adminTransactions'])
         ->name('admin.leave.transactions');
 
-    Route::get('/leave-transactions/export',
-        [LeaveController::class, 'exportTransactions'])
+    Route::get('/leave-transactions/export', [LeaveController::class, 'exportTransactions'])
         ->name('admin.leave.transactions.export');
 
-    Route::get('/payroll-summary',
-        [LeaveController::class, 'payrollSummary'])
+    Route::get('/payroll-summary', [LeaveController::class, 'payrollSummary'])
         ->name('admin.payroll.summary');
 
     /*
@@ -156,19 +152,23 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::post('/salary/store', [SalaryController::class,'store'])->name('admin.salary.store');
     Route::get('/salary/{id}', [SalaryController::class,'show'])->name('admin.salary.show');
     Route::post('/salary/post/{id}', [SalaryController::class,'post'])->name('admin.salary.post');
-    Route::get('admin/salary/{id}/edit', [SalaryController::class,'edit'])
-    ->name('admin.salary.edit');
 
-Route::put('admin/salary/{id}', [SalaryController::class,'update'])
-    ->name('admin.salary.update');
+    Route::get('/salary/{id}/edit', [SalaryController::class,'edit'])
+        ->name('admin.salary.edit');
 
-Route::delete('admin/salary/{id}', [SalaryController::class,'destroy'])
-    ->name('admin.salary.delete');
+    Route::put('/salary/{id}', [SalaryController::class,'update'])
+        ->name('admin.salary.update');
 
-Route::get('admin/salary/export', [SalaryController::class,'export'])
-    ->name('admin.salary.export');
+    Route::delete('/salary/{id}', [SalaryController::class,'destroy'])
+        ->name('admin.salary.delete');
 
-Route::post('admin/salary/import', [SalaryController::class,'import'])
-    ->name('admin.salary.import');
+    Route::get('/salary/export', [SalaryController::class,'export'])
+        ->name('admin.salary.export');
+
+    Route::post('/salary/import', [SalaryController::class,'import'])
+        ->name('admin.salary.import');
+
+    Route::get('/salary/import-form', [SalaryController::class,'importForm'])
+        ->name('admin.salary.import.form');
 
 });
