@@ -1,59 +1,62 @@
-<nav x-data="{ open: false, adminOpen: false }"
-     class="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
-
+<nav x-data="{ open: false }" class="bg-white border-b shadow-sm">
     <div class="max-w-7xl mx-auto px-6">
         <div class="flex justify-between h-16 items-center">
 
-            <!-- LEFT -->
+            {{-- LEFT SIDE --}}
             <div class="flex items-center space-x-10">
 
-                <!-- Logo -->
-                <a href="{{ route('dashboard') }}" class="flex items-center space-x-2">
-    <img src="{{ asset('UOL-Green-V1.png') }}"
-         alt="UOL"
-         class="h-8 w-auto object-contain"
-         style="max-width: 140px;">
-</a>
-                <!-- Main Menu -->
-                <div class="hidden sm:flex items-center space-x-8 text-sm font-medium">
+                {{-- LOGO --}}
+                <a href="{{ route('dashboard') }}" class="flex items-center">
+                    <img src="{{ asset('UOL-Green-V1.png') }}"
+                         alt="UOL Logo"
+                         class="h-10 w-auto">
+                </a>
 
-                    <x-nav-link :href="route('dashboard')"
-                        :active="request()->routeIs('dashboard')">
+                {{-- MAIN NAVIGATION --}}
+                <div class="hidden md:flex items-center space-x-6 text-sm font-medium">
+
+                    <a href="{{ route('dashboard') }}"
+                       class="hover:text-green-700 {{ request()->routeIs('dashboard') ? 'text-green-700 font-semibold' : 'text-gray-700' }}">
                         Dashboard
-                    </x-nav-link>
+                    </a>
 
-                    <x-nav-link :href="route('attendance.index')"
-                        :active="request()->routeIs('attendance.*')">
+                    <a href="{{ route('attendance.index') }}"
+                       class="hover:text-green-700 {{ request()->routeIs('attendance.*') ? 'text-green-700 font-semibold' : 'text-gray-700' }}">
                         Attendance
-                    </x-nav-link>
+                    </a>
 
-                    <x-nav-link :href="route('leave.index')"
-                        :active="request()->routeIs('leave.index')">
+                    <a href="{{ route('leave.index') }}"
+                       class="hover:text-green-700 {{ request()->routeIs('leave.index') ? 'text-green-700 font-semibold' : 'text-gray-700' }}">
                         Leave
-                    </x-nav-link>
+                    </a>
 
-                    <!-- ADMIN DROPDOWN -->
+                    {{-- EMPLOYEE LOAN VIEW --}}
+                    @if(auth()->user()->role === 'employee')
+                        <a href="{{ route('loan.my') }}"
+                           class="hover:text-green-700 {{ request()->routeIs('loan.my') ? 'text-green-700 font-semibold' : 'text-gray-700' }}">
+                            My Loan
+                        </a>
+                    @endif
+
+                    {{-- ADMIN DROPDOWN --}}
                     @if(auth()->user()->role === 'admin')
-                        <div class="relative">
+                        <div class="relative" x-data="{ adminOpen: false }">
 
                             <button @click="adminOpen = !adminOpen"
-                                    class="flex items-center space-x-1 text-gray-700 hover:text-green-600 transition">
+                                    class="flex items-center space-x-1 text-gray-700 hover:text-green-700">
                                 <span>Admin</span>
-                                <svg class="w-4 h-4"
-                                     fill="none" stroke="currentColor"
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor"
                                      viewBox="0 0 24 24">
                                     <path stroke-linecap="round"
                                           stroke-linejoin="round"
                                           stroke-width="2"
-                                          d="M19 9l-7 7-7-7"/>
+                                          d="M19 9l-7 7-7-7" />
                                 </svg>
                             </button>
 
-                            <!-- Dropdown Menu -->
                             <div x-show="adminOpen"
                                  @click.away="adminOpen = false"
-                                 x-transition
-                                 class="absolute mt-3 w-56 bg-white border rounded-lg shadow-lg py-2">
+                                 class="absolute mt-2 w-56 bg-white shadow-lg rounded-lg py-2 z-50">
 
                                 <a href="{{ route('staff.index') }}"
                                    class="block px-4 py-2 hover:bg-gray-100">
@@ -62,17 +65,22 @@
 
                                 <a href="{{ route('leave.admin') }}"
                                    class="block px-4 py-2 hover:bg-gray-100">
-                                    Manage Leaves
+                                    Leave Management
                                 </a>
 
                                 <a href="{{ route('leave.transactions') }}"
                                    class="block px-4 py-2 hover:bg-gray-100">
-                                    Transactions
+                                    Leave Transactions
                                 </a>
 
                                 <a href="{{ route('payroll.summary') }}"
                                    class="block px-4 py-2 hover:bg-gray-100">
                                     Payroll Summary
+                                </a>
+
+                                <a href="{{ route('loan.index') }}"
+                                   class="block px-4 py-2 hover:bg-gray-100">
+                                    Loan Management
                                 </a>
 
                             </div>
@@ -82,32 +90,22 @@
                 </div>
             </div>
 
-            <!-- RIGHT -->
-            <div class="hidden sm:flex items-center space-x-5">
+            {{-- RIGHT SIDE --}}
+            <div class="flex items-center space-x-4">
 
-                <span class="text-gray-600 text-sm">
-                    {{ Auth::user()->name }}
+                <span class="text-gray-600 font-medium">
+                    {{ auth()->user()->name }}
                 </span>
 
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <button type="submit"
-                        class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm shadow transition">
+                            class="bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded shadow">
                         Logout
                     </button>
                 </form>
 
             </div>
-
-            <!-- Mobile Toggle -->
-            <div class="sm:hidden">
-                <button @click="open = !open"
-                        class="p-2 text-gray-600">
-                    ☰
-                </button>
-            </div>
-
         </div>
     </div>
-
 </nav>
