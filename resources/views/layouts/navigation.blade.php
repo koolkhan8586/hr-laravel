@@ -16,59 +16,68 @@
                 <!-- Main Menu -->
                 <div class="flex items-center space-x-8 text-sm font-medium text-gray-700">
 
+                    <!-- Dashboard -->
                     <a href="{{ route('dashboard') }}"
                        class="hover:text-green-700 transition">
                         Dashboard
                     </a>
 
+                    <!-- Attendance -->
                     <a href="{{ route('attendance.index') }}"
                        class="hover:text-green-700 transition">
                         Attendance
                     </a>
 
+                    <!-- Leave -->
                     <a href="{{ route('leave.index') }}"
                        class="hover:text-green-700 transition">
                         Leave
                     </a>
 
-                    <!-- Salary (Visible to All) -->
+                    <!-- Salary (Both Admin & Employee) -->
                     <a href="{{ route('salary.index') }}"
                        class="hover:text-green-700 transition">
                         Salary
                     </a>
 
-                    <!-- Loans -->
+                    <!-- Loans Section -->
                     @if(auth()->user()->role === 'admin')
-                        <a href="{{ route('loan.index') }}"
+
+                        <!-- Admin Loan Management -->
+                        <a href="{{ route('admin.loan.index') }}"
                            class="hover:text-green-700 transition">
                             Loans
                         </a>
+
                     @else
+
+                        <!-- Employee Loan Links -->
                         <a href="{{ route('loan.my') }}"
                            class="hover:text-green-700 transition">
-                            My Loan
+                            My Loans
                         </a>
+
+                        <a href="{{ route('loan.apply') }}"
+                           class="hover:text-green-700 transition">
+                            Apply Loan
+                        </a>
+
                     @endif
 
 
                     <!-- Admin Dropdown -->
                     @if(auth()->user()->role === 'admin')
-                        <div x-data="{ open: false }" class="relative">
-
-                            <button @click="open = !open"
-                                    class="hover:text-green-700 transition flex items-center space-x-1 focus:outline-none">
+                        <div class="relative group">
+                            <button class="hover:text-green-700 transition flex items-center space-x-1">
                                 <span>Admin</span>
                                 <span class="text-xs">▼</span>
                             </button>
 
-                            <div x-show="open"
-                                 @click.away="open = false"
-                                 x-transition
-                                 class="absolute left-0 mt-2 w-48 bg-white border rounded-md shadow-lg z-50">
+                            <div class="absolute left-0 mt-2 w-52 bg-white border rounded-md shadow-lg hidden group-hover:block z-50">
 
                                 <a href="{{ route('staff.index') }}"
                                    class="block px-4 py-2 hover:bg-gray-100">
-                                    Staff
+                                    Staff Management
                                 </a>
 
                                 <a href="{{ route('leave.admin') }}"
@@ -81,19 +90,19 @@
                                     Leave Transactions
                                 </a>
 
+                                <a href="{{ route('payroll.summary') }}"
+                                   class="block px-4 py-2 hover:bg-gray-100">
+                                    Payroll Summary
+                                </a>
+
                                 <a href="{{ route('admin.salary.index') }}"
                                    class="block px-4 py-2 hover:bg-gray-100">
                                     Salary Management
                                 </a>
 
-                                <a href="{{ route('loan.index') }}"
+                                <a href="{{ route('admin.loan.index') }}"
                                    class="block px-4 py-2 hover:bg-gray-100">
                                     Loan Management
-                                </a>
-
-                                <a href="{{ route('payroll.summary') }}"
-                                   class="block px-4 py-2 hover:bg-gray-100">
-                                    Payroll Summary
                                 </a>
 
                             </div>
