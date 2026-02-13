@@ -75,7 +75,8 @@
 
                             <div class="absolute left-0 mt-2 w-52 bg-white border rounded-md shadow-lg hidden group-hover:block z-50">
 
-                                <a href="{{ route('staff.index') }}"
+                                <a href="{{ route('admin.staff.index') }}"
+
                                    class="block px-4 py-2 hover:bg-gray-100">
                                     Staff Management
                                 </a>
