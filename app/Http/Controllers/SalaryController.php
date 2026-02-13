@@ -93,7 +93,7 @@ class SalaryController extends Controller
         'is_posted' => true
     ]);
 
-    return redirect()->route('salary.admin')
+    return redirect()->route('admin.salary.index')
         ->with('success', 'Salary Posted Successfully');
 }
 
