@@ -84,6 +84,7 @@ Route::middleware(['auth'])->group(function () {
     */
     Route::get('/salary', [SalaryController::class,'employeeIndex'])->name('salary.index');
     Route::get('/salary/download/{id}', [SalaryController::class,'download'])->name('salary.download');
+    
 
 });
 
