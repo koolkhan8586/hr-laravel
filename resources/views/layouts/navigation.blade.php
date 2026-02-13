@@ -16,60 +16,73 @@
                 <!-- Main Menu -->
                 <div class="flex items-center space-x-8 text-sm font-medium text-gray-700">
 
+                    <!-- Dashboard -->
                     <a href="{{ route('dashboard') }}"
                        class="hover:text-green-700 transition">
                         Dashboard
                     </a>
 
+                    <!-- Attendance -->
                     <a href="{{ route('attendance.index') }}"
                        class="hover:text-green-700 transition">
                         Attendance
                     </a>
 
+                    <!-- Leave -->
                     <a href="{{ route('leave.index') }}"
                        class="hover:text-green-700 transition">
                         Leave
                     </a>
 
-                    <a href="{{ route('admin.loan.index') }}"
+                    <!-- Employee Loan View -->
+                    @if(auth()->user()->role !== 'admin')
+                        <a href="{{ route('loan.my') }}"
+                           class="hover:text-green-700 transition">
+                            My Loan
+                        </a>
+                    @endif
 
-                       class="hover:text-green-700 transition">
-                        Loans
-                    </a>
-
+                    <!-- ADMIN DROPDOWN -->
                     @if(auth()->user()->role === 'admin')
                         <div class="relative group">
-                            <button class="hover:text-green-700 transition flex items-center space-x-1">
+
+                            <button class="hover:text-green-700 transition flex items-center space-x-1 focus:outline-none">
                                 <span>Admin</span>
                                 <span class="text-xs">▼</span>
                             </button>
 
-                            <div class="absolute left-0 mt-2 w-48 bg-white border rounded-md shadow-lg hidden group-hover:block z-50">
+                            <div class="absolute left-0 mt-2 w-52 bg-white border rounded-md shadow-lg hidden group-hover:block z-50">
 
-                                <a href="{{ route('staff.index') }}"
+                                <a href="{{ route('admin.staff.index') }}"
                                    class="block px-4 py-2 hover:bg-gray-100">
                                     Staff
                                 </a>
 
-                                <a href="{{ route('leave.admin') }}"
+                                <a href="{{ route('admin.leave.index') }}"
                                    class="block px-4 py-2 hover:bg-gray-100">
                                     Manage Leaves
                                 </a>
 
-                                <a href="{{ route('leave.transactions') }}"
+                                <a href="{{ route('admin.leave.transactions') }}"
                                    class="block px-4 py-2 hover:bg-gray-100">
-                                    Transactions
+                                    Leave Transactions
                                 </a>
 
-                                <a href="{{ route('payroll.summary') }}"
+                                <a href="{{ route('admin.payroll.summary') }}"
                                    class="block px-4 py-2 hover:bg-gray-100">
-                                    Payroll
+                                    Payroll Summary
                                 </a>
 
-                                <a href="{{ route('loan.index') }}"
+                                <a href="{{ route('admin.salary.index') }}"
+                                   class="block px-4 py-2 hover:bg-gray-100">
+                                    Salary Management
+                                </a>
+
+                                <a href="{{ route('admin.loan.index') }}"
                                    class="block px-4 py-2 hover:bg-gray-100">
                                     Loan Management
                                 </a>
+
                             </div>
                         </div>
                     @endif
@@ -87,7 +100,7 @@
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <button type="submit"
-                            class="bg-red-500 hover:bg-red-600 text-white text-sm px-4 py-2 rounded shadow">
+                            class="bg-red-500 hover:bg-red-600 text-white text-sm px-4 py-2 rounded shadow transition">
                         Logout
                     </button>
                 </form>
