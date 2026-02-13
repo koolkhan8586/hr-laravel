@@ -67,48 +67,48 @@
 
                     <!-- Admin Dropdown -->
                     @if(auth()->user()->role === 'admin')
-                        <div class="relative group">
-                            <button class="hover:text-green-700 transition flex items-center space-x-1">
-                                <span>Admin</span>
-                                <span class="text-xs">▼</span>
-                            </button>
+    <div class="relative group">
+        <button class="hover:text-green-700 transition flex items-center space-x-1">
+            <span>Admin</span>
+            <span class="text-xs">▼</span>
+        </button>
 
-                            <div class="absolute left-0 mt-2 w-52 bg-white border rounded-md shadow-lg hidden group-hover:block z-50">
+        <div class="absolute left-0 mt-2 w-56 bg-white border rounded-md shadow-lg hidden group-hover:block z-50">
 
-                                <a href="{{ route('admin.staff.index') }}"
+            <a href="{{ route('admin.staff.index') }}"
+               class="block px-4 py-2 hover:bg-gray-100">
+                Staff Management
+            </a>
 
-                                   class="block px-4 py-2 hover:bg-gray-100">
-                                    Staff Management
-                                </a>
+            <a href="{{ route('leave.admin') }}"
+               class="block px-4 py-2 hover:bg-gray-100">
+                Manage Leaves
+            </a>
 
-                                <a href="{{ route('leave.admin') }}"
-                                   class="block px-4 py-2 hover:bg-gray-100">
-                                    Manage Leaves
-                                </a>
+            <a href="{{ route('leave.transactions') }}"
+               class="block px-4 py-2 hover:bg-gray-100">
+                Leave Transactions
+            </a>
 
-                                <a href="{{ route('leave.transactions') }}"
-                                   class="block px-4 py-2 hover:bg-gray-100">
-                                    Leave Transactions
-                                </a>
+            <a href="{{ route('admin.salary.index') }}"
+               class="block px-4 py-2 hover:bg-gray-100">
+                Salary Management
+            </a>
 
-                                <a href="{{ route('payroll.summary') }}"
-                                   class="block px-4 py-2 hover:bg-gray-100">
-                                    Payroll Summary
-                                </a>
+            <a href="{{ route('payroll.summary') }}"
+               class="block px-4 py-2 hover:bg-gray-100">
+                Payroll Summary
+            </a>
 
-                                <a href="{{ route('admin.salary.index') }}"
-                                   class="block px-4 py-2 hover:bg-gray-100">
-                                    Salary Management
-                                </a>
+            <a href="{{ route('admin.loan.index') }}"
+               class="block px-4 py-2 hover:bg-gray-100">
+                Loan Management
+            </a>
 
-                                <a href="{{ route('admin.loan.index') }}"
-                                   class="block px-4 py-2 hover:bg-gray-100">
-                                    Loan Management
-                                </a>
+        </div>
+    </div>
+@endif
 
-                            </div>
-                        </div>
-                    @endif
 
                 </div>
             </div>
