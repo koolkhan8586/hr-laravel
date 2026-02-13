@@ -14,8 +14,16 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'annual_leave_balance',   // ✅ ADD THIS
+        'role',
+        'annual_leave_balance'
     ];
+
+    public function leaves()
+    {
+        return $this->hasMany(\App\Models\Leave::class);
+    }
+}
+
 
     protected $hidden = [
         'password',
