@@ -238,6 +238,46 @@ class SalaryController extends Controller
 
     return view('salary.edit', compact('salary','users'));
 }
+    public function update(Request $request, $id)
+{
+    $salary = Salary::findOrFail($id);
+
+    $gross =
+        $request->basic_salary
+        + $request->invigilation
+        + $request->t_payment
+        + $request->eidi
+        + $request->increment
+        + $request->other_earnings;
+
+    $deductions =
+        $request->extra_leaves
+        + $request->income_tax
+        + $request->loan_deduction
+        + $request->insurance
+        + $request->other_deductions;
+
+    $salary->update([
+        'basic_salary' => $request->basic_salary,
+        'invigilation' => $request->invigilation,
+        't_payment' => $request->t_payment,
+        'eidi' => $request->eidi,
+        'increment' => $request->increment,
+        'other_earnings' => $request->other_earnings,
+        'extra_leaves' => $request->extra_leaves,
+        'income_tax' => $request->income_tax,
+        'loan_deduction' => $request->loan_deduction,
+        'insurance' => $request->insurance,
+        'other_deductions' => $request->other_deductions,
+        'gross_total' => $gross,
+        'total_deductions' => $deductions,
+        'net_salary' => $gross - $deductions,
+    ]);
+
+    return redirect()->route('admin.salary.index')
+        ->with('success','Salary Updated Successfully');
+}
+
 
     /*
     |--------------------------------------------------------------------------
