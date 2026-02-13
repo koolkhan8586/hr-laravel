@@ -66,43 +66,50 @@
 
 
                     <!-- Admin Dropdown -->
-                    @if(auth()->user()->role === 'admin')
-    <div class="relative group">
-        <button class="hover:text-green-700 transition flex items-center space-x-1">
-            <span>Admin</span>
-            <span class="text-xs">▼</span>
-        </button>
+                    <!-- Admin Dropdown -->
+@if(auth()->user()->role === 'admin')
+<div x-data="{ open: false }" class="relative">
 
-        <div class="absolute left-0 mt-2 w-52 bg-white border rounded-md shadow-lg hidden group-hover:block z-50">
+    <button @click="open = !open"
+            class="hover:text-green-700 transition flex items-center space-x-1 focus:outline-none">
+        <span>Admin</span>
+        <span class="text-xs">▼</span>
+    </button>
 
-            <a href="{{ route('admin.staff.index') }}"
-               class="block px-4 py-2 hover:bg-gray-100">
-                Staff Management
-            </a>
+    <div x-show="open"
+         @click.away="open = false"
+         x-transition
+         class="absolute left-0 mt-2 w-56 bg-white border rounded-md shadow-lg z-50">
 
-            <a href="{{ route('admin.leave.index') }}"
-               class="block px-4 py-2 hover:bg-gray-100">
-                Manage Leaves
-            </a>
+        <a href="{{ route('admin.staff.index') }}"
+           class="block px-4 py-2 hover:bg-gray-100">
+            Staff Management
+        </a>
 
-            <a href="{{ route('admin.leave.transactions') }}"
-               class="block px-4 py-2 hover:bg-gray-100">
-                Leave Transactions
-            </a>
+        <a href="{{ route('admin.leave.index') }}"
+           class="block px-4 py-2 hover:bg-gray-100">
+            Manage Leaves
+        </a>
 
-            <a href="{{ route('admin.salary.index') }}"
-               class="block px-4 py-2 hover:bg-gray-100">
-                Salary Management
-            </a>
+        <a href="{{ route('admin.leave.transactions') }}"
+           class="block px-4 py-2 hover:bg-gray-100">
+            Leave Transactions
+        </a>
 
-            <a href="{{ route('admin.loan.index') }}"
-               class="block px-4 py-2 hover:bg-gray-100">
-                Loan Management
-            </a>
+        <a href="{{ route('admin.salary.index') }}"
+           class="block px-4 py-2 hover:bg-gray-100">
+            Salary Management
+        </a>
 
-        </div>
+        <a href="{{ route('admin.loan.index') }}"
+           class="block px-4 py-2 hover:bg-gray-100">
+            Loan Management
+        </a>
+
     </div>
+</div>
 @endif
+
 
 
 
