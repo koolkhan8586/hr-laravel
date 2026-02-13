@@ -9,10 +9,8 @@ class Loan extends Model
     protected $fillable = [
         'user_id',
         'amount',
-        'installments',
-        'monthly_deduction',
         'remaining_amount',
-        'start_date',
+        'installments',
         'status'
     ];
 
