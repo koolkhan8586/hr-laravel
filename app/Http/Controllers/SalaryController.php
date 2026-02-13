@@ -231,6 +231,14 @@ class SalaryController extends Controller
         return view('salary.employee-index', compact('salaries'));
     }
 
+    public function edit($id)
+{
+    $salary = Salary::findOrFail($id);
+    $users = User::where('role','employee')->get();
+
+    return view('salary.edit', compact('salary','users'));
+}
+
     /*
     |--------------------------------------------------------------------------
     | Download Payslip
