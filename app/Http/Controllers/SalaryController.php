@@ -132,8 +132,20 @@ class SalaryController extends Controller
 
     return redirect()->route('admin.salary.index')
         ->with('success', 'Salary Posted Successfully');
+    
 }
 
+/*
+|--------------------------------------------------------------------------
+| View Salary Details (Admin)
+|--------------------------------------------------------------------------
+*/
+public function show($id)
+{
+    $salary = Salary::with('user')->findOrFail($id);
+
+    return view('salary.show', compact('salary'));
+}
 
     /*
     |--------------------------------------------------------------------------
