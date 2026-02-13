@@ -233,6 +233,22 @@ class LeaveController extends Controller
     ->with('user')
     ->get();
 
+    /*
+|--------------------------------------------------------------------------
+| Leave History (Employee)
+|--------------------------------------------------------------------------
+*/
+public function history()
+{
+    $leaves = auth()->user()
+                    ->leaves()
+                    ->latest()
+                    ->get();
+
+    return view('leave.history', compact('leaves'));
+}
+
+
 
     return view('leave.payroll-summary', compact(
     'annualUsed',
