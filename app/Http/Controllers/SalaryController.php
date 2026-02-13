@@ -39,8 +39,10 @@ class SalaryController extends Controller
 
         // Summary Cards
         $totalSalaries = $salaries->count();
-        $totalNet = $salaries->sum('net_salary');
-        $postedCount = $salaries->where('is_posted', true)->count();
+$totalNet = $salaries->sum('net_salary');
+$totalPosted = $salaries->where('is_posted', true)->count();
+$totalDeductions = $salaries->sum('total_deductions');
+
 
         $employees = User::where('role', 'employee')->get();
 
