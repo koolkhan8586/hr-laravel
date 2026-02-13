@@ -31,7 +31,8 @@
                         Leave
                     </a>
 
-                    <a href="{{ route('loan.index') }}"
+                    <a href="{{ route('admin.loan.index') }}"
+
                        class="hover:text-green-700 transition">
                         Loans
                     </a>
