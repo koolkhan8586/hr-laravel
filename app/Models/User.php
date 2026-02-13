@@ -60,6 +60,11 @@ class User extends Authenticatable
         return $this->hasMany(Leave::class);
     }
 
+    public function salaries()
+{
+    return $this->hasMany(\App\Models\Salary::class);
+}
+
     public function loans()
     {
         return $this->hasMany(Loan::class);
