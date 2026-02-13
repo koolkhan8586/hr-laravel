@@ -155,5 +155,19 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::post('/salary/store', [SalaryController::class,'store'])->name('admin.salary.store');
     Route::get('/salary/{id}', [SalaryController::class,'show'])->name('admin.salary.show');
     Route::post('/salary/post/{id}', [SalaryController::class,'post'])->name('admin.salary.post');
+    Route::get('admin/salary/{id}/edit', [SalaryController::class,'edit'])
+    ->name('admin.salary.edit');
+
+Route::put('admin/salary/{id}', [SalaryController::class,'update'])
+    ->name('admin.salary.update');
+
+Route::delete('admin/salary/{id}', [SalaryController::class,'destroy'])
+    ->name('admin.salary.delete');
+
+Route::get('admin/salary/export', [SalaryController::class,'export'])
+    ->name('admin.salary.export');
+
+Route::post('admin/salary/import', [SalaryController::class,'import'])
+    ->name('admin.salary.import');
 
 });
