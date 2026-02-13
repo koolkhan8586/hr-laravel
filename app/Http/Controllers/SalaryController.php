@@ -278,6 +278,21 @@ class SalaryController extends Controller
         ->with('success','Salary Updated Successfully');
 }
 
+    public function destroy($id)
+{
+    Salary::findOrFail($id)->delete();
+
+    return back()->with('success','Salary Deleted Successfully');
+}
+
+    public function export()
+{
+    return \Maatwebsite\Excel\Facades\Excel::download(
+        new \App\Exports\SalariesExport,
+        'salaries.xlsx'
+    );
+}
+
 
     /*
     |--------------------------------------------------------------------------
