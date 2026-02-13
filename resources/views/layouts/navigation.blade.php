@@ -10,11 +10,11 @@
                     <img src="{{ asset('UOL-Green-V1.png') }}"
                          alt="UOL Logo"
                          class="h-8 w-auto object-contain"
-                         style="max-width:120px;">
+                         style="max-width:140px;">
                 </a>
 
-                <!-- Main Menu -->
-                <div class="flex items-center space-x-8 text-sm font-medium text-gray-700">
+                <!-- Navigation Links -->
+                <div class="hidden md:flex items-center space-x-8 text-sm font-medium text-gray-700">
 
                     <a href="{{ route('dashboard') }}"
                        class="hover:text-green-700 transition">
@@ -37,27 +37,40 @@
                     </a>
 
                     @if(auth()->user()->role === 'admin')
+                        <div class="relative group">
+                            <button class="hover:text-green-700 transition flex items-center space-x-1">
+                                <span>Admin</span>
+                                <span class="text-xs">▼</span>
+                            </button>
 
-                        <a href="{{ route('staff.index') }}"
-                           class="hover:text-green-700 transition">
-                            Staff
-                        </a>
+                            <div class="absolute hidden group-hover:block bg-white shadow-lg rounded-md mt-2 w-48 z-50 border">
+                                
+                                <a href="{{ route('staff.index') }}"
+                                   class="block px-4 py-2 hover:bg-gray-100">
+                                    Staff
+                                </a>
 
-                        <a href="{{ route('leave.admin') }}"
-                           class="hover:text-green-700 transition">
-                            Manage Leaves
-                        </a>
+                                <a href="{{ route('leave.admin') }}"
+                                   class="block px-4 py-2 hover:bg-gray-100">
+                                    Manage Leaves
+                                </a>
 
-                        <a href="{{ route('leave.transactions') }}"
-                           class="hover:text-green-700 transition">
-                            Transactions
-                        </a>
+                                <a href="{{ route('leave.transactions') }}"
+                                   class="block px-4 py-2 hover:bg-gray-100">
+                                    Transactions
+                                </a>
 
-                        <a href="{{ route('payroll.summary') }}"
-                           class="hover:text-green-700 transition">
-                            Payroll
-                        </a>
+                                <a href="{{ route('payroll.summary') }}"
+                                   class="block px-4 py-2 hover:bg-gray-100">
+                                    Payroll
+                                </a>
 
+                                <a href="{{ route('loan.index') }}"
+                                   class="block px-4 py-2 hover:bg-gray-100">
+                                    Loan Management
+                                </a>
+                            </div>
+                        </div>
                     @endif
 
                 </div>
@@ -66,14 +79,16 @@
             <!-- RIGHT SIDE -->
             <div class="flex items-center space-x-6">
 
-                <span class="text-sm text-gray-600">
+                <!-- Username -->
+                <span class="text-sm text-gray-700 font-medium">
                     {{ auth()->user()->name }}
                 </span>
 
+                <!-- Logout -->
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <button type="submit"
-                        class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm shadow">
+                            class="bg-red-500 hover:bg-red-600 text-white text-sm px-4 py-2 rounded shadow transition">
                         Logout
                     </button>
                 </form>
