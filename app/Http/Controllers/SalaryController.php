@@ -17,44 +17,46 @@ class SalaryController extends Controller
     |--------------------------------------------------------------------------
     */
     public function index(Request $request)
-    {
-        $query = Salary::with('user');
+{
+    $query = Salary::with('user');
 
-        // Filters
-        if ($request->month) {
-            $query->where('month', $request->month);
-        }
-
-        if ($request->year) {
-            $query->where('year', $request->year);
-        }
-
-        if ($request->employee) {
-            $query->where('user_id', $request->employee);
-        }
-
-        $salaries = $query->orderByDesc('year')
-                          ->orderByDesc('month')
-                          ->get();
-
-        // Summary Cards
-        $totalSalaries = $salaries->count();
-$totalNet = $salaries->sum('net_salary');
-$totalPosted = $salaries->where('is_posted', true)->count();
-$totalDeductions = $salaries->sum('total_deductions');
-
-
-        $employees = User::where('role', 'employee')->get();
-
-        return view('salary.admin-index', compact(
-            'salaries',
-    'employees',
-    'totalSalaries',
-    'totalNet',
-    'totalPosted',
-    'totalDeductions'
-        ));
+    // Filters (if any)
+    if ($request->month) {
+        $query->where('month', $request->month);
     }
+
+    if ($request->year) {
+        $query->where('year', $request->year);
+    }
+
+    if ($request->employee) {
+        $query->where('user_id', $request->employee);
+    }
+
+    $salaries = $query->orderByDesc('year')
+                       ->orderByDesc('month')
+                       ->get();
+
+    $employees = User::where('role', 'employee')->get();
+
+    // ================= SUMMARY CALCULATIONS =================
+    $totalSalaries   = $salaries->count();
+    $totalNet        = $salaries->sum('net_salary');
+    $totalDeductions = $salaries->sum('total_deductions');
+    $totalPosted     = $salaries->where('is_posted', true)->count();
+    $draftCount      = $salaries->where('is_posted', false)->count();
+
+    return view('salary.admin-index', compact(
+        'salaries',
+        'employees',
+        'totalSalaries',
+        'totalNet',
+        'totalDeductions',
+        'totalPosted',
+        'draftCount'
+    ));
+}
+
 
     /*
     |--------------------------------------------------------------------------
