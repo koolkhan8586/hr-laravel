@@ -48,10 +48,11 @@ $totalDeductions = $salaries->sum('total_deductions');
 
         return view('salary.admin-index', compact(
             'salaries',
-            'employees',
-            'totalSalaries',
-            'totalNet',
-            'postedCount'
+    'employees',
+    'totalSalaries',
+    'totalNet',
+    'totalPosted',
+    'totalDeductions'
         ));
     }
 
