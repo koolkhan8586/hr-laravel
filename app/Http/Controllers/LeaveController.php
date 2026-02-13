@@ -83,19 +83,25 @@ class LeaveController extends Controller
     }
 
     /*
-    |--------------------------------------------------------------------------
-    | Leave History (Employee)
-    |--------------------------------------------------------------------------
-    */
-    public function history()
-    {
-        $leaves = auth()->user()
-                        ->leaves()
+|--------------------------------------------------------------------------
+| Leave History (Employee)
+|--------------------------------------------------------------------------
+*/
+public function history()
+{
+    $leaves = auth()->user()
+                    ->leaves()
+                    ->latest()
+                    ->get();
+
+    $transactions = LeaveTransaction::where('user_id', auth()->id())
+                        ->with('leave')
                         ->latest()
                         ->get();
 
-        return view('leave.history', compact('leaves'));
-    }
+    return view('leave.history', compact('leaves', 'transactions'));
+}
+
 
     /*
     |--------------------------------------------------------------------------
