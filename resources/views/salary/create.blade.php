@@ -1,41 +1,58 @@
 <x-app-layout>
-<div class="max-w-4xl mx-auto py-8 px-4">
+<div class="max-w-5xl mx-auto py-8">
 
-    <h2 class="text-2xl font-bold mb-6">Create Salary</h2>
+<h2 class="text-2xl font-bold mb-6">Add Salary</h2>
 
-    <form action="{{ route('admin.salary.store') }}" method="POST" class="space-y-4 bg-white p-6 rounded-lg shadow">
-        @csrf
+<form method="POST" action="{{ route('admin.salary.store') }}"
+      class="bg-white p-6 rounded shadow space-y-6">
+@csrf
 
-        <div>
-            <label class="block font-medium">Employee</label>
-            <select name="user_id" class="w-full border rounded p-2">
-                @foreach($users as $user)
-                    <option value="{{ $user->id }}">{{ $user->name }}</option>
-                @endforeach
-            </select>
-        </div>
+<div class="grid grid-cols-3 gap-4">
 
-        <div class="grid grid-cols-2 gap-4">
-            <div>
-                <label>Month</label>
-                <input type="number" name="month" class="w-full border p-2 rounded" required>
-            </div>
-            <div>
-                <label>Year</label>
-                <input type="number" name="year" class="w-full border p-2 rounded" required>
-            </div>
-        </div>
+<select name="user_id" class="border p-2 rounded">
+    @foreach($users as $user)
+        <option value="{{ $user->id }}">
+            {{ $user->name }}
+        </option>
+    @endforeach
+</select>
 
-        <div>
-            <label>Basic Salary</label>
-            <input type="number" step="0.01" name="basic_salary" class="w-full border p-2 rounded">
-        </div>
+<input type="number" name="month" placeholder="Month"
+       class="border p-2 rounded">
 
-        <button type="submit"
-                class="bg-blue-600 text-white px-4 py-2 rounded">
-            Save Salary
-        </button>
-    </form>
+<input type="number" name="year" placeholder="Year"
+       class="border p-2 rounded">
 
+</div>
+
+<h3 class="font-semibold text-lg mt-4">Earnings</h3>
+
+<div class="grid grid-cols-3 gap-4">
+
+<input type="number" name="basic_salary" placeholder="Basic Salary" class="border p-2 rounded">
+<input type="number" name="invigilation" placeholder="Invigilation" class="border p-2 rounded">
+<input type="number" name="t_payment" placeholder="T Payment" class="border p-2 rounded">
+<input type="number" name="eidi" placeholder="Eidi" class="border p-2 rounded">
+<input type="number" name="increment" placeholder="Increment" class="border p-2 rounded">
+<input type="number" name="other_earnings" placeholder="Other Earnings" class="border p-2 rounded">
+
+</div>
+
+<h3 class="font-semibold text-lg mt-4">Deductions</h3>
+
+<div class="grid grid-cols-3 gap-4">
+
+<input type="number" name="extra_leaves" placeholder="Extra Leaves" class="border p-2 rounded">
+<input type="number" name="income_tax" placeholder="Income Tax" class="border p-2 rounded">
+<input type="number" name="insurance" placeholder="Insurance" class="border p-2 rounded">
+<input type="number" name="other_deductions" placeholder="Other Deductions" class="border p-2 rounded">
+
+</div>
+
+<button class="bg-green-600 text-white px-6 py-2 rounded">
+    Save Salary
+</button>
+
+</form>
 </div>
 </x-app-layout>
