@@ -84,6 +84,21 @@ class LeaveController extends Controller
 
     /*
     |--------------------------------------------------------------------------
+    | Leave History (Employee)
+    |--------------------------------------------------------------------------
+    */
+    public function history()
+    {
+        $leaves = auth()->user()
+                        ->leaves()
+                        ->latest()
+                        ->get();
+
+        return view('leave.history', compact('leaves'));
+    }
+
+    /*
+    |--------------------------------------------------------------------------
     | Admin Leave List
     |--------------------------------------------------------------------------
     */
@@ -196,71 +211,46 @@ class LeaveController extends Controller
     |--------------------------------------------------------------------------
     */
     public function payrollSummary(Request $request)
-{
-    $year = $request->year ?? now()->year;
+    {
+        $year = $request->year ?? now()->year;
 
-    // Annual Leave Used
-    $annualUsed = Leave::where('type', 'annual')
-        ->where('status', 'approved')
-        ->whereYear('start_date', $year)
-        ->sum('calculated_days');
+        $annualUsed = Leave::where('type', 'annual')
+            ->where('status', 'approved')
+            ->whereYear('start_date', $year)
+            ->sum('calculated_days');
 
-    // Without Pay Used
-    $withoutPay = Leave::where('type', 'without_pay')
-        ->where('status', 'approved')
-        ->whereYear('start_date', $year)
-        ->sum('calculated_days');
+        $withoutPay = Leave::where('type', 'without_pay')
+            ->where('status', 'approved')
+            ->whereYear('start_date', $year)
+            ->sum('calculated_days');
 
-    // Sick Leave Used
-    $sickUsed = Leave::where('type', 'sick')
-        ->where('status', 'approved')
-        ->whereYear('start_date', $year)
-        ->sum('calculated_days');
+        $sickUsed = Leave::where('type', 'sick')
+            ->where('status', 'approved')
+            ->whereYear('start_date', $year)
+            ->sum('calculated_days');
 
-    // Monthly Breakdown
-    $monthly = Leave::selectRaw('MONTH(start_date) as month, SUM(calculated_days) as total')
-        ->where('status', 'approved')
-        ->whereYear('start_date', $year)
-        ->groupBy('month')
-        ->orderBy('month')
-        ->get();
+        $monthly = Leave::selectRaw('MONTH(start_date) as month, SUM(calculated_days) as total')
+            ->where('status', 'approved')
+            ->whereYear('start_date', $year)
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get();
 
-    // Per Employee Summary
-    $employees = Leave::selectRaw('user_id, SUM(calculated_days) as total_used')
-    ->where('status', 'approved')
-    ->whereYear('start_date', $year)
-    ->groupBy('user_id')
-    ->with('user')
-    ->get();
+        $employees = Leave::selectRaw('user_id, SUM(calculated_days) as total_used')
+            ->where('status', 'approved')
+            ->whereYear('start_date', $year)
+            ->groupBy('user_id')
+            ->with('user')
+            ->get();
 
-    /*
-|--------------------------------------------------------------------------
-| Leave History (Employee)
-|--------------------------------------------------------------------------
-*/
-public function history()
-{
-    $leaves = auth()->user()
-                    ->leaves()
-                    ->latest()
-                    ->get();
-
-    return view('leave.history', compact('leaves'));
-}
-
-
-
-    return view('leave.payroll-summary', compact(
-    'annualUsed',
-    'withoutPay',
-    'sickUsed',
-    'monthly',
-    'employees',
-    'year'
-
-
-    ));
-}
-
+        return view('leave.payroll-summary', compact(
+            'annualUsed',
+            'withoutPay',
+            'sickUsed',
+            'monthly',
+            'employees',
+            'year'
+        ));
+    }
 
 }
