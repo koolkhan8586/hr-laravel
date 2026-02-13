@@ -9,13 +9,19 @@ class Loan extends Model
     protected $fillable = [
         'user_id',
         'amount',
-        'remaining_amount',
         'installments',
+        'monthly_deduction',
+        'remaining_balance',
         'status'
     ];
 
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(LoanPayment::class);
     }
 }
