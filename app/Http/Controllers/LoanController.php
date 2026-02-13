@@ -38,6 +38,15 @@ class LoanController extends Controller
     | Store Loan
     |--------------------------------------------------------------------------
     */
+    public function myLoan()
+{
+    $loan = Loan::where('user_id', auth()->id())
+                ->where('status', 'approved')
+                ->first();
+
+    return view('loan.my', compact('loan'));
+}
+
     public function store(Request $request)
     {
         $request->validate([
