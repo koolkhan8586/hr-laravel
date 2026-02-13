@@ -4,25 +4,21 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
+class RenameSalaryColumnsToLowercase extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::table('lowercase', function (Blueprint $table) {
-            //
+        Schema::table('salaries', function (Blueprint $table) {
+            $table->renameColumn('Others', 'others');
+            $table->renameColumn('Eidi', 'eidi');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::table('lowercase', function (Blueprint $table) {
-            //
+        Schema::table('salaries', function (Blueprint $table) {
+            $table->renameColumn('others', 'Others');
+            $table->renameColumn('eidi', 'Eidi');
         });
     }
-};
+}
