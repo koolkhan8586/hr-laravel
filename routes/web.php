@@ -155,6 +155,20 @@ Route::get('/leave/export',
     [LeaveController::class, 'export'])
     ->name('admin.leave.export');
 
+    /*
+|--------------------------------------------------------------------------
+| Leave Revert / Delete
+|--------------------------------------------------------------------------
+*/
+
+Route::post('/leave/revert/{id}',
+    [LeaveController::class, 'revert'])
+    ->name('admin.leave.revert');
+
+Route::delete('/leave/delete/{id}',
+    [LeaveController::class, 'destroy'])
+    ->name('admin.leave.delete');
+
         /*
     |--------------------------------------------------------------------------
     | Salary Management (Admin)
