@@ -185,6 +185,48 @@ public function history()
     }
 
     /*
+|--------------------------------------------------------------------------
+| Revert Leave (Approved/Rejected → Pending)
+|--------------------------------------------------------------------------
+*/
+public function revert($id)
+{
+    $leave = Leave::findOrFail($id);
+
+    // If approved, return leave balance back
+    if ($leave->status == 'approved') {
+        $leave->user->increment('leave_balance', $leave->days);
+    }
+
+    $leave->update([
+        'status' => 'pending'
+    ]);
+
+    return back()->with('success', 'Leave reverted to pending.');
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| Delete Leave
+|--------------------------------------------------------------------------
+*/
+public function destroy($id)
+{
+    $leave = Leave::findOrFail($id);
+
+    // If approved, return balance before deleting
+    if ($leave->status == 'approved') {
+        $leave->user->increment('leave_balance', $leave->days);
+    }
+
+    $leave->delete();
+
+    return back()->with('success', 'Leave deleted successfully.');
+}
+
+    
+    /*
     |--------------------------------------------------------------------------
     | Admin Transactions
     |--------------------------------------------------------------------------
