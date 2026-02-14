@@ -213,4 +213,9 @@ Route::post('/salary/unpost/{id}',
 Route::get('/salary/{id}', [SalaryController::class,'show'])
     ->name('admin.salary.show');
 
+Route::post('/salary/bulk-post',
+    [SalaryController::class,'bulkPost'])
+    ->name('admin.salary.bulk.post');
+
+
 });
