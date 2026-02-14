@@ -195,8 +195,8 @@ public function revert($id)
 
     // If approved, return leave balance back
     if ($leave->status == 'approved') {
-        $leave->user->increment('leave_balance', $leave->days);
-    }
+    $leave->user->increment('annual_leave_balance', $leave->calculated_days ?? $leave->days);
+}
 
     $leave->update([
         'status' => 'pending'
