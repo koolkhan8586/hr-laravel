@@ -133,6 +133,42 @@ class LoanController extends Controller
         return back()->with('success', 'Loan Approved');
     }
 
+    public function edit($id)
+{
+    $loan = Loan::findOrFail($id);
+    return view('loan.edit', compact('loan'));
+}
+   public function update(Request $request, $id)
+{
+    $loan = Loan::findOrFail($id);
+
+    $request->validate([
+        'amount' => 'required|numeric',
+        'installments' => 'required|integer|min:1'
+    ]);
+
+    $monthly = $request->amount / $request->installments;
+
+    $loan->update([
+        'amount' => $request->amount,
+        'installments' => $request->installments,
+        'monthly_deduction' => $monthly,
+        'remaining_balance' => $request->amount,
+    ]);
+
+    return redirect()->route('admin.loan.index')
+        ->with('success', 'Loan Updated Successfully');
+}
+
+    public function destroy($id)
+{
+    $loan = Loan::findOrFail($id);
+
+    $loan->delete();
+
+    return redirect()->route('admin.loan.index')
+        ->with('success', 'Loan Deleted Successfully');
+}
 
     /*
     |--------------------------------------------------------------------------
