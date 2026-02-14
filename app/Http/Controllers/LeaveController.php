@@ -217,7 +217,8 @@ public function destroy($id)
 
     // If approved, return balance before deleting
     if ($leave->status == 'approved') {
-        $leave->user->increment('leave_balance', $leave->days);
+        $leave->user->increment('annual_leave_balance', $leave->days);
+
     }
 
     $leave->delete();
