@@ -8,76 +8,100 @@
         body {
             font-family: DejaVu Sans, sans-serif;
             font-size: 13px;
-            color: #000;
+            margin: 40px;
+            color: #333;
+            position: relative;
         }
 
+        /* WATERMARK */
+        .watermark {
+            position: fixed;
+            top: 35%;
+            left: 15%;
+            font-size: 80px;
+            color: rgba(0, 128, 0, 0.08);
+            transform: rotate(-30deg);
+            z-index: -1;
+        }
+
+        /* HEADER */
         .header {
             text-align: center;
-            margin-bottom: 10px;
+            border-bottom: 3px solid #0f5132;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
         }
 
         .logo {
-            position: absolute;
-            left: 30px;
-            top: 20px;
-            width: 120px;
+            height: 60px;
+            margin-bottom: 8px;
         }
 
         .title {
             font-size: 20px;
             font-weight: bold;
+            color: #0f5132;
         }
 
-        .subtitle {
-            font-size: 14px;
+        /* MONTH BADGE */
+        .badge {
+            display: inline-block;
+            padding: 6px 14px;
+            background: #0f5132;
+            color: white;
+            font-weight: bold;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-top: 6px;
         }
 
+        /* INFO SECTION */
         .info-table {
             width: 100%;
-            margin-top: 15px;
+            margin-top: 20px;
             margin-bottom: 20px;
         }
 
         .info-table td {
-            padding: 4px;
-        }
-
-        .section-title {
-            background: #f0f0f0;
-            font-weight: bold;
             padding: 6px;
-            margin-top: 15px;
         }
 
-        table.salary-table {
+        /* MAIN TABLE */
+        table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 5px;
+            margin-top: 10px;
         }
 
-        .salary-table td {
-            padding: 6px;
-            border-bottom: 1px solid #ddd;
+        th {
+            background: #e9f5ef;
+            color: #0f5132;
+            padding: 8px;
+            border: 1px solid #c7e2d4;
+            text-align: left;
         }
 
-        .right {
-            text-align: right;
+        td {
+            padding: 8px;
+            border: 1px solid #e2e2e2;
         }
 
+        /* NET BOX */
         .net-box {
-            margin-top: 20px;
-            padding: 10px;
-            background: #e8f5e9;
+            margin-top: 25px;
+            padding: 15px;
+            background: #e9f5ef;
+            border: 2px solid #0f5132;
+            font-size: 16px;
             font-weight: bold;
-            font-size: 15px;
+            color: #0f5132;
             text-align: center;
-            border: 1px solid #2e7d32;
         }
 
+        /* SIGNATURE */
         .signature {
-            margin-top: 40px;
+            margin-top: 60px;
             text-align: right;
-            font-size: 12px;
         }
 
         .signature-line {
@@ -86,95 +110,105 @@
             width: 200px;
             float: right;
             text-align: center;
+            font-size: 12px;
             padding-top: 5px;
         }
+
+        /* FOOTER */
+        .footer {
+            margin-top: 70px;
+            font-size: 11px;
+            text-align: center;
+            color: #666;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+        }
+
     </style>
 </head>
 
 <body>
 
-<img src="{{ public_path('UOL-Green-V1.png') }}" class="logo">
+<div class="watermark">CONFIDENTIAL</div>
 
 <div class="header">
-    <div class="title">THE UNIVERSITY OF LAHORE</div>
-    <div class="subtitle">City Campus Lahore</div>
+    <img src="{{ public_path('UOL-Green-V1.png') }}" class="logo">
+    <div class="title">University of Lahore</div>
+    <div class="badge">
+        Salary Slip - {{ date('F Y', mktime(0,0,0,$salary->month,1,$salary->year)) }}
+    </div>
 </div>
 
 <table class="info-table">
     <tr>
         <td><strong>Employee Name:</strong> {{ $salary->user->name }}</td>
-        <td><strong>Month:</strong> {{ \Carbon\Carbon::create()->month($salary->month)->format('F') }}</td>
-    </tr>
-    <tr>
         <td><strong>Employee ID:</strong> {{ $salary->user->staff->employee_id ?? 'N/A' }}</td>
-        <td><strong>Year:</strong> {{ $salary->year }}</td>
     </tr>
     <tr>
         <td><strong>Department:</strong> {{ $salary->user->staff->department ?? 'N/A' }}</td>
-        <td><strong>Date:</strong> {{ now()->format('d-m-Y') }}</td>
+        <td><strong>Designation:</strong> {{ $salary->user->staff->designation ?? 'N/A' }}</td>
     </tr>
 </table>
 
-<div class="section-title">EARNINGS DETAIL</div>
+<table>
+    <thead>
+        <tr>
+            <th>Earnings</th>
+            <th>Amount (Rs)</th>
+            <th>Deductions</th>
+            <th>Amount (Rs)</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Basic Salary</td>
+            <td>{{ number_format($salary->basic_salary,2) }}</td>
+            <td>Income Tax</td>
+            <td>{{ number_format($salary->income_tax,2) }}</td>
+        </tr>
 
-<table class="salary-table">
-    <tr>
-        <td>Basic Salary</td>
-        <td class="right">{{ number_format($salary->basic_salary,2) }}</td>
-    </tr>
-    <tr>
-        <td>Invigilation</td>
-        <td class="right">{{ number_format($salary->invigilation,2) }}</td>
-    </tr>
-    <tr>
-        <td>T. Payment</td>
-        <td class="right">{{ number_format($salary->t_payment,2) }}</td>
-    </tr>
-    <tr>
-        <td>Eidi</td>
-        <td class="right">{{ number_format($salary->eidi,2) }}</td>
-    </tr>
-    <tr>
-        <td>Increment</td>
-        <td class="right">{{ number_format($salary->increment,2) }}</td>
-    </tr>
-    <tr>
-        <td>Other Earnings</td>
-        <td class="right">{{ number_format($salary->other_earnings,2) }}</td>
-    </tr>
-    <tr>
-        <td><strong>Gross Total</strong></td>
-        <td class="right"><strong>{{ number_format($salary->gross_total,2) }}</strong></td>
-    </tr>
-</table>
+        <tr>
+            <td>Invigilation</td>
+            <td>{{ number_format($salary->invigilation,2) }}</td>
+            <td>Loan Deduction</td>
+            <td>{{ number_format($salary->loan_deduction,2) }}</td>
+        </tr>
 
-<div class="section-title">DEDUCTIONS DETAIL</div>
+        <tr>
+            <td>T. Payment</td>
+            <td>{{ number_format($salary->t_payment,2) }}</td>
+            <td>Insurance</td>
+            <td>{{ number_format($salary->insurance,2) }}</td>
+        </tr>
 
-<table class="salary-table">
-    <tr>
-        <td>Extra Leaves</td>
-        <td class="right">{{ number_format($salary->extra_leaves,2) }}</td>
-    </tr>
-    <tr>
-        <td>Income Tax</td>
-        <td class="right">{{ number_format($salary->income_tax,2) }}</td>
-    </tr>
-    <tr>
-        <td>Loan Recovery</td>
-        <td class="right">{{ number_format($salary->loan_deduction,2) }}</td>
-    </tr>
-    <tr>
-        <td>Insurance</td>
-        <td class="right">{{ number_format($salary->insurance,2) }}</td>
-    </tr>
-    <tr>
-        <td>Other Deductions</td>
-        <td class="right">{{ number_format($salary->other_deductions,2) }}</td>
-    </tr>
-    <tr>
-        <td><strong>Total Deductions</strong></td>
-        <td class="right"><strong>{{ number_format($salary->total_deductions,2) }}</strong></td>
-    </tr>
+        <tr>
+            <td>Eidi</td>
+            <td>{{ number_format($salary->eidi,2) }}</td>
+            <td>Extra Leaves</td>
+            <td>{{ number_format($salary->extra_leaves,2) }}</td>
+        </tr>
+
+        <tr>
+            <td>Increment</td>
+            <td>{{ number_format($salary->increment,2) }}</td>
+            <td>Other Deductions</td>
+            <td>{{ number_format($salary->other_deductions,2) }}</td>
+        </tr>
+
+        <tr>
+            <td>Other Earnings</td>
+            <td>{{ number_format($salary->other_earnings,2) }}</td>
+            <td></td>
+            <td></td>
+        </tr>
+
+        <tr style="font-weight:bold;">
+            <td>Gross Total</td>
+            <td>{{ number_format($salary->gross_total,2) }}</td>
+            <td>Total Deductions</td>
+            <td>{{ number_format($salary->total_deductions,2) }}</td>
+        </tr>
+    </tbody>
 </table>
 
 <div class="net-box">
@@ -188,8 +222,8 @@
     </div>
 </div>
 
-<div style="clear:both; margin-top:60px; font-size:11px; text-align:center;">
-    This is a system generated salary slip and does not require manual signature.
+<div class="footer">
+    This is a computer-generated salary slip and does not require a physical signature.
 </div>
 
 </body>
