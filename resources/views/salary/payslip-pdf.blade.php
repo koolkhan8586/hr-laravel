@@ -1,178 +1,161 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8">
-<style>
-    body {
-        font-family: DejaVu Sans, sans-serif;
-        font-size: 12px;
-        margin: 30px;
-        color: #000;
-    }
+    <meta charset="utf-8">
+    <title>Salary Slip</title>
 
-    .header {
-        text-align: center;
-        margin-bottom: 10px;
-    }
+    <style>
+        body {
+            font-family: DejaVu Sans, sans-serif;
+            font-size: 11px;
+            margin: 0;
+            padding: 0;
+            color: #000;
+        }
 
-    .logo {
-        width: 120px;
-        margin-bottom: 5px;
-    }
+        .container {
+            border: 2px solid #0b6b3a;
+            padding: 20px 25px;
+            position: relative;
+        }
 
-    .title {
-        font-size: 16px;
-        font-weight: bold;
-        margin-bottom: 2px;
-    }
+        /* Watermark */
+        .watermark {
+            position: fixed;
+            top: 40%;
+            left: 25%;
+            font-size: 70px;
+            color: rgba(0,0,0,0.05);
+            transform: rotate(-30deg);
+        }
 
-    .sub-title {
-        font-size: 12px;
-        margin-bottom: 10px;
-    }
+        .header {
+            text-align: center;
+        }
 
-    .info-table {
-        width: 100%;
-        margin-bottom: 15px;
-    }
+        .header img {
+            height: 70px;
+            margin-bottom: 5px;
+        }
 
-    .info-table td {
-        padding: 3px 0;
-    }
+        .header h2 {
+            margin: 2px 0;
+            font-size: 16px;
+        }
 
-    .section-title {
-        font-weight: bold;
-        border-bottom: 1px solid #000;
-        padding-bottom: 3px;
-        margin-top: 8px;
-        margin-bottom: 6px;
-    }
+        .subheading {
+            font-size: 12px;
+        }
 
-    table.salary-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-bottom: 8px;
-    }
+        .info-table {
+            width: 100%;
+            margin-top: 10px;
+        }
 
-    table.salary-table td {
-        padding: 4px 0;
-    }
+        .info-table td {
+            padding: 2px 0;
+        }
 
-    .amount {
-        text-align: right;
-    }
+        .section-title {
+            font-weight: bold;
+            margin-top: 12px;
+            border-bottom: 1px solid #000;
+            padding-bottom: 3px;
+        }
 
-    .deduction {
-        color: #c00000;
-    }
+        table.detail {
+            width: 100%;
+            margin-top: 5px;
+            border-collapse: collapse;
+        }
 
-    .net-box {
-        margin-top: 10px;
-        padding: 8px;
-        background: #f2f2f2;
-        font-weight: bold;
-        text-align: center;
-        font-size: 13px;
-    }
+        table.detail td {
+            padding: 3px 0;
+        }
 
-    .footer {
-        margin-top: 25px;
-        font-size: 10px;
-        text-align: center;
-    }
+        .amount {
+            text-align: right;
+        }
 
-</style>
+        .deduction {
+            color: red;
+        }
+
+        .net-box {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .signature {
+            margin-top: 40px;
+            text-align: right;
+            font-size: 11px;
+        }
+
+    </style>
 </head>
 
 <body>
 
-<div class="header">
-    <img src="{{ public_path('UOL-Green-V1.png') }}" class="logo">
-    <div class="title">Lahore School of Accountancy & Finance (LSAF)</div>
-    <div class="sub-title">Salary Slip</div>
-</div>
+<div class="watermark">CONFIDENTIAL</div>
 
-<table class="info-table">
-    <tr>
-        <td><strong>Employee Name:</strong> {{ $salary->user->name }}</td>
-        <td><strong>Month:</strong> {{ \Carbon\Carbon::create()->month($salary->month)->format('F') }}</td>
-    </tr>
-    <tr>
-        <td><strong>Employee ID:</strong> {{ $salary->user->staff->employee_id ?? 'N/A' }}</td>
-        <td><strong>Year:</strong> {{ $salary->year }}</td>
-    </tr>
-    <tr>
-        <td><strong>Department:</strong> {{ $salary->user->staff->department ?? 'N/A' }}</td>
-        <td><strong>Date:</strong> {{ now()->format('d-m-Y') }}</td>
-    </tr>
-</table>
+<div class="container">
 
-<div class="section-title">EARNINGS DETAIL</div>
+    <div class="header">
+        <img src="{{ public_path('UOL-Green-V1.png') }}">
+        <h2>Lahore School of Accountancy and Finance (LSAF)</h2>
+        <div class="subheading">City Campus Lahore</div>
+    </div>
 
-<table class="salary-table">
-    <tr>
-        <td>Basic Salary</td>
-        <td class="amount">{{ number_format($salary->basic_salary,2) }}</td>
-    </tr>
-    <tr>
-        <td>Invigilation</td>
-        <td class="amount">{{ number_format($salary->invigilation,2) }}</td>
-    </tr>
-    <tr>
-        <td>T. Payment</td>
-        <td class="amount">{{ number_format($salary->t_payment,2) }}</td>
-    </tr>
-    <tr>
-        <td>Eidi</td>
-        <td class="amount">{{ number_format($salary->eidi,2) }}</td>
-    </tr>
-    <tr>
-        <td>Increment</td>
-        <td class="amount">{{ number_format($salary->increment,2) }}</td>
-    </tr>
-    <tr>
-        <td><strong>Gross Total</strong></td>
-        <td class="amount"><strong>{{ number_format($salary->gross_total,2) }}</strong></td>
-    </tr>
-</table>
+    <table class="info-table">
+        <tr>
+            <td><strong>Employee Name:</strong> {{ $salary->user->name }}</td>
+            <td><strong>Month:</strong> {{ date('F', mktime(0,0,0,$salary->month,1)) }}</td>
+        </tr>
+        <tr>
+            <td><strong>Employee ID:</strong> {{ $salary->user->employee_id ?? 'N/A' }}</td>
+            <td><strong>Year:</strong> {{ $salary->year }}</td>
+        </tr>
+        <tr>
+            <td><strong>Department:</strong> {{ $salary->user->staff->department ?? 'N/A' }}</td>
+            <td><strong>Date:</strong> {{ now()->format('d-m-Y') }}</td>
+        </tr>
+    </table>
 
-<div class="section-title">DEDUCTIONS DETAIL</div>
+    <div class="section-title">EARNINGS DETAIL</div>
 
-<table class="salary-table">
-    <tr>
-        <td>Extra Leaves</td>
-        <td class="amount deduction">{{ number_format($salary->extra_leaves,2) }}</td>
-    </tr>
-    <tr>
-        <td>Income Tax</td>
-        <td class="amount deduction">{{ number_format($salary->income_tax,2) }}</td>
-    </tr>
-    <tr>
-        <td>Loan Recovery</td>
-        <td class="amount deduction">{{ number_format($salary->loan_deduction,2) }}</td>
-    </tr>
-    <tr>
-        <td>Insurance</td>
-        <td class="amount deduction">{{ number_format($salary->insurance,2) }}</td>
-    </tr>
-    <tr>
-        <td>Other Deductions</td>
-        <td class="amount deduction">{{ number_format($salary->other_deductions,2) }}</td>
-    </tr>
-    <tr>
-        <td><strong>Total Deductions</strong></td>
-        <td class="amount deduction"><strong>{{ number_format($salary->total_deductions,2) }}</strong></td>
-    </tr>
-</table>
+    <table class="detail">
+        <tr><td>Basic Salary</td><td class="amount">{{ number_format($salary->basic_salary,2) }}</td></tr>
+        <tr><td>Invigilation</td><td class="amount">{{ number_format($salary->invigilation,2) }}</td></tr>
+        <tr><td>T. Payment</td><td class="amount">{{ number_format($salary->t_payment,2) }}</td></tr>
+        <tr><td>Eidi</td><td class="amount">{{ number_format($salary->eidi,2) }}</td></tr>
+        <tr><td>Increment</td><td class="amount">{{ number_format($salary->increment,2) }}</td></tr>
+        <tr><td><strong>Gross Total</strong></td><td class="amount"><strong>{{ number_format($salary->gross_total,2) }}</strong></td></tr>
+    </table>
 
-<div class="net-box">
-    NET PAYABLE AMOUNT — Rs {{ number_format($salary->net_salary,2) }}
-</div>
+    <div class="section-title">DEDUCTIONS DETAIL</div>
 
-<div class="footer">
-    Authorized Signature <br>
-    HR & Accounts Department <br><br>
-    This is a system generated salary slip and does not require manual signature.
+    <table class="detail">
+        <tr><td>Extra Leaves</td><td class="amount deduction">{{ number_format($salary->extra_leaves,2) }}</td></tr>
+        <tr><td>Income Tax</td><td class="amount deduction">{{ number_format($salary->income_tax,2) }}</td></tr>
+        <tr><td>Loan Recovery</td><td class="amount deduction">{{ number_format($salary->loan_deduction,2) }}</td></tr>
+        <tr><td>Insurance</td><td class="amount deduction">{{ number_format($salary->insurance,2) }}</td></tr>
+        <tr><td>Other Deductions</td><td class="amount deduction">{{ number_format($salary->other_deductions,2) }}</td></tr>
+        <tr><td><strong>Total Deductions</strong></td><td class="amount deduction"><strong>{{ number_format($salary->total_deductions,2) }}</strong></td></tr>
+    </table>
+
+    <div class="net-box">
+        NET PAYABLE AMOUNT — Rs {{ number_format($salary->net_salary,2) }}
+    </div>
+
+    <div class="signature">
+        Authorized Signature<br>
+        HR & Accounts Department<br><br>
+        This is a system generated salary slip and does not require manual signature.
+    </div>
+
 </div>
 
 </body>
