@@ -110,7 +110,8 @@
 
                                 {{-- Reset Password --}}
                                 <form action="{{ route('admin.staff.reset.password', $item->id) }}"
-                                      method="POST">
+                                      method="POST"
+                                      class="inline">
                                     @csrf
                                     <button type="submit"
                                             class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-xs shadow">
