@@ -32,7 +32,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 require __DIR__.'/auth.php';
 
-
 /*
 |--------------------------------------------------------------------------
 | AUTHENTICATED USER ROUTES
@@ -41,49 +40,28 @@ require __DIR__.'/auth.php';
 
 Route::middleware(['auth'])->group(function () {
 
-    /*
-    |--------------------------------------------------------------------------
-    | Profile
-    |--------------------------------------------------------------------------
-    */
+    /* Profile */
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Attendance
-    |--------------------------------------------------------------------------
-    */
+    /* Attendance */
     Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
     Route::post('/attendance/clock-in', [AttendanceController::class, 'clockIn'])->name('attendance.clockin');
     Route::post('/attendance/clock-out', [AttendanceController::class, 'clockOut'])->name('attendance.clockout');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Leave (Employee)
-    |--------------------------------------------------------------------------
-    */
+    /* Leave (Employee) */
     Route::get('/leave', [LeaveController::class, 'index'])->name('leave.index');
     Route::get('/leave/apply', [LeaveController::class, 'create'])->name('leave.create');
     Route::post('/leave/store', [LeaveController::class, 'store'])->name('leave.store');
     Route::get('/leave/history', [LeaveController::class, 'history'])->name('leave.history');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Loans (Employee)
-    |--------------------------------------------------------------------------
-    */
+    /* Loans (Employee) */
     Route::get('/my-loans', [LoanController::class, 'myLoan'])->name('loan.my');
     Route::get('/loan/apply', [LoanController::class, 'apply'])->name('loan.apply');
     Route::post('/loan/store-request', [LoanController::class, 'storeRequest'])->name('loan.store.request');
 
-   
-    /*
-    |--------------------------------------------------------------------------
-    | Salary (Employee)
-    |--------------------------------------------------------------------------
-    */
+    /* Salary (Employee) */
     Route::get('/salary', [SalaryController::class,'employeeIndex'])->name('salary.index');
     Route::get('/salary/download/{id}', [SalaryController::class,'download'])->name('salary.download');
 });
@@ -114,6 +92,7 @@ Route::middleware(['auth', 'admin'])
     Route::post('/staff/reset-password/{id}', [StaffController::class, 'resetPassword'])
         ->name('admin.staff.reset.password');
 
+
     /*
     |--------------------------------------------------------------------------
     | Leave Management (Admin)
@@ -129,8 +108,18 @@ Route::middleware(['auth', 'admin'])
     Route::get('/leave-transactions/export', [LeaveController::class, 'exportTransactions'])
         ->name('admin.leave.transactions.export');
 
+    Route::get('/leave/export', [LeaveController::class, 'export'])
+        ->name('admin.leave.export');
+
+    Route::post('/leave/revert/{id}', [LeaveController::class, 'revert'])
+        ->name('admin.leave.revert');
+
+    Route::delete('/leave/delete/{id}', [LeaveController::class, 'destroy'])
+        ->name('admin.leave.delete');
+
     Route::get('/payroll-summary', [LeaveController::class, 'payrollSummary'])
         ->name('admin.payroll.summary');
+
 
     /*
     |--------------------------------------------------------------------------
@@ -146,85 +135,63 @@ Route::middleware(['auth', 'admin'])
     Route::put('/loans/{id}', [LoanController::class, 'update'])->name('admin.loan.update');
     Route::delete('/loans/{id}', [LoanController::class, 'destroy'])->name('admin.loan.delete');
 
-     /*
-|--------------------------------------------------------------------------
-| Leave Export (Excel)
-|--------------------------------------------------------------------------
-*/
-Route::get('/leave/export', 
-    [LeaveController::class, 'export'])
-    ->name('admin.leave.export');
 
     /*
-|--------------------------------------------------------------------------
-| Leave Revert / Delete
-|--------------------------------------------------------------------------
-*/
+    |--------------------------------------------------------------------------
+    | Salary Management (Admin)
+    |--------------------------------------------------------------------------
+    */
 
-Route::post('/leave/revert/{id}',
-    [LeaveController::class, 'revert'])
-    ->name('admin.leave.revert');
+    Route::get('/salary', [SalaryController::class,'index'])
+        ->name('admin.salary.index');
 
-Route::delete('/leave/delete/{id}',
-    [LeaveController::class, 'destroy'])
-    ->name('admin.leave.delete');
+    Route::get('/salary/create', [SalaryController::class,'create'])
+        ->name('admin.salary.create');
 
-        /*
-|--------------------------------------------------------------------------
-| Salary Management (Admin)
-|--------------------------------------------------------------------------
-*/
+    Route::post('/salary/store', [SalaryController::class,'store'])
+        ->name('admin.salary.store');
 
-Route::get('/salary', [SalaryController::class,'index'])
-    ->name('admin.salary.index');
+    /* IMPORTANT: Static routes BEFORE {id} */
 
-Route::get('/salary/create', [SalaryController::class,'create'])
-    ->name('admin.salary.create');
+    Route::get('/salary/export', [SalaryController::class,'export'])
+        ->name('admin.salary.export');
 
-Route::post('/salary/store', [SalaryController::class,'store'])
-    ->name('admin.salary.store');
+    Route::get('/salary/import-form', [SalaryController::class,'importForm'])
+        ->name('admin.salary.import.form');
 
-/* IMPORTANT: EXPORT BEFORE {id} */
-Route::get('/salary/export', [SalaryController::class,'export'])
-    ->name('admin.salary.export');
+    Route::post('/salary/import', [SalaryController::class,'import'])
+        ->name('admin.salary.import');
 
-Route::get('/salary/import-form', [SalaryController::class,'importForm'])
-    ->name('admin.salary.import.form');
+    Route::post('/salary/bulk-post', [SalaryController::class,'bulkPost'])
+        ->name('admin.salary.bulk.post');
 
-Route::post('/salary/import', [SalaryController::class,'import'])
-    ->name('admin.salary.import');
+    Route::post('/salary/bulk-unpost', [SalaryController::class,'bulkUnpost'])
+        ->name('admin.salary.bulk.unpost');
 
-Route::post('/salary/post/{id}', [SalaryController::class,'post'])
-    ->name('admin.salary.post');
+    Route::post('/salary/bulk-delete', [SalaryController::class,'bulkDelete'])
+        ->name('admin.salary.bulk.delete');
 
-Route::get('/salary/{id}/edit', [SalaryController::class,'edit'])
-    ->name('admin.salary.edit');
+    Route::post('/salary/post-all-drafts', [SalaryController::class,'postAllDrafts'])
+        ->name('admin.salary.post.all');
 
-Route::put('/salary/{id}', [SalaryController::class,'update'])
-    ->name('admin.salary.update');
+    Route::post('/salary/post/{id}', [SalaryController::class,'post'])
+        ->name('admin.salary.post');
 
-Route::delete('/salary/{id}', [SalaryController::class,'destroy'])
-    ->name('admin.salary.delete');
+    Route::post('/salary/unpost/{id}', [SalaryController::class,'unpost'])
+        ->name('admin.salary.unpost');
 
-Route::post('/salary/unpost/{id}', 
-    [SalaryController::class,'unpost'])
-    ->name('admin.salary.unpost');
+    /* Dynamic routes LAST */
 
-Route::get('/salary/{id}', [SalaryController::class,'show'])
-    ->name('admin.salary.show');
+    Route::get('/salary/{id}/edit', [SalaryController::class,'edit'])
+        ->name('admin.salary.edit');
 
-Route::post('/salary/bulk-post', [SalaryController::class,'bulkPost'])
-    ->name('admin.salary.bulk.post');
+    Route::put('/salary/{id}', [SalaryController::class,'update'])
+        ->name('admin.salary.update');
 
-Route::post('/salary/bulk-unpost', [SalaryController::class,'bulkUnpost'])
-    ->name('admin.salary.bulk.unpost');
+    Route::delete('/salary/{id}', [SalaryController::class,'destroy'])
+        ->name('admin.salary.delete');
 
-Route::post('/salary/bulk-delete', [SalaryController::class,'bulkDelete'])
-    ->name('admin.salary.bulk.delete');
-
-Route::post('/salary/post-all-drafts', [SalaryController::class,'postAllDrafts'])
-    ->name('admin.salary.post.all');
-
-
+    Route::get('/salary/{id}', [SalaryController::class,'show'])
+        ->name('admin.salary.show');
 
 });
