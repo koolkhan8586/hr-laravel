@@ -130,6 +130,7 @@ class SalaryController extends Controller
 
             if ($loan->remaining_balance <= 0) {
                 $loan->remaining_balance = 0;
+                $loan->status = 'approved'; // stays approved but balance zero
             }
 
             $loan->save();
@@ -143,6 +144,7 @@ class SalaryController extends Controller
         $deductions =
             ($request->extra_leaves ?? 0)
             + ($request->income_tax ?? 0)
+            + ($request->loan_deduction ?? 0)
             + ($request->insurance ?? 0)
             + ($request->other_deductions ?? 0)
             + $loanDeduction;
@@ -186,9 +188,10 @@ class SalaryController extends Controller
         if ($loan && $loanDeduction > 0) {
             LoanPayment::create([
                 'loan_id' => $loan->id,
-                'salary_id' => $salary->id,
-                'amount_paid' => $loanDeduction,
-                'remaining_balance' => $loan->remaining_balance
+        'amount_paid' => $loanDeduction,
+        'remaining_balance' => $loan->remaining_balance,
+        'month' => $request->month,
+        'year' => $request->year
             ]);
         }
 
