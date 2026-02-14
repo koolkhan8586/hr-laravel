@@ -1,134 +1,165 @@
-<a href="{{ route('admin.payroll.summary') }}"
-   class="bg-purple-600 text-white px-4 py-2 rounded mb-4 inline-block">
-    Payroll Summary
-</a>
-
 <x-app-layout>
-<div class="max-w-7xl mx-auto py-6 px-4">
+<div class="max-w-7xl mx-auto py-8 px-6">
 
-    <h2 class="text-2xl font-bold mb-6">All Leave Requests</h2>
+    {{-- ================= HEADER ================= --}}
+    <div class="flex justify-between items-center mb-8">
+        <h2 class="text-2xl font-bold text-gray-800">
+            Leave Management
+        </h2>
 
-    {{-- Filter & Export Section --}}
-    <div class="flex items-center gap-3 mb-6">
-
-        {{-- Export Transactions --}}
-        <a href="{{ route('leave.export.transactions') }}"
-           class="bg-green-600 text-white px-4 py-2 rounded">
-            Export Transactions
+        <a href="{{ route('admin.payroll.summary') }}"
+           class="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2 rounded shadow text-sm">
+            Payroll Summary
         </a>
-
-        {{-- Export Excel --}}
-        <a href="{{ route('leave.export') }}"
-           class="bg-green-700 text-white px-4 py-2 rounded">
-            Export to Excel
-        </a>
-
-        {{-- Filter Form --}}
-        <form method="GET" action="{{ route('leave.admin') }}" class="flex gap-2">
-
-            <select name="month" class="border p-2 rounded">
-                <option value="">All Months</option>
-                @for($m = 1; $m <= 12; $m++)
-                    <option value="{{ $m }}" {{ request('month') == $m ? 'selected' : '' }}>
-                        {{ date('F', mktime(0,0,0,$m,1)) }}
-                    </option>
-                @endfor
-            </select>
-
-            <select name="year" class="border p-2 rounded">
-                <option value="">All Years</option>
-                @for($y = date('Y'); $y >= 2024; $y--)
-                    <option value="{{ $y }}" {{ request('year') == $y ? 'selected' : '' }}>
-                        {{ $y }}
-                    </option>
-                @endfor
-            </select>
-
-            <button class="bg-blue-600 text-white px-4 py-2 rounded">
-                Filter
-            </button>
-        </form>
-
     </div>
 
-    {{-- Leave Table --}}
-    <table class="w-full border">
-        <thead class="bg-gray-200">
-            <tr>
-                <th class="p-2 border">Employee</th>
-                <th class="p-2 border">Type</th>
-                <th class="p-2 border">Days</th>
-                <th class="p-2 border">Status</th>
-                <th class="p-2 border">Action</th>
-            </tr>
-        </thead>
+    {{-- ================= FILTER & EXPORT SECTION ================= --}}
+    <div class="bg-white shadow rounded p-5 mb-8">
 
-        <tbody>
-        @foreach($leaves as $leave)
-            <tr>
-                <td class="p-2 border">
-                    {{ $leave->user->name ?? 'N/A' }}
-                </td>
+        <div class="flex flex-wrap items-center justify-between gap-4">
 
-                <td class="p-2 border capitalize">
-                    {{ str_replace('_',' ',$leave->type) }}
-                </td>
+            {{-- LEFT SIDE --}}
+            <div class="flex flex-wrap items-center gap-3">
 
-                <td class="p-2 border">
-                    {{ $leave->days }}
-                </td>
+                <a href="{{ route('admin.leave.transactions.export') }}"
+                   class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm shadow">
+                    Export Transactions
+                </a>
 
-                {{-- Status Column --}}
-                <td class="p-2 border">
-                    @if($leave->status == 'approved')
-                        <span class="text-green-600 font-bold">
-                            Approved
-                        </span>
-                    @elseif($leave->status == 'pending')
-                        <span class="text-yellow-600 font-bold">
-                            Pending
-                        </span>
-                    @else
-                        <span class="text-red-600 font-bold">
-                            Rejected
-                        </span>
-                    @endif
-                </td>
+                <a href="{{ route('admin.leave.export') }}"
+                   class="bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded text-sm shadow">
+                    Export Leave Excel
+                </a>
 
-                {{-- Action Column --}}
-                <td class="p-2 border">
+            </div>
 
-                    @if($leave->status == 'pending')
+            {{-- RIGHT SIDE (FILTER) --}}
+            <form method="GET"
+                  action="{{ route('admin.leave.index') }}"
+                  class="flex flex-wrap gap-2 items-center">
 
-                        <form method="POST"
-                              action="{{ route('leave.approve', $leave->id) }}"
-                              class="inline">
-                            @csrf
-                            <button class="bg-green-600 text-white px-3 py-1 rounded">
-                                Approve
-                            </button>
-                        </form>
+                <select name="month"
+                        class="border rounded px-3 py-2 text-sm">
+                    <option value="">All Months</option>
+                    @for($m = 1; $m <= 12; $m++)
+                        <option value="{{ $m }}"
+                            {{ request('month') == $m ? 'selected' : '' }}>
+                            {{ date('F', mktime(0,0,0,$m,1)) }}
+                        </option>
+                    @endfor
+                </select>
 
-                        <form method="POST"
-                              action="{{ route('leave.reject', $leave->id) }}"
-                              class="inline">
-                            @csrf
-                            <button class="bg-red-600 text-white px-3 py-1 rounded">
-                                Reject
-                            </button>
-                        </form>
+                <select name="year"
+                        class="border rounded px-3 py-2 text-sm">
+                    <option value="">All Years</option>
+                    @for($y = date('Y'); $y >= 2024; $y--)
+                        <option value="{{ $y }}"
+                            {{ request('year') == $y ? 'selected' : '' }}>
+                            {{ $y }}
+                        </option>
+                    @endfor
+                </select>
 
-                    @else
-                        <span class="text-gray-500 italic">
-                            No Action
-                        </span>
-                    @endif
+                <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm shadow">
+                    Filter
+                </button>
 
-                </td>
-            </tr>
-        @endforeach
-        </tbody>
-    </table>
+            </form>
+
+        </div>
+    </div>
+
+    {{-- ================= LEAVE TABLE ================= --}}
+    <div class="bg-white shadow rounded overflow-hidden">
+
+        <table class="w-full text-sm">
+            <thead class="bg-gray-100 text-gray-700">
+                <tr>
+                    <th class="p-3 text-left">Employee</th>
+                    <th class="p-3 text-left">Type</th>
+                    <th class="p-3 text-left">Days</th>
+                    <th class="p-3 text-left">Status</th>
+                    <th class="p-3 text-left">Action</th>
+                </tr>
+            </thead>
+
+            <tbody>
+            @forelse($leaves as $leave)
+                <tr class="border-t hover:bg-gray-50">
+
+                    <td class="p-3">
+                        {{ $leave->user->name ?? 'N/A' }}
+                    </td>
+
+                    <td class="p-3 capitalize">
+                        {{ str_replace('_',' ',$leave->type) }}
+                    </td>
+
+                    <td class="p-3">
+                        {{ $leave->days }}
+                    </td>
+
+                    {{-- STATUS BADGE --}}
+                    <td class="p-3">
+                        @if($leave->status == 'approved')
+                            <span class="px-3 py-1 text-xs font-semibold rounded bg-green-100 text-green-700">
+                                Approved
+                            </span>
+                        @elseif($leave->status == 'pending')
+                            <span class="px-3 py-1 text-xs font-semibold rounded bg-yellow-100 text-yellow-700">
+                                Pending
+                            </span>
+                        @else
+                            <span class="px-3 py-1 text-xs font-semibold rounded bg-red-100 text-red-700">
+                                Rejected
+                            </span>
+                        @endif
+                    </td>
+
+                    {{-- ACTIONS --}}
+                    <td class="p-3">
+
+                        @if($leave->status == 'pending')
+
+                            <div class="flex gap-2">
+
+                                <form method="POST"
+                                      action="{{ route('admin.leave.approve', $leave->id) }}">
+                                    @csrf
+                                    <button class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs shadow">
+                                        Approve
+                                    </button>
+                                </form>
+
+                                <form method="POST"
+                                      action="{{ route('admin.leave.reject', $leave->id) }}">
+                                    @csrf
+                                    <button class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs shadow">
+                                        Reject
+                                    </button>
+                                </form>
+
+                            </div>
+
+                        @else
+                            <span class="text-gray-400 italic text-xs">
+                                No Action
+                            </span>
+                        @endif
+
+                    </td>
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="5" class="text-center p-6 text-gray-500">
+                        No leave records found.
+                    </td>
+                </tr>
+            @endforelse
+            </tbody>
+        </table>
+
+    </div>
 
 </div>
 </x-app-layout>
