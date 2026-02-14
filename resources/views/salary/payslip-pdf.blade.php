@@ -103,7 +103,7 @@
 
 <div class="header">
     {{-- Replace with your logo path --}}
-    <img src="{{ public_path('images/logo.png') }}" class="logo">
+    <img src="{{ public_path('images/UOL-Green-V1.png') }}" class="logo">
     <div class="university">THE UNIVERSITY OF LAHORE</div>
     <div class="campus">CITY CAMPUS LAHORE</div>
 </div>
