@@ -170,32 +170,43 @@ Route::delete('/leave/delete/{id}',
     ->name('admin.leave.delete');
 
         /*
-    |--------------------------------------------------------------------------
-    | Salary Management (Admin)
-    |--------------------------------------------------------------------------
-    */
-    Route::get('/salary', [SalaryController::class,'index'])->name('admin.salary.index');
-    Route::get('/salary/create', [SalaryController::class,'create'])->name('admin.salary.create');
-    Route::post('/salary/store', [SalaryController::class,'store'])->name('admin.salary.store');
-    Route::get('/salary/{id}', [SalaryController::class,'show'])->name('admin.salary.show');
-    Route::post('/salary/post/{id}', [SalaryController::class,'post'])->name('admin.salary.post');
+|--------------------------------------------------------------------------
+| Salary Management (Admin)
+|--------------------------------------------------------------------------
+*/
 
-    Route::get('/salary/{id}/edit', [SalaryController::class,'edit'])
-        ->name('admin.salary.edit');
+Route::get('/salary', [SalaryController::class,'index'])
+    ->name('admin.salary.index');
 
-    Route::put('/salary/{id}', [SalaryController::class,'update'])
-        ->name('admin.salary.update');
+Route::get('/salary/create', [SalaryController::class,'create'])
+    ->name('admin.salary.create');
 
-    Route::delete('/salary/{id}', [SalaryController::class,'destroy'])
-        ->name('admin.salary.delete');
+Route::post('/salary/store', [SalaryController::class,'store'])
+    ->name('admin.salary.store');
 
-    Route::get('/salary/export', [SalaryController::class,'export'])
-        ->name('admin.salary.export');
+/* IMPORTANT: EXPORT BEFORE {id} */
+Route::get('/salary/export', [SalaryController::class,'export'])
+    ->name('admin.salary.export');
 
-    Route::post('/salary/import', [SalaryController::class,'import'])
-        ->name('admin.salary.import');
+Route::get('/salary/import-form', [SalaryController::class,'importForm'])
+    ->name('admin.salary.import.form');
 
-    Route::get('/salary/import-form', [SalaryController::class,'importForm'])
-        ->name('admin.salary.import.form');
+Route::post('/salary/import', [SalaryController::class,'import'])
+    ->name('admin.salary.import');
+
+Route::post('/salary/post/{id}', [SalaryController::class,'post'])
+    ->name('admin.salary.post');
+
+Route::get('/salary/{id}/edit', [SalaryController::class,'edit'])
+    ->name('admin.salary.edit');
+
+Route::put('/salary/{id}', [SalaryController::class,'update'])
+    ->name('admin.salary.update');
+
+Route::delete('/salary/{id}', [SalaryController::class,'destroy'])
+    ->name('admin.salary.delete');
+
+Route::get('/salary/{id}', [SalaryController::class,'show'])
+    ->name('admin.salary.show');
 
 });
