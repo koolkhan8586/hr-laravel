@@ -9,7 +9,8 @@
         </div>
     @endif
 
-    <form action="{{ route('staff.update', $staff->id) }}" method="POST">
+    <form action="{{ route('admin.staff.update', $staff->id) }}" method="POST">
+
         @csrf
         @method('PUT')
 
