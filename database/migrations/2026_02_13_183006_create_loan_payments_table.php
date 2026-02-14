@@ -13,12 +13,11 @@ return new class extends Migration
                   ->constrained()
                   ->cascadeOnDelete();
 
-            $table->foreignId('salary_id')
-                  ->constrained()
-                  ->cascadeOnDelete();
-
             $table->decimal('amount_paid', 12, 2);
             $table->decimal('remaining_balance', 12, 2);
+
+            $table->integer('month');
+            $table->integer('year');
 
             $table->timestamps();
         });
