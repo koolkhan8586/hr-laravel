@@ -326,6 +326,17 @@ class SalaryController extends Controller
         );
     }
 
+    public function unpost($id)
+{
+    $salary = Salary::findOrFail($id);
+
+    $salary->update([
+        'status' => 'draft'
+    ]);
+
+    return back()->with('success','Salary Unposted Successfully');
+}
+
     /*
     |--------------------------------------------------------------------------
     | Post Salary (Optional Separate Action)
