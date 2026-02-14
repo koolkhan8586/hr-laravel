@@ -1,13 +1,20 @@
-public function up(): void
-{
-    Schema::table('users', function (Blueprint $table) {
-        $table->dropColumn('leave_balance');
-    });
-}
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
-public function down(): void
+return new class extends Migration
 {
-    Schema::table('users', function (Blueprint $table) {
-        $table->decimal('leave_balance',5,2)->default(0);
-    });
-}
+    public function up(): void
+    {
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn('leave_balance');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('users', function (Blueprint $table) {
+            $table->decimal('leave_balance', 5, 2)->default(0);
+        });
+    }
+};
