@@ -78,6 +78,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/loan/apply', [LoanController::class, 'apply'])->name('loan.apply');
     Route::post('/loan/store-request', [LoanController::class, 'storeRequest'])->name('loan.store.request');
 
+   
     /*
     |--------------------------------------------------------------------------
     | Salary (Employee)
@@ -145,7 +146,16 @@ Route::middleware(['auth', 'admin'])
     Route::put('/loans/{id}', [LoanController::class, 'update'])->name('admin.loan.update');
     Route::delete('/loans/{id}', [LoanController::class, 'destroy'])->name('admin.loan.delete');
 
-    /*
+     /*
+|--------------------------------------------------------------------------
+| Leave Export (Excel)
+|--------------------------------------------------------------------------
+*/
+Route::get('/leave/export', 
+    [LeaveController::class, 'export'])
+    ->name('admin.leave.export');
+
+        /*
     |--------------------------------------------------------------------------
     | Salary Management (Admin)
     |--------------------------------------------------------------------------
