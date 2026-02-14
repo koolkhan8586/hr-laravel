@@ -6,6 +6,17 @@
 <form action="{{ route('loan.store') }}" method="POST" class="space-y-4">
 @csrf
 
+<div class="mt-4">
+    <label class="block text-sm font-medium text-gray-700">
+        Opening Remaining Balance (Optional)
+    </label>
+    <input type="number"
+           name="remaining_balance"
+           step="0.01"
+           placeholder="Leave empty for full amount"
+           class="w-full border rounded px-3 py-2 mt-1">
+</div>
+
 <select name="user_id" class="w-full border p-2 rounded">
     <option value="">Select Employee</option>
     @foreach($employees as $emp)
