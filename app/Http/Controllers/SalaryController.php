@@ -10,6 +10,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Mail\SalaryPostedMail;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\SalariesExport;
 
 class SalaryController extends Controller
 {
@@ -287,6 +289,11 @@ class SalaryController extends Controller
         ->with('success', 'Salary Updated Successfully');
 }
 
+    public function export()
+{
+    return Excel::download(new SalariesExport, 'salaries.xlsx');
+}
+    
     public function destroy($id)
 {
     Salary::findOrFail($id)->delete();
