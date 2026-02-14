@@ -110,7 +110,7 @@ Route::middleware(['auth', 'admin'])
     Route::get('/staff/edit/{id}', [StaffController::class, 'edit'])->name('admin.staff.edit');
     Route::put('/staff/update/{id}', [StaffController::class, 'update'])->name('admin.staff.update');
     Route::delete('/staff/delete/{id}', [StaffController::class, 'destroy'])->name('admin.staff.destroy');
-    Route::get('/staff/reset-password/{id}', [StaffController::class, 'resetPassword'])
+    Route::post('/staff/reset-password/{id}', [StaffController::class, 'resetPassword'])
         ->name('admin.staff.reset.password');
 
     /*
