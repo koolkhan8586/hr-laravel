@@ -2,7 +2,7 @@
 
 <div class="max-w-7xl mx-auto py-8 px-6">
 
-    {{-- Header --}}
+    {{-- ================= HEADER ================= --}}
     <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-bold text-gray-800">
             Salary Management
@@ -28,15 +28,21 @@
         </div>
     </div>
 
-    {{-- Success Message --}}
+    {{-- ================= SUCCESS / ERROR ================= --}}
     @if(session('success'))
         <div class="bg-green-100 text-green-700 p-3 rounded mb-6">
             {{ session('success') }}
         </div>
     @endif
 
+    @if(session('error'))
+        <div class="bg-red-100 text-red-700 p-3 rounded mb-6">
+            {{ session('error') }}
+        </div>
+    @endif
 
-    {{-- Summary Cards --}}
+
+    {{-- ================= SUMMARY CARDS ================= --}}
     <div class="grid grid-cols-4 gap-6 mb-8">
 
         <div class="bg-white shadow rounded p-6">
@@ -49,7 +55,7 @@
         <div class="bg-white shadow rounded p-6">
             <p class="text-gray-500 text-sm">Total Net Paid</p>
             <p class="text-2xl font-bold text-green-600">
-                Rs {{ number_format($salaries->where('status','posted')->sum('net_salary'),2) }}
+                Rs {{ number_format($salaries->where('is_posted', true)->sum('net_salary'),2) }}
             </p>
         </div>
 
@@ -63,38 +69,69 @@
         <div class="bg-white shadow rounded p-6">
             <p class="text-gray-500 text-sm">Draft Salaries</p>
             <p class="text-2xl font-bold text-yellow-600">
-                {{ $salaries->where('status','draft')->count() }}
+                {{ $salaries->where('is_posted', false)->count() }}
             </p>
         </div>
 
     </div>
 
 
-    {{-- Salary Table --}}
-    <div class="bg-white shadow rounded overflow-hidden">
+    {{-- ================= BULK POST FORM ================= --}}
+    <form method="POST" action="{{ route('admin.salary.bulk.post') }}">
+        @csrf
 
-        <table class="w-full text-sm">
-            <thead class="bg-gray-100">
-                <tr>
-                    <th class="p-3 text-left">Employee</th>
-                    <th class="p-3 text-left">Month</th>
-                    <th class="p-3 text-left">Year</th>
-                    <th class="p-3 text-left">Net Salary</th>
-                    <th class="p-3 text-left">Status</th>
-                    <th class="p-3 text-left">Action</th>
-                </tr>
-            </thead>
+        <div class="mb-4 flex justify-between items-center">
 
-            <tbody>
+            <button type="submit"
+                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow text-sm">
+                Post Selected
+            </button>
+
+            <span class="text-sm text-gray-500">
+                Only draft salaries can be posted
+            </span>
+
+        </div>
+
+
+        {{-- ================= SALARY TABLE ================= --}}
+        <div class="bg-white shadow rounded overflow-hidden">
+
+            <table class="w-full text-sm">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th class="p-3 text-center">
+                            <input type="checkbox" onclick="toggleAll(this)">
+                        </th>
+                        <th class="p-3 text-left">Employee</th>
+                        <th class="p-3 text-left">Month</th>
+                        <th class="p-3 text-left">Year</th>
+                        <th class="p-3 text-left">Net Salary</th>
+                        <th class="p-3 text-left">Status</th>
+                        <th class="p-3 text-left">Action</th>
+                    </tr>
+                </thead>
+
+                <tbody>
                 @forelse($salaries as $salary)
+
                     <tr class="border-t hover:bg-gray-50">
+
+                        {{-- Checkbox --}}
+                        <td class="p-3 text-center">
+                            @if(!$salary->is_posted)
+                                <input type="checkbox"
+                                    name="salary_ids[]"
+                                    value="{{ $salary->id }}">
+                            @endif
+                        </td>
 
                         <td class="p-3">
                             {{ $salary->user->name ?? 'N/A' }}
                         </td>
 
                         <td class="p-3">
-                            {{ $salary->month }}
+                            {{ date('F', mktime(0,0,0,$salary->month,1)) }}
                         </td>
 
                         <td class="p-3">
@@ -105,8 +142,9 @@
                             Rs {{ number_format($salary->net_salary,2) }}
                         </td>
 
+                        {{-- Status --}}
                         <td class="p-3">
-                            @if($salary->status == 'posted')
+                            @if($salary->is_posted)
                                 <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">
                                     Posted
                                 </span>
@@ -117,21 +155,19 @@
                             @endif
                         </td>
 
+                        {{-- Actions --}}
                         <td class="p-3 space-x-2">
 
-                            {{-- View --}}
                             <a href="{{ route('admin.salary.show', $salary->id) }}"
                                class="text-blue-600 hover:underline">
                                 View
                             </a>
 
-                            {{-- Edit --}}
                             <a href="{{ route('admin.salary.edit', $salary->id) }}"
                                class="text-yellow-600 hover:underline">
                                 Edit
                             </a>
 
-                            {{-- Delete --}}
                             <form action="{{ route('admin.salary.delete', $salary->id) }}"
                                   method="POST"
                                   class="inline"
@@ -143,8 +179,8 @@
                                 </button>
                             </form>
 
-                            {{-- POST / UNPOST --}}
-                            @if($salary->status == 'draft')
+                            {{-- Individual Post --}}
+                            @if(!$salary->is_posted)
                                 <form action="{{ route('admin.salary.post', $salary->id) }}"
                                       method="POST"
                                       class="inline">
@@ -153,33 +189,35 @@
                                         Post
                                     </button>
                                 </form>
-                            @else
-                                <form action="{{ route('admin.salary.unpost', $salary->id) }}"
-                                      method="POST"
-                                      class="inline">
-                                    @csrf
-                                    <button class="text-gray-600 font-semibold hover:underline">
-                                        Unpost
-                                    </button>
-                                </form>
                             @endif
 
                         </td>
 
                     </tr>
+
                 @empty
                     <tr>
-                        <td colspan="6" class="text-center p-6 text-gray-500">
+                        <td colspan="7" class="text-center p-6 text-gray-500">
                             No salaries found.
                         </td>
                     </tr>
                 @endforelse
-            </tbody>
+                </tbody>
+            </table>
 
-        </table>
-
-    </div>
+        </div>
+    </form>
 
 </div>
+
+{{-- ================= SELECT ALL SCRIPT ================= --}}
+<script>
+function toggleAll(source) {
+    let checkboxes = document.querySelectorAll('input[name="salary_ids[]"]');
+    for (let i = 0; i < checkboxes.length; i++) {
+        checkboxes[i].checked = source.checked;
+    }
+}
+</script>
 
 </x-app-layout>
