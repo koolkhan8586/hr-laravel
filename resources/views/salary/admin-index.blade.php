@@ -28,27 +28,59 @@
         </div>
     </div>
 
-    {{-- Success / Error Messages --}}
+    {{-- Success / Error --}}
     @if(session('success'))
-        <div class="bg-green-100 text-green-700 p-3 rounded mb-4">
+        <div class="bg-green-100 text-green-700 p-3 rounded mb-6">
             {{ session('success') }}
         </div>
     @endif
 
     @if(session('error'))
-        <div class="bg-red-100 text-red-700 p-3 rounded mb-4">
+        <div class="bg-red-100 text-red-700 p-3 rounded mb-6">
             {{ session('error') }}
         </div>
     @endif
 
+    {{-- Summary Cards --}}
+    <div class="grid grid-cols-4 gap-6 mb-8">
 
-    {{-- BULK FORM START --}}
+        <div class="bg-white shadow rounded p-6">
+            <p class="text-gray-500 text-sm">Total Salaries</p>
+            <p class="text-2xl font-bold">
+                {{ $salaries->count() }}
+            </p>
+        </div>
+
+        <div class="bg-white shadow rounded p-6">
+            <p class="text-gray-500 text-sm">Total Net Paid</p>
+            <p class="text-2xl font-bold text-green-600">
+                Rs {{ number_format($salaries->where('is_posted', true)->sum('net_salary'),2) }}
+            </p>
+        </div>
+
+        <div class="bg-white shadow rounded p-6">
+            <p class="text-gray-500 text-sm">Total Deductions</p>
+            <p class="text-2xl font-bold text-red-600">
+                Rs {{ number_format($salaries->sum('total_deductions'),2) }}
+            </p>
+        </div>
+
+        <div class="bg-white shadow rounded p-6">
+            <p class="text-gray-500 text-sm">Draft Salaries</p>
+            <p class="text-2xl font-bold text-yellow-600">
+                {{ $salaries->where('is_posted', false)->count() }}
+            </p>
+        </div>
+
+    </div>
+
+
+    {{-- Bulk Form --}}
     <form method="POST">
-
         @csrf
 
         {{-- Bulk Action Buttons --}}
-        <div class="flex gap-3 mb-4">
+        <div class="mb-4 flex gap-3">
 
             <button formaction="{{ route('admin.salary.bulk.post') }}"
                     class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm">
@@ -56,7 +88,7 @@
             </button>
 
             <button formaction="{{ route('admin.salary.bulk.unpost') }}"
-                    class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm">
+                    class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded text-sm">
                 Bulk Unpost
             </button>
 
@@ -66,7 +98,7 @@
                 Bulk Delete
             </button>
 
-            <a href="{{ route('admin.salary.post.all.drafts') }}"
+            <a href="{{ route('admin.salary.post.all') }}"
                class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded text-sm">
                 Post All Drafts
             </a>
@@ -79,8 +111,8 @@
             <table class="w-full text-sm">
                 <thead class="bg-gray-100">
                     <tr>
-                        <th class="p-3 text-left">
-                            <input type="checkbox" onclick="toggleAll(this)">
+                        <th class="p-3">
+                            <input type="checkbox" onclick="toggleCheckboxes(this)">
                         </th>
                         <th class="p-3 text-left">Employee</th>
                         <th class="p-3 text-left">Month</th>
@@ -92,78 +124,88 @@
                 </thead>
 
                 <tbody>
-                @forelse($salaries as $salary)
+                    @forelse($salaries as $salary)
+                        <tr class="border-t hover:bg-gray-50">
 
-                    <tr class="border-t hover:bg-gray-50">
+                            <td class="p-3">
+                                <input type="checkbox"
+                                       name="salary_ids[]"
+                                       value="{{ $salary->id }}">
+                            </td>
 
-                        <td class="p-3">
-                            <input type="checkbox"
-                                   name="salary_ids[]"
-                                   value="{{ $salary->id }}">
-                        </td>
+                            <td class="p-3">
+                                {{ $salary->user->name ?? 'N/A' }}
+                            </td>
 
-                        <td class="p-3">
-                            {{ $salary->user->name ?? 'N/A' }}
-                        </td>
+                            <td class="p-3">
+                                {{ date('F', mktime(0,0,0,$salary->month,1)) }}
+                            </td>
 
-                        <td class="p-3">
-                            {{ $salary->month }}
-                        </td>
+                            <td class="p-3">
+                                {{ $salary->year }}
+                            </td>
 
-                        <td class="p-3">
-                            {{ $salary->year }}
-                        </td>
+                            <td class="p-3 text-green-600 font-semibold">
+                                Rs {{ number_format($salary->net_salary,2) }}
+                            </td>
 
-                        <td class="p-3 text-green-600 font-semibold">
-                            Rs {{ number_format($salary->net_salary,2) }}
-                        </td>
+                            <td class="p-3">
+                                @if($salary->is_posted)
+                                    <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">
+                                        Posted
+                                    </span>
+                                @else
+                                    <span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs">
+                                        Draft
+                                    </span>
+                                @endif
+                            </td>
 
-                        <td class="p-3">
-                            @if($salary->is_posted)
-                                <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">
-                                    Posted
-                                </span>
-                            @else
-                                <span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs">
-                                    Draft
-                                </span>
-                            @endif
-                        </td>
+                            <td class="p-3 space-x-2">
 
-                        <td class="p-3 space-x-2">
+                                <a href="{{ route('admin.salary.show', $salary->id) }}"
+                                   class="text-blue-600 hover:underline">
+                                    View
+                                </a>
 
-                            <a href="{{ route('admin.salary.show', $salary->id) }}"
-                               class="text-blue-600 hover:underline">
-                                View
-                            </a>
+                                <a href="{{ route('admin.salary.edit', $salary->id) }}"
+                                   class="text-yellow-600 hover:underline">
+                                    Edit
+                                </a>
 
-                            <a href="{{ route('admin.salary.edit', $salary->id) }}"
-                               class="text-yellow-600 hover:underline">
-                                Edit
-                            </a>
+                                <form action="{{ route('admin.salary.delete', $salary->id) }}"
+                                      method="POST"
+                                      class="inline"
+                                      onsubmit="return confirm('Delete this salary?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button class="text-red-600 hover:underline">
+                                        Delete
+                                    </button>
+                                </form>
 
-                            <form action="{{ route('admin.salary.delete', $salary->id) }}"
-                                  method="POST"
-                                  class="inline"
-                                  onsubmit="return confirm('Are you sure?')">
-                                @csrf
-                                @method('DELETE')
-                                <button class="text-red-600 hover:underline">
-                                    Delete
-                                </button>
-                            </form>
+                                @if(!$salary->is_posted)
+                                    <form action="{{ route('admin.salary.post', $salary->id) }}"
+                                          method="POST"
+                                          class="inline">
+                                        @csrf
+                                        <button class="text-green-600 font-semibold hover:underline">
+                                            Post
+                                        </button>
+                                    </form>
+                                @endif
 
-                        </td>
+                            </td>
 
-                    </tr>
-
-                @empty
-                    <tr>
-                        <td colspan="7" class="text-center p-6 text-gray-500">
-                            No salaries found.
-                        </td>
-                    </tr>
-                @endforelse
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7"
+                                class="text-center p-6 text-gray-500">
+                                No salaries found.
+                            </td>
+                        </tr>
+                    @endforelse
                 </tbody>
 
             </table>
@@ -171,16 +213,14 @@
         </div>
 
     </form>
-    {{-- BULK FORM END --}}
 
 </div>
 
+{{-- Select All Script --}}
 <script>
-function toggleAll(source) {
-    checkboxes = document.getElementsByName('salary_ids[]');
-    for(var i=0; i<checkboxes.length; i++) {
-        checkboxes[i].checked = source.checked;
-    }
+function toggleCheckboxes(source) {
+    const checkboxes = document.querySelectorAll('input[name="salary_ids[]"]');
+    checkboxes.forEach(cb => cb.checked = source.checked);
 }
 </script>
 
