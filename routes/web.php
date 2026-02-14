@@ -213,9 +213,18 @@ Route::post('/salary/unpost/{id}',
 Route::get('/salary/{id}', [SalaryController::class,'show'])
     ->name('admin.salary.show');
 
-Route::post('/salary/bulk-post',
-    [SalaryController::class,'bulkPost'])
+Route::post('/salary/bulk-post', [SalaryController::class,'bulkPost'])
     ->name('admin.salary.bulk.post');
+
+Route::post('/salary/bulk-unpost', [SalaryController::class,'bulkUnpost'])
+    ->name('admin.salary.bulk.unpost');
+
+Route::post('/salary/bulk-delete', [SalaryController::class,'bulkDelete'])
+    ->name('admin.salary.bulk.delete');
+
+Route::post('/salary/post-all-drafts', [SalaryController::class,'postAllDrafts'])
+    ->name('admin.salary.post.all');
+
 
 
 });
