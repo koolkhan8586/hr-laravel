@@ -141,6 +141,9 @@ Route::middleware(['auth', 'admin'])
     Route::post('/loans/store', [LoanController::class, 'store'])->name('admin.loan.store');
     Route::post('/loans/approve/{id}', [LoanController::class, 'approve'])->name('admin.loan.approve');
     Route::post('/loans/reject/{id}', [LoanController::class, 'reject'])->name('admin.loan.reject');
+    Route::get('/loans/{id}/edit', [LoanController::class, 'edit'])->name('admin.loan.edit');
+    Route::put('/loans/{id}', [LoanController::class, 'update'])->name('admin.loan.update');
+    Route::delete('/loans/{id}', [LoanController::class, 'destroy'])->name('admin.loan.delete');
 
     /*
     |--------------------------------------------------------------------------
