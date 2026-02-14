@@ -7,7 +7,7 @@
         <div class="flex items-center gap-3">
 
             {{-- Import Form --}}
-            <form action="{{ route('staff.import') }}" method="POST" enctype="multipart/form-data" class="flex items-center gap-2">
+            <form action="{{ route('admin.staff.import') }}" method="POST" enctype="multipart/form-data" class="flex items-center gap-2">
                 @csrf
                 <input type="file" name="file"
                        class="border rounded px-2 py-1 text-sm"
