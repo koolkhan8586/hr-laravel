@@ -73,7 +73,7 @@
                 Update Staff
             </button>
 
-            <a href="{{ route('staff.index') }}"
+            <a href="{{ route('admin.staff.index') }}"
                class="ml-3 bg-gray-500 text-white px-6 py-2 rounded">
                 Cancel
             </a>
