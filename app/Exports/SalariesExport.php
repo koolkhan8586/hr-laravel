@@ -5,90 +5,56 @@ namespace App\Exports;
 use App\Models\Salary;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\WithMapping;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 
-class SalariesExport implements
-    FromCollection,
-    WithHeadings,
-    WithMapping,
-    ShouldAutoSize
+class SalariesExport implements FromCollection, WithHeadings
 {
-    /**
-     * Fetch Data
-     */
     public function collection()
     {
-        return Salary::with('user')
-            ->orderByDesc('year')
-            ->orderByDesc('month')
-            ->get();
+        return Salary::with('user')->get()->map(function ($salary) {
+            return [
+                'Employee' => $salary->user->name ?? '',
+                'Month' => $salary->month,
+                'Year' => $salary->year,
+                'Basic Salary' => $salary->basic_salary,
+                'Invigilation' => $salary->invigilation,
+                'T Payment' => $salary->t_payment,
+                'Eidi' => $salary->eidi,
+                'Increment' => $salary->increment,
+                'Other Earnings' => $salary->other_earnings,
+                'Extra Leaves' => $salary->extra_leaves,
+                'Income Tax' => $salary->income_tax,
+                'Loan Deduction' => $salary->loan_deduction,
+                'Insurance' => $salary->insurance,
+                'Other Deductions' => $salary->other_deductions,
+                'Gross Total' => $salary->gross_total,
+                'Total Deductions' => $salary->total_deductions,
+                'Net Salary' => $salary->net_salary,
+                'Status' => $salary->is_posted ? 'Posted' : 'Draft',
+            ];
+        });
     }
 
-    /**
-     * Excel Headings
-     */
     public function headings(): array
     {
         return [
-            'Employee Name',
+            'Employee',
             'Month',
             'Year',
-
-            // Earnings
             'Basic Salary',
             'Invigilation',
             'T Payment',
             'Eidi',
             'Increment',
             'Other Earnings',
-
-            // Deductions
             'Extra Leaves',
             'Income Tax',
             'Loan Deduction',
             'Insurance',
             'Other Deductions',
-
-            // Totals
             'Gross Total',
             'Total Deductions',
             'Net Salary',
-
-            'Status',
-            'Created At'
-        ];
-    }
-
-    /**
-     * Map Columns
-     */
-    public function map($salary): array
-    {
-        return [
-            $salary->user->name ?? '-',
-            $salary->month,
-            $salary->year,
-
-            $salary->basic_salary,
-            $salary->invigilation,
-            $salary->t_payment,
-            $salary->eidi,
-            $salary->increment,
-            $salary->other_earnings,
-
-            $salary->extra_leaves,
-            $salary->income_tax,
-            $salary->loan_deduction,
-            $salary->insurance,
-            $salary->other_deductions,
-
-            $salary->gross_total,
-            $salary->total_deductions,
-            $salary->net_salary,
-
-            $salary->is_posted ? 'Posted' : 'Draft',
-            $salary->created_at->format('Y-m-d')
+            'Status'
         ];
     }
 }
