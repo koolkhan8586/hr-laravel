@@ -1,14 +1,14 @@
 <x-app-layout>
 
-<div class="max-w-7xl mx-auto py-6 px-4">
+<div class="max-w-7xl mx-auto py-8 px-6">
 
-    {{-- ================= HEADER ================= --}}
+    {{-- Header --}}
     <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-bold text-gray-800">
             Salary Management
         </h2>
 
-        <div class="space-x-2">
+        <div class="flex gap-3">
 
             <a href="{{ route('admin.salary.export') }}"
                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow text-sm">
@@ -28,138 +28,85 @@
         </div>
     </div>
 
-    {{-- ================= SUCCESS MESSAGE ================= --}}
+    {{-- Success Message --}}
     @if(session('success'))
-        <div class="bg-green-100 text-green-700 p-3 rounded mb-4">
+        <div class="bg-green-100 text-green-700 p-3 rounded mb-6">
             {{ session('success') }}
         </div>
     @endif
 
-    @if(session('error'))
-        <div class="bg-red-100 text-red-700 p-3 rounded mb-4">
-            {{ session('error') }}
-        </div>
-    @endif
 
-
-    {{-- ================= SUMMARY CARDS ================= --}}
+    {{-- Summary Cards --}}
     <div class="grid grid-cols-4 gap-6 mb-8">
 
-        <div class="bg-white p-5 rounded shadow">
+        <div class="bg-white shadow rounded p-6">
             <p class="text-gray-500 text-sm">Total Salaries</p>
-            <h3 class="text-xl font-bold">
-                {{ $totalSalaries }}
-            </h3>
+            <p class="text-2xl font-bold">
+                {{ $salaries->count() }}
+            </p>
         </div>
 
-        <div class="bg-white p-5 rounded shadow">
+        <div class="bg-white shadow rounded p-6">
             <p class="text-gray-500 text-sm">Total Net Paid</p>
-            <h3 class="text-xl font-bold text-green-600">
-                Rs {{ number_format($totalNet,2) }}
-            </h3>
+            <p class="text-2xl font-bold text-green-600">
+                Rs {{ number_format($salaries->where('status','posted')->sum('net_salary'),2) }}
+            </p>
         </div>
 
-        <div class="bg-white p-5 rounded shadow">
+        <div class="bg-white shadow rounded p-6">
             <p class="text-gray-500 text-sm">Total Deductions</p>
-            <h3 class="text-xl font-bold text-red-600">
-                Rs {{ number_format($totalDeductions,2) }}
-            </h3>
+            <p class="text-2xl font-bold text-red-600">
+                Rs {{ number_format($salaries->sum('total_deductions'),2) }}
+            </p>
         </div>
 
-        <div class="bg-white p-5 rounded shadow">
+        <div class="bg-white shadow rounded p-6">
             <p class="text-gray-500 text-sm">Draft Salaries</p>
-            <h3 class="text-xl font-bold text-yellow-600">
-                {{ $draftCount }}
-            </h3>
+            <p class="text-2xl font-bold text-yellow-600">
+                {{ $salaries->where('status','draft')->count() }}
+            </p>
         </div>
 
     </div>
 
 
-    {{-- ================= FILTERS ================= --}}
-    <form method="GET"
-          class="bg-white p-4 rounded shadow mb-6 flex space-x-4">
+    {{-- Salary Table --}}
+    <div class="bg-white shadow rounded overflow-hidden">
 
-        <select name="month"
-                class="border rounded px-3 py-2 text-sm">
-            <option value="">Month</option>
-            @for($m=1;$m<=12;$m++)
-                <option value="{{ $m }}"
-                    {{ request('month') == $m ? 'selected' : '' }}>
-                    {{ $m }}
-                </option>
-            @endfor
-        </select>
-
-        <select name="year"
-                class="border rounded px-3 py-2 text-sm">
-            <option value="">Year</option>
-            @for($y=2025;$y<=2035;$y++)
-                <option value="{{ $y }}"
-                    {{ request('year') == $y ? 'selected' : '' }}>
-                    {{ $y }}
-                </option>
-            @endfor
-        </select>
-
-        <select name="employee"
-                class="border rounded px-3 py-2 text-sm">
-            <option value="">Employee</option>
-            @foreach($employees as $emp)
-                <option value="{{ $emp->id }}"
-                    {{ request('employee') == $emp->id ? 'selected' : '' }}>
-                    {{ $emp->name }}
-                </option>
-            @endforeach
-        </select>
-
-        <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
-            Filter
-        </button>
-
-    </form>
-
-
-    {{-- ================= SALARY TABLE ================= --}}
-    <div class="bg-white rounded shadow overflow-hidden">
-
-        <table class="w-full text-sm text-left">
-
-            <thead class="bg-gray-100 text-gray-700 uppercase text-xs">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-100">
                 <tr>
-                    <th class="px-4 py-3">Employee</th>
-                    <th class="px-4 py-3">Month</th>
-                    <th class="px-4 py-3">Year</th>
-                    <th class="px-4 py-3">Net Salary</th>
-                    <th class="px-4 py-3">Status</th>
-                    <th class="px-4 py-3">Action</th>
+                    <th class="p-3 text-left">Employee</th>
+                    <th class="p-3 text-left">Month</th>
+                    <th class="p-3 text-left">Year</th>
+                    <th class="p-3 text-left">Net Salary</th>
+                    <th class="p-3 text-left">Status</th>
+                    <th class="p-3 text-left">Action</th>
                 </tr>
             </thead>
 
-            <tbody class="divide-y">
-
+            <tbody>
                 @forelse($salaries as $salary)
+                    <tr class="border-t hover:bg-gray-50">
 
-                    <tr class="hover:bg-gray-50">
-
-                        <td class="px-4 py-3">
-                            {{ $salary->user->name }}
+                        <td class="p-3">
+                            {{ $salary->user->name ?? 'N/A' }}
                         </td>
 
-                        <td class="px-4 py-3">
+                        <td class="p-3">
                             {{ $salary->month }}
                         </td>
 
-                        <td class="px-4 py-3">
+                        <td class="p-3">
                             {{ $salary->year }}
                         </td>
 
-                        <td class="px-4 py-3 font-semibold text-green-600">
+                        <td class="p-3 text-green-600 font-semibold">
                             Rs {{ number_format($salary->net_salary,2) }}
                         </td>
 
-                        <td class="px-4 py-3">
-                            @if($salary->is_posted)
+                        <td class="p-3">
+                            @if($salary->status == 'posted')
                                 <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">
                                     Posted
                                 </span>
@@ -170,40 +117,49 @@
                             @endif
                         </td>
 
-                        <td class="px-4 py-3 space-x-2">
+                        <td class="p-3 space-x-2">
 
-                            <!-- View -->
+                            {{-- View --}}
                             <a href="{{ route('admin.salary.show', $salary->id) }}"
-                               class="text-blue-600 hover:underline text-sm">
+                               class="text-blue-600 hover:underline">
                                 View
                             </a>
 
-                            <!-- Edit -->
+                            {{-- Edit --}}
                             <a href="{{ route('admin.salary.edit', $salary->id) }}"
-                               class="text-yellow-600 hover:underline text-sm">
+                               class="text-yellow-600 hover:underline">
                                 Edit
                             </a>
 
-                            <!-- Delete -->
+                            {{-- Delete --}}
                             <form action="{{ route('admin.salary.delete', $salary->id) }}"
                                   method="POST"
-                                  class="inline">
+                                  class="inline"
+                                  onsubmit="return confirm('Are you sure?')">
                                 @csrf
                                 @method('DELETE')
-                                <button class="text-red-600 hover:underline text-sm"
-                                        onclick="return confirm('Delete this salary?')">
+                                <button class="text-red-600 hover:underline">
                                     Delete
                                 </button>
                             </form>
 
-                            <!-- Post -->
-                            @if(!$salary->is_posted)
+                            {{-- POST / UNPOST --}}
+                            @if($salary->status == 'draft')
                                 <form action="{{ route('admin.salary.post', $salary->id) }}"
                                       method="POST"
                                       class="inline">
                                     @csrf
-                                    <button class="text-green-600 hover:underline text-sm">
+                                    <button class="text-green-600 font-semibold hover:underline">
                                         Post
+                                    </button>
+                                </form>
+                            @else
+                                <form action="{{ route('admin.salary.unpost', $salary->id) }}"
+                                      method="POST"
+                                      class="inline">
+                                    @csrf
+                                    <button class="text-gray-600 font-semibold hover:underline">
+                                        Unpost
                                     </button>
                                 </form>
                             @endif
@@ -211,18 +167,13 @@
                         </td>
 
                     </tr>
-
                 @empty
-
                     <tr>
-                        <td colspan="6"
-                            class="text-center py-6 text-gray-500">
+                        <td colspan="6" class="text-center p-6 text-gray-500">
                             No salaries found.
                         </td>
                     </tr>
-
                 @endforelse
-
             </tbody>
 
         </table>
