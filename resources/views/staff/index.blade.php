@@ -19,7 +19,7 @@
             </form>
 
             {{-- Add Staff --}}
-            <a href="{{ route('staff.create') }}"
+            <a href="{{ route('admin.staff.create') }}"
                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow">
                 Add Staff
             </a>
