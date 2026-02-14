@@ -366,6 +366,89 @@ class SalaryController extends Controller
 }
 
     /*
+|--------------------------------------------------------------------------
+| Bulk Post
+|--------------------------------------------------------------------------
+*/
+public function bulkPost(Request $request)
+{
+    if (!$request->salary_ids) {
+        return back()->with('error','No salary selected.');
+    }
+
+    $salaries = Salary::whereIn('id', $request->salary_ids)
+                        ->where('is_posted', false)
+                        ->get();
+
+    foreach ($salaries as $salary) {
+
+        $salary->update(['is_posted' => true]);
+
+        // Send Email
+        Mail::to($salary->user->email)
+            ->send(new SalaryPostedMail($salary));
+    }
+
+    return back()->with('success','Selected salaries posted successfully.');
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| Bulk Unpost
+|--------------------------------------------------------------------------
+*/
+public function bulkUnpost(Request $request)
+{
+    if (!$request->salary_ids) {
+        return back()->with('error','No salary selected.');
+    }
+
+    Salary::whereIn('id', $request->salary_ids)
+        ->update(['is_posted' => false]);
+
+    return back()->with('success','Selected salaries unposted.');
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| Bulk Delete
+|--------------------------------------------------------------------------
+*/
+public function bulkDelete(Request $request)
+{
+    if (!$request->salary_ids) {
+        return back()->with('error','No salary selected.');
+    }
+
+    Salary::whereIn('id', $request->salary_ids)->delete();
+
+    return back()->with('success','Selected salaries deleted.');
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| Post All Drafts
+|--------------------------------------------------------------------------
+*/
+public function postAllDrafts()
+{
+    $drafts = Salary::where('is_posted', false)->get();
+
+    foreach ($drafts as $salary) {
+
+        $salary->update(['is_posted' => true]);
+
+        Mail::to($salary->user->email)
+            ->send(new SalaryPostedMail($salary));
+    }
+
+    return back()->with('success','All draft salaries posted successfully.');
+}
+
+    /*
     |--------------------------------------------------------------------------
     | Post Salary (Optional Separate Action)
     |--------------------------------------------------------------------------
