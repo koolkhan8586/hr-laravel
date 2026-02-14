@@ -3,7 +3,7 @@
 
         <h2 class="text-2xl font-bold mb-6">Create Staff</h2>
 
-        <form method="POST" action="{{ route('staff.store') }}">
+        <form method="POST" action="{{ route('admin.staff.store') }}">
             @csrf
 
             <div class="grid grid-cols-2 gap-4">
