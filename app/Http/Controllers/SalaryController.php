@@ -337,6 +337,34 @@ class SalaryController extends Controller
     return back()->with('success','Salary Unposted Successfully');
 }
 
+    public function bulkPost(Request $request)
+{
+    if (!$request->has('salary_ids')) {
+        return back()->with('error', 'No salaries selected.');
+    }
+
+    $salaries = Salary::whereIn('id', $request->salary_ids)
+                        ->where('is_posted', false)
+                        ->get();
+
+    if ($salaries->isEmpty()) {
+        return back()->with('error', 'No draft salaries found.');
+    }
+
+    foreach ($salaries as $salary) {
+
+        $salary->update([
+            'is_posted' => true
+        ]);
+
+        // Send email
+        Mail::to($salary->user->email)
+            ->send(new SalaryPostedMail($salary));
+    }
+
+    return back()->with('success', 'Selected salaries posted successfully.');
+}
+
     /*
     |--------------------------------------------------------------------------
     | Post Salary (Optional Separate Action)
