@@ -288,11 +288,6 @@ class SalaryController extends Controller
     return redirect()->route('admin.salary.index')
         ->with('success', 'Salary Updated Successfully');
 }
-
-    public function export()
-{
-    return Excel::download(new SalariesExport, 'salaries.xlsx');
-}
     
     public function destroy($id)
 {
