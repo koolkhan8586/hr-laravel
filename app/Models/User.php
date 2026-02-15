@@ -55,18 +55,29 @@ class User extends Authenticatable
     |--------------------------------------------------------------------------
     */
 
-    public function leaves()
-    {
-        return $this->hasMany(Leave::class);
-    }
-
-    public function salaries()
+    public function staff()
 {
-    return $this->hasMany(\App\Models\Salary::class);
+    return $this->hasOne(Staff::class);
 }
 
-    public function loans()
-    {
-        return $this->hasMany(Loan::class);
-    }
+public function salaries()
+{
+    return $this->hasMany(Salary::class);
+}
+
+public function leaves()
+{
+    return $this->hasMany(Leave::class);
+}
+
+public function loans()
+{
+    return $this->hasMany(Loan::class);
+}
+
+public function attendances()
+{
+    return $this->hasMany(Attendance::class);
+}
+
 }
