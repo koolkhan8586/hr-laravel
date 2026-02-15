@@ -310,13 +310,19 @@ public function show($id)
         'file' => 'required|mimes:xlsx,csv'
     ]);
 
-    try {
-        Excel::import(new SalaryImport, $request->file('file'));
-    } catch (\Exception $e) {
-        return back()->with('error', 'Import failed: ' . $e->getMessage());
+    $import = new \App\Imports\SalaryImport;
+
+    \Maatwebsite\Excel\Facades\Excel::import($import, $request->file('file'));
+
+    if (!empty($import->errors)) {
+        return back()->with('error', implode(' | ', $import->errors));
     }
 
-    return back()->with('success', 'Salary Imported Successfully');
+    foreach ($import->rows as $row) {
+        \App\Models\Salary::create($row);
+    }
+
+    return back()->with('success', 'Salary Imported Successfully as Draft');
 }
 
     /*
