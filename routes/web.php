@@ -97,6 +97,12 @@ Route::middleware(['auth', 'admin'])
     Route::get('/staff/export', [StaffController::class,'export'])->name('admin.staff.export');
     Route::get('/staff/sample', [StaffController::class,'downloadSample']) ->name('admin.staff.sample');
     Route::post('/staff/bulk-delete',[StaffController::class,'bulkDelete'])->name('admin.staff.bulk.delete');
+    Route::post('/staff/bulk-email',[StaffController::class,'bulkEmail'])->name('admin.staff.bulk.email');
+    Route::post('/staff/toggle/{id}',[StaffController::class,'toggleStatus'])->name('admin.staff.toggle');
+    Route::get('/staff/{id}/view',[StaffController::class,'view'])->name('admin.staff.view');
+
+
+
 
 
 
