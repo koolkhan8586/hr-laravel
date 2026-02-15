@@ -8,6 +8,7 @@ use App\Models\LoanPayment;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\LoansExport;
+use App\Imports\LoansImport;
 
 class LoanController extends Controller
 {
@@ -18,13 +19,11 @@ class LoanController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    // Loan Application Form
     public function apply()
     {
         return view('loan.apply');
     }
 
-    // Store Employee Loan Request
     public function storeRequest(Request $request)
     {
         $request->validate([
@@ -47,13 +46,12 @@ class LoanController extends Controller
             ->with('success', 'Loan Request Submitted Successfully');
     }
 
-    // Employee Loan Dashboard
     public function myLoan()
     {
         $loan = Loan::with('payments')
-                    ->where('user_id', auth()->id())
-                    ->whereIn('status', ['approved', 'completed'])
-                    ->first();
+            ->where('user_id', auth()->id())
+            ->whereIn('status', ['approved', 'completed'])
+            ->first();
 
         return view('loan.my', compact('loan'));
     }
@@ -65,7 +63,6 @@ class LoanController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    // Loan List
     public function index()
     {
         $loans = Loan::with('user')
@@ -75,21 +72,18 @@ class LoanController extends Controller
         return view('loan.admin-index', compact('loans'));
     }
 
-    // Admin Create Form
     public function create()
     {
         $users = User::where('role', 'employee')->get();
         return view('loan.create', compact('users'));
     }
 
-    // Store Loan (Admin Direct Approval)
     public function store(Request $request)
     {
         $request->validate([
             'user_id' => 'required',
             'amount' => 'required|numeric|min:1',
             'installments' => 'required|integer|min:1',
-            'remaining_balance' => 'nullable|numeric|min:0'
         ]);
 
         $monthly = $request->amount / $request->installments;
@@ -99,7 +93,7 @@ class LoanController extends Controller
             'amount' => $request->amount,
             'installments' => $request->installments,
             'monthly_deduction' => $monthly,
-            'remaining_balance' => $request->remaining_balance ?? $request->amount,
+            'remaining_balance' => $request->amount,
             'status' => 'approved'
         ]);
 
@@ -107,7 +101,6 @@ class LoanController extends Controller
             ->with('success', 'Loan Created Successfully');
     }
 
-    // Approve Loan
     public function approve($id)
     {
         $loan = Loan::findOrFail($id);
@@ -121,36 +114,39 @@ class LoanController extends Controller
         return back()->with('success', 'Loan Approved');
     }
 
-    public function export()
-{
-    return Excel::download(new LoansExport, 'loans.xlsx');
-}
-    public function importForm()
-{
-    return view('loan.import');
-}
-
-    public function import(Request $request)
-{
-    $request->validate([
-        'file' => 'required|mimes:xlsx,csv'
-    ]);
-
-    Excel::import(new LoansImport, $request->file('file'));
-
-    return back()->with('success','Loans Imported Successfully');
-}
-
-    // Reject Loan
     public function reject($id)
     {
-        $loan = Loan::findOrFail($id);
-
-        $loan->update([
-            'status' => 'rejected'
-        ]);
+        Loan::findOrFail($id)
+            ->update(['status' => 'rejected']);
 
         return back()->with('success', 'Loan Rejected');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | IMPORT / EXPORT
+    |--------------------------------------------------------------------------
+    */
+
+    public function export()
+    {
+        return Excel::download(new LoansExport, 'loans.xlsx');
+    }
+
+    public function importForm()
+    {
+        return view('loan.import');
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,csv'
+        ]);
+
+        Excel::import(new LoansImport, $request->file('file'));
+
+        return back()->with('success', 'Loans Imported Successfully');
     }
 
     /*
@@ -162,9 +158,7 @@ class LoanController extends Controller
     public function edit($id)
     {
         $loan = Loan::findOrFail($id);
-        $users = User::where('role', 'employee')->get();
-
-        return view('loan.edit', compact('loan','users'));
+        return view('loan.edit', compact('loan'));
     }
 
     public function update(Request $request, $id)
@@ -174,17 +168,23 @@ class LoanController extends Controller
         $request->validate([
             'amount' => 'required|numeric|min:1',
             'installments' => 'required|integer|min:1',
-            'remaining_balance' => 'required|numeric|min:0'
         ]);
 
         $monthly = $request->amount / $request->installments;
 
+        // If no payments yet → reset remaining balance
+        if ($loan->payments()->count() == 0) {
+            $remaining = $request->amount;
+        } else {
+            // Keep remaining balance unchanged
+            $remaining = $loan->remaining_balance;
+        }
+
         $loan->update([
-            'user_id' => $request->user_id,
             'amount' => $request->amount,
             'installments' => $request->installments,
             'monthly_deduction' => $monthly,
-            'remaining_balance' => $request->remaining_balance,
+            'remaining_balance' => $remaining,
         ]);
 
         return redirect()->route('admin.loan.index')
@@ -193,19 +193,15 @@ class LoanController extends Controller
 
     public function destroy($id)
     {
-        $loan = Loan::findOrFail($id);
-        $loan->delete();
+        Loan::findOrFail($id)->delete();
 
         return redirect()->route('admin.loan.index')
             ->with('success', 'Loan Deleted Successfully');
     }
 
-
     /*
     |--------------------------------------------------------------------------
-    | PAYMENT PROCESSING (Auto Deduction)
-    |--------------------------------------------------------------------------
-    | Call this when salary is posted
+    | AUTO DEDUCTION WHEN SALARY POSTED
     |--------------------------------------------------------------------------
     */
 
@@ -213,12 +209,7 @@ class LoanController extends Controller
     {
         $loan = Loan::findOrFail($loanId);
 
-        if ($loan->status !== 'approved') {
-            return;
-        }
-
-        if ($loan->remaining_balance <= 0) {
-            $loan->update(['status' => 'completed']);
+        if ($loan->status !== 'approved' || $loan->remaining_balance <= 0) {
             return;
         }
 
