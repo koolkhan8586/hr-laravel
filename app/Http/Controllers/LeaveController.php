@@ -43,44 +43,40 @@ class LeaveController extends Controller
     |--------------------------------------------------------------------------
     */
     public function store(Request $request)
-    {
-        $request->validate([
-            'type' => 'required',
-            'start_date' => 'required|date',
-            'duration_type' => 'required',
-            'reason' => 'required'
-        ]);
+{
+    $request->validate([
+        'user_id'   => 'required',
+        'type'      => 'required',
+        'from_date' => 'required|date',
+        'to_date'   => 'required|date|after_or_equal:from_date',
+        'day_type'  => 'required',
+        'status'    => 'required'
+    ]);
 
-        $start = Carbon::parse($request->start_date);
+    // Calculate days difference
+    $from = \Carbon\Carbon::parse($request->from_date);
+    $to   = \Carbon\Carbon::parse($request->to_date);
 
-        if ($request->duration_type === 'half_day') {
-            $end = $start;
-            $days = 0.5;
-        } else {
-            $request->validate([
-                'end_date' => 'required|date|after_or_equal:start_date',
-            ]);
+    $days = $from->diffInDays($to) + 1;
 
-            $end = Carbon::parse($request->end_date);
-            $days = $start->diffInDays($end) + 1;
-        }
-
-        Leave::create([
-            'user_id' => auth()->id(),
-            'type' => $request->type,
-            'start_date' => $start,
-            'end_date' => $end,
-            'days' => $days,
-            'duration_type' => $request->duration_type,
-            'half_day_type' => $request->half_day_type,
-            'calculated_days' => $days,
-            'reason' => $request->reason,
-            'status' => 'pending',
-        ]);
-
-        return redirect()->route('leave.index')
-            ->with('success', 'Leave Applied Successfully');
+    if ($request->day_type == 'half') {
+        $days = 0.5;
     }
+
+    Leave::create([
+        'user_id'   => $request->user_id,
+        'type'      => $request->type,
+        'from_date' => $request->from_date,
+        'to_date'   => $request->to_date,
+        'days'      => $days,
+        'day_type'  => $request->day_type,
+        'status'    => $request->status
+    ]);
+
+    return redirect()->route('admin.leave.index')
+        ->with('success','Leave Added Successfully');
+}
+
 
     /*
 |--------------------------------------------------------------------------
