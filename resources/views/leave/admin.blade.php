@@ -12,6 +12,12 @@
            class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded shadow text-sm">
             Payroll Summary
         </a>
+
+        <a href="{{ route('admin.leave.create') }}"
+   class="bg-blue-600 text-white px-4 py-2 rounded shadow">
+    Add Leave
+</a>
+
     </div>
 
     {{-- SUCCESS MESSAGE --}}
