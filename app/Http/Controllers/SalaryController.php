@@ -60,6 +60,21 @@ class SalaryController extends Controller
     }
 
     /*
+|--------------------------------------------------------------------------
+| Employee Salary List
+|--------------------------------------------------------------------------
+*/
+public function employeeIndex()
+{
+    $salaries = Salary::where('user_id', auth()->id())
+        ->orderByDesc('year')
+        ->orderByDesc('month')
+        ->get();
+
+    return view('salary.employee-index', compact('salaries'));
+}
+
+    /*
     |--------------------------------------------------------------------------
     | Create Salary
     |--------------------------------------------------------------------------
