@@ -194,13 +194,6 @@ Route::middleware(['auth', 'admin'])
     Route::get('/salary/{id}', [SalaryController::class,'show'])
         ->name('admin.salary.show');
 
-        public function destroy($id)
-{
-    $salary = Salary::findOrFail($id);
-    $salary->delete();
-
-    return back()->with('success','Salary Deleted Successfully');
-}
-
+        
 
 });
