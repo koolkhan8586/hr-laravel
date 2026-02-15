@@ -298,9 +298,18 @@ public function employeeIndex()
         'file' => 'required|mimes:xlsx,csv'
     ]);
 
-    Excel::import(new SalaryImport, $request->file('file'));
+    $import = new SalaryImport;
+    Excel::import($import, $request->file('file'));
 
-    return back()->with('success','Salary imported successfully');
+    if (!empty($import->errors)) {
+        return back()->with('error', implode(', ', $import->errors));
+    }
+
+    foreach ($import->rows as $row) {
+        Salary::create($row);
+    }
+
+    return back()->with('success', 'Salary Imported Successfully');
 }
 
     /*
