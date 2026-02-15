@@ -109,9 +109,7 @@ public function export()
 */
 public function downloadSample()
 {
-    $file = public_path('samples/staff_sample.xlsx');
-
-    return response()->download($file);
+    return Excel::download(new StaffSampleExport, 'staff_sample.xlsx');
 }
 
     /*
