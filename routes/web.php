@@ -124,7 +124,21 @@ Route::middleware(['auth', 'admin'])
     Route::get('/payroll-summary', [LeaveController::class, 'payrollSummary'])
         ->name('admin.payroll.summary');
 
+    // Create Leave (Admin)
+Route::get('/leave/create', [LeaveController::class, 'adminCreate'])
+    ->name('admin.leave.create');
 
+Route::post('/leave/store', [LeaveController::class, 'adminStore'])
+    ->name('admin.leave.store');
+
+// Edit Leave (Admin)
+Route::get('/leave/{id}/edit', [LeaveController::class, 'adminEdit'])
+    ->name('admin.leave.edit');
+
+Route::put('/leave/{id}', [LeaveController::class, 'adminUpdate'])
+    ->name('admin.leave.update');
+
+    
     /*
     |--------------------------------------------------------------------------
     | Loan Management (Admin)
