@@ -226,6 +226,58 @@ public function destroy($id)
     return back()->with('success', 'Leave deleted successfully.');
 }
 
+    public function adminCreate()
+{
+    $employees = \App\Models\User::where('role','employee')->get();
+    return view('leave.admin-create', compact('employees'));
+}
+public function adminStore(Request $request)
+{
+    $request->validate([
+        'user_id' => 'required',
+        'type' => 'required',
+        'days' => 'required|numeric|min:0.5',
+        'status' => 'required'
+    ]);
+
+    Leave::create([
+        'user_id' => $request->user_id,
+        'type' => $request->type,
+        'days' => $request->days,
+        'status' => $request->status
+    ]);
+
+    return redirect()->route('admin.leave.index')
+        ->with('success','Leave Added Successfully');
+}
+public function adminEdit($id)
+{
+    $leave = Leave::findOrFail($id);
+    $employees = \App\Models\User::where('role','employee')->get();
+
+    return view('leave.admin-edit', compact('leave','employees'));
+}
+public function adminUpdate(Request $request, $id)
+{
+    $leave = Leave::findOrFail($id);
+
+    $request->validate([
+        'type' => 'required',
+        'days' => 'required|numeric|min:0.5',
+        'status' => 'required'
+    ]);
+
+    $leave->update([
+        'user_id' => $request->user_id,
+        'type' => $request->type,
+        'days' => $request->days,
+        'status' => $request->status
+    ]);
+
+    return redirect()->route('admin.leave.index')
+        ->with('success','Leave Updated Successfully');
+}
+
     
     /*
     |--------------------------------------------------------------------------
