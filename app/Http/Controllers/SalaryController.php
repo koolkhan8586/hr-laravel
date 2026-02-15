@@ -13,6 +13,7 @@ use App\Mail\SalaryPostedMail;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\SalaryImport;
 use App\Exports\SalariesExport;
+use App\Exports\SalarySampleExport;
 
 class SalaryController extends Controller
 {
