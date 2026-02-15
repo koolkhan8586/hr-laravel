@@ -347,53 +347,70 @@ public function destroy($id)
 {
     $salary = Salary::findOrFail($id);
 
-    // Convert to numeric
-    $basic        = (float) $request->basic_salary;
-    $invigilation = (float) $request->invigilation;
-    $tPayment     = (float) $request->t_payment;
-    $eidi         = (float) $request->eidi;
-    $increment    = (float) $request->increment;
-    $otherEarn    = (float) $request->other_earnings;
+    $request->validate([
+        'user_id' => 'required|exists:users,id',
+        'month' => 'required|integer|min:1|max:12',
+        'year' => 'required|integer',
+    ]);
 
-    $extraLeaves  = (float) $request->extra_leaves;
-    $incomeTax    = (float) $request->income_tax;
-    $loan         = (float) $request->loan_deduction;
-    $insurance    = (float) $request->insurance;
-    $otherDed     = (float) $request->other_deductions;
+    // Earnings
+    $basic = $request->basic_salary ?? 0;
+    $invigilation = $request->invigilation ?? 0;
+    $t_payment = $request->t_payment ?? 0;
+    $eidi = $request->eidi ?? 0;
+    $increment = $request->increment ?? 0;
+    $other_earnings = $request->other_earnings ?? 0;
 
-    // Calculate totals
-    $gross = $basic + $invigilation + $tPayment + $eidi + $increment + $otherEarn;
+    // Deductions
+    $extra_leaves = $request->extra_leaves ?? 0;
+    $income_tax = $request->income_tax ?? 0;
+    $loan_deduction = $request->loan_deduction ?? 0;
+    $insurance = $request->insurance ?? 0;
+    $other_deductions = $request->other_deductions ?? 0;
 
-    $deductions = $extraLeaves + $incomeTax + $loan + $insurance + $otherDed;
+    // Calculations
+    $gross_total =
+        $basic +
+        $invigilation +
+        $t_payment +
+        $eidi +
+        $increment +
+        $other_earnings;
 
-    $net = $gross - $deductions;
+    $total_deductions =
+        $extra_leaves +
+        $income_tax +
+        $loan_deduction +
+        $insurance +
+        $other_deductions;
 
-    // Update record
+    $net_salary = $gross_total - $total_deductions;
+
     $salary->update([
-        'user_id'          => $request->user_id,
-        'month'            => $request->month,
-        'year'             => $request->year,
+        'user_id' => $request->user_id,
+        'month' => $request->month,
+        'year' => $request->year,
 
-        'basic_salary'     => $basic,
-        'invigilation'     => $invigilation,
-        't_payment'        => $tPayment,
-        'eidi'             => $eidi,
-        'increment'        => $increment,
-        'other_earnings'   => $otherEarn,
+        'basic_salary' => $basic,
+        'invigilation' => $invigilation,
+        't_payment' => $t_payment,
+        'eidi' => $eidi,
+        'increment' => $increment,
+        'other_earnings' => $other_earnings,
 
-        'extra_leaves'     => $extraLeaves,
-        'income_tax'       => $incomeTax,
-        'loan_deduction'   => $loan,
-        'insurance'        => $insurance,
-        'other_deductions' => $otherDed,
+        'extra_leaves' => $extra_leaves,
+        'income_tax' => $income_tax,
+        'loan_deduction' => $loan_deduction,
+        'insurance' => $insurance,
+        'other_deductions' => $other_deductions,
 
-        'gross_total'      => $gross,
-        'total_deductions' => $deductions,
-        'net_salary'       => $net,
+        'gross_total' => $gross_total,
+        'total_deductions' => $total_deductions,
+        'net_salary' => $net_salary,
     ]);
 
     return redirect()->route('admin.salary.index')
-        ->with('success', 'Salary Updated Successfully');
+        ->with('success', 'Salary updated successfully');
 }
 
     /*
