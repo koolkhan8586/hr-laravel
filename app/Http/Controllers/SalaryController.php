@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Mail;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Mail\SalaryPostedMail;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Imports\SalaryImport;
 use App\Exports\SalariesExport;
 
 class SalaryController extends Controller
@@ -72,6 +73,11 @@ public function employeeIndex()
         ->get();
 
     return view('salary.employee-index', compact('salaries'));
+}
+
+    public function downloadSample()
+{
+    return Excel::download(new SalarySampleExport, 'salary_sample.xlsx');
 }
 
     /*
@@ -284,6 +290,17 @@ public function employeeIndex()
 
         return back()->with('success','All draft salaries posted.');
     }
+
+    public function import(Request $request)
+{
+    $request->validate([
+        'file' => 'required|mimes:xlsx,csv'
+    ]);
+
+    Excel::import(new SalaryImport, $request->file('file'));
+
+    return back()->with('success','Salary imported successfully');
+}
 
     /*
     |--------------------------------------------------------------------------
