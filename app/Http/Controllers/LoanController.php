@@ -6,6 +6,8 @@ use App\Models\Loan;
 use App\Models\User;
 use App\Models\LoanPayment;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\LoansExport;
 
 class LoanController extends Controller
 {
@@ -118,6 +120,26 @@ class LoanController extends Controller
 
         return back()->with('success', 'Loan Approved');
     }
+
+    public function export()
+{
+    return Excel::download(new LoansExport, 'loans.xlsx');
+}
+    public function importForm()
+{
+    return view('loan.import');
+}
+
+    public function import(Request $request)
+{
+    $request->validate([
+        'file' => 'required|mimes:xlsx,csv'
+    ]);
+
+    Excel::import(new LoansImport, $request->file('file'));
+
+    return back()->with('success','Loans Imported Successfully');
+}
 
     // Reject Loan
     public function reject($id)
