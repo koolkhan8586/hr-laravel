@@ -69,11 +69,10 @@ class SalaryController extends Controller
 public function employeeIndex()
 {
     $salaries = Salary::where('user_id', auth()->id())
-        ->salaries()
-    ->where('is_posted', true)
-    ->orderByDesc('year')
-    ->orderByDesc('month')
-    ->get();
+        ->where('status', 'posted')   // only posted salaries
+        ->orderByDesc('year')
+        ->orderByDesc('month')
+        ->get();
 
     return view('salary.employee-index', compact('salaries'));
 }
