@@ -343,7 +343,12 @@ public function destroy($id)
 
     return view('salary.edit', compact('salary','users'));
 }
-public function update(Request $request, $id)
+    public function update(Request $request, $id)
+{
+    dd($request->all());
+}
+
+/*public function update(Request $request, $id)
 {
     $salary = Salary::findOrFail($id);
 
