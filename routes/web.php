@@ -7,6 +7,10 @@ use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\LoanController;
 use App\Http\Controllers\LeaveController;
 use App\Http\Controllers\SalaryController;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\LoansExport;
+use App\Imports\LoansImport;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -134,6 +138,10 @@ Route::middleware(['auth', 'admin'])
     Route::get('/loans/{id}/edit', [LoanController::class, 'edit'])->name('admin.loan.edit');
     Route::put('/loans/{id}', [LoanController::class, 'update'])->name('admin.loan.update');
     Route::delete('/loans/{id}', [LoanController::class, 'destroy'])->name('admin.loan.delete');
+    Route::get('/loans/export', [LoanController::class,'export'])->name('admin.loan.export');
+    Route::get('/loans/import-form', [LoanController::class,'importForm'])->name('admin.loan.import.form');
+    Route::post('/loans/import', [LoanController::class,'import'])->name('admin.loan.import');
+
 
 
     /*
