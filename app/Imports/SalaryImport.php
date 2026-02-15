@@ -4,75 +4,83 @@ namespace App\Imports;
 
 use App\Models\Salary;
 use App\Models\User;
-use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\ToCollection;
-use Carbon\Carbon;
+use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Illuminate\Support\Collection;
 
-class SalaryImport implements ToCollection
+class SalaryImport implements ToCollection, WithHeadingRow
 {
-    public function collection(Collection $rows)
+    public $errors = [];
+    public $rows = [];
+
+    public function collection(Collection $collection)
     {
-        $rowNumber = 1;
+        foreach ($collection as $index => $row) {
 
-        foreach ($rows as $row) {
-
-            // Skip header row
-            if ($rowNumber == 1) {
-                $rowNumber++;
-                continue;
-            }
-
-            $employeeEmail = trim($row[0] ?? null);
-            $month         = trim($row[1] ?? null);
-            $year          = trim($row[2] ?? null);
-            $basic         = $row[3] ?? 0;
-            $allowance     = $row[4] ?? 0;
-            $deduction     = $row[5] ?? 0;
-
-            // Validate required fields
-            if (!$employeeEmail || !$month || !$year) {
-                session()->flash('error', "Row {$rowNumber} - Missing required fields.");
-                return;
-            }
-
-            // Find employee by email
-            $user = User::where('email', $employeeEmail)
-                        ->where('role', 'employee')
+            $user = User::where('employee_id', $row['employee_id'] ?? null)
+                        ->orWhere('id', $row['employee_id'] ?? null)
                         ->first();
 
             if (!$user) {
-                session()->flash('error', "Row {$rowNumber} - Employee not found.");
-                return;
+                $this->errors[] = "Row ".($index+2)." - Employee not found";
+                continue;
             }
 
-            // Convert month name to number if needed
-            if (!is_numeric($month)) {
-                try {
-                    $month = Carbon::parse("1 {$month} {$year}")->month;
-                } catch (\Exception $e) {
-                    session()->flash('error', "Row {$rowNumber} - Invalid month format.");
-                    return;
-                }
+            // Prevent duplicate salary
+            $exists = Salary::where('user_id', $user->id)
+                ->where('month', $row['month'])
+                ->where('year', $row['year'])
+                ->exists();
+
+            if ($exists) {
+                $this->errors[] = "Row ".($index+2)." - Salary already exists";
+                continue;
             }
 
-            $netSalary = ($basic + $allowance) - $deduction;
+            // Earnings
+            $gross =
+                ($row['basic_salary'] ?? 0)
+                + ($row['invigilation'] ?? 0)
+                + ($row['t_payment'] ?? 0)
+                + ($row['eidi'] ?? 0)
+                + ($row['increment'] ?? 0)
+                + ($row['other_earnings'] ?? 0);
 
-            Salary::updateOrCreate(
-                [
-                    'user_id' => $user->id,
-                    'month'   => $month,
-                    'year'    => $year,
-                ],
-                [
-                    'basic_salary' => $basic,
-                    'allowance'    => $allowance,
-                    'deduction'    => $deduction,
-                    'net_salary'   => $netSalary,
-                    'is_posted'    => false
-                ]
-            );
+            // Deductions
+            $totalDeductions =
+                ($row['extra_leaves'] ?? 0)
+                + ($row['income_tax'] ?? 0)
+                + ($row['loan_deduction'] ?? 0)
+                + ($row['insurance'] ?? 0)
+                + ($row['other_deductions'] ?? 0);
 
-            $rowNumber++;
+            $net = $gross - $totalDeductions;
+
+            $this->rows[] = [
+                'user_id' => $user->id,
+                'month' => $row['month'],
+                'year' => $row['year'],
+
+                'basic_salary' => $row['basic_salary'] ?? 0,
+                'invigilation' => $row['invigilation'] ?? 0,
+                't_payment' => $row['t_payment'] ?? 0,
+                'eidi' => $row['eidi'] ?? 0,
+                'increment' => $row['increment'] ?? 0,
+                'other_earnings' => $row['other_earnings'] ?? 0,
+
+                'extra_leaves' => $row['extra_leaves'] ?? 0,
+                'income_tax' => $row['income_tax'] ?? 0,
+                'loan_deduction' => $row['loan_deduction'] ?? 0,
+                'insurance' => $row['insurance'] ?? 0,
+                'other_deductions' => $row['other_deductions'] ?? 0,
+
+                'gross_total' => $gross,
+                'total_deductions' => $totalDeductions,
+                'net_salary' => $net,
+
+                'is_posted' => false, // IMPORTANT
+                'status' => 'draft'
+            ];
         }
     }
 }
