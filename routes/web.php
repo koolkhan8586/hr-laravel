@@ -195,6 +195,8 @@ Route::put('/leave/{id}', [LeaveController::class, 'adminUpdate'])
 
     Route::post('/salary/import', [SalaryController::class,'import'])
         ->name('admin.salary.import');
+    Route::get('/salary/sample', [SalaryController::class, 'downloadSample'])
+    ->name('admin.salary.sample');
 
     Route::post('/salary/bulk-post', [SalaryController::class,'bulkPost'])
         ->name('admin.salary.bulk.post');
