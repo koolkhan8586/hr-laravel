@@ -93,8 +93,10 @@ Route::middleware(['auth', 'admin'])
     Route::get('/staff/edit/{id}', [StaffController::class, 'edit'])->name('admin.staff.edit');
     Route::put('/staff/update/{id}', [StaffController::class, 'update'])->name('admin.staff.update');
     Route::delete('/staff/delete/{id}', [StaffController::class, 'destroy'])->name('admin.staff.destroy');
-    Route::post('/staff/reset-password/{id}', [StaffController::class, 'resetPassword'])
-        ->name('admin.staff.reset.password');
+    Route::post('/staff/reset-password/{id}', [StaffController::class, 'resetPassword'])->name('admin.staff.reset.password');
+    Route::get('/staff/export', [StaffController::class,'export'])->name('admin.staff.export');
+    Route::get('/staff/sample', [StaffController::class,'downloadSample']) ->name('admin.staff.sample');
+
 
 
     /*
