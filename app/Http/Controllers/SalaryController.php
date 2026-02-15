@@ -343,6 +343,44 @@ public function destroy($id)
 
     return view('salary.edit', compact('salary','users'));
 }
+public function update(Request $request, $id)
+{
+    $salary = Salary::findOrFail($id);
+
+    $request->validate([
+        'basic_salary' => 'required|numeric',
+        'month' => 'required|integer',
+        'year' => 'required|integer',
+    ]);
+
+    $gross = 
+        $request->basic_salary +
+        ($request->invigilation ?? 0) +
+        ($request->t_payment ?? 0) +
+        ($request->eidi ?? 0) +
+        ($request->increment ?? 0) +
+        ($request->other_earnings ?? 0);
+
+    $deductions =
+        ($request->income_tax ?? 0) +
+        ($request->loan_deduction ?? 0) +
+        ($request->insurance ?? 0) +
+        ($request->other_deductions ?? 0);
+
+    $net = $gross - $deductions;
+
+    $salary->update([
+        'basic_salary' => $request->basic_salary,
+        'month' => $request->month,
+        'year' => $request->year,
+        'gross_total' => $gross,
+        'total_deductions' => $deductions,
+        'net_salary' => $net,
+    ]);
+
+    return redirect()->route('admin.salary.index')
+        ->with('success','Salary Updated Successfully');
+}
 
 
     /*
