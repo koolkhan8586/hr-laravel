@@ -191,16 +191,16 @@ public function employeeIndex()
     |--------------------------------------------------------------------------
     */
     public function post($id)
-    {
-        $salary = Salary::findOrFail($id);
+{
+    $salary = Salary::findOrFail($id);
 
-        $salary->update(['is_posted' => true]);
+    $salary->update([
+        'is_posted' => 1
+    ]);
 
-        Mail::to($salary->user->email)
-            ->send(new SalaryPostedMail($salary));
+    return back()->with('success', 'Salary Posted Successfully');
+}
 
-        return back()->with('success', 'Salary Posted & Email Sent');
-    }
 
     /*
 |--------------------------------------------------------------------------
@@ -220,12 +220,16 @@ public function show($id)
     |--------------------------------------------------------------------------
     */
     public function unpost($id)
-    {
-        $salary = Salary::findOrFail($id);
-        $salary->update(['is_posted' => false]);
+{
+    $salary = Salary::findOrFail($id);
 
-        return back()->with('success', 'Salary Unposted');
-    }
+    $salary->update([
+        'is_posted' => 0
+    ]);
+
+    return back()->with('success', 'Salary Unposted Successfully');
+}
+
 
     /*
     |--------------------------------------------------------------------------
