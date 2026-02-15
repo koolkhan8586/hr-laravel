@@ -237,24 +237,17 @@ public function show($id)
     |--------------------------------------------------------------------------
     */
     public function bulkPost(Request $request)
-    {
-        if (!$request->salary_ids) {
-            return back()->with('error','No salary selected.');
-        }
-
-        $salaries = Salary::whereIn('id', $request->salary_ids)
-            ->where('is_posted', false)
-            ->get();
-
-        foreach ($salaries as $salary) {
-            $salary->update(['is_posted' => true]);
-
-            Mail::to($salary->user->email)
-                ->send(new SalaryPostedMail($salary));
-        }
-
-        return back()->with('success','Selected salaries posted.');
+{
+    if (!$request->salary_ids) {
+        return back()->with('error','No salary selected.');
     }
+
+    Salary::whereIn('id', $request->salary_ids)
+        ->update(['is_posted' => 1]);
+
+    return back()->with('success','Selected salaries posted successfully.');
+}
+
 
     /*
     |--------------------------------------------------------------------------
@@ -262,16 +255,17 @@ public function show($id)
     |--------------------------------------------------------------------------
     */
     public function bulkUnpost(Request $request)
-    {
-        if (!$request->salary_ids) {
-            return back()->with('error','No salary selected.');
-        }
-
-        Salary::whereIn('id', $request->salary_ids)
-            ->update(['is_posted' => false]);
-
-        return back()->with('success','Selected salaries unposted.');
+{
+    if (!$request->salary_ids) {
+        return back()->with('error','No salary selected.');
     }
+
+    Salary::whereIn('id', $request->salary_ids)
+        ->update(['is_posted' => 0]);
+
+    return back()->with('success','Selected salaries unposted.');
+}
+
 
     /*
     |--------------------------------------------------------------------------
