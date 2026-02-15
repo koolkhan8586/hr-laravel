@@ -94,12 +94,14 @@ Route::middleware(['auth', 'admin'])
     Route::put('/staff/update/{id}', [StaffController::class, 'update'])->name('admin.staff.update');
     Route::delete('/staff/delete/{id}', [StaffController::class, 'destroy'])->name('admin.staff.destroy');
     Route::post('/staff/reset-password/{id}', [StaffController::class, 'resetPassword'])->name('admin.staff.reset.password');
-    Route::get('/staff/export', [StaffController::class,'export'])->name('admin.staff.export');
+    //Route::get('/staff/export', [StaffController::class,'export'])->name('admin.staff.export');
     Route::get('/staff/sample', [StaffController::class,'downloadSample']) ->name('admin.staff.sample');
     Route::post('/staff/bulk-delete',[StaffController::class,'bulkDelete'])->name('admin.staff.bulk.delete');
     Route::post('/staff/bulk-email',[StaffController::class,'bulkEmail'])->name('admin.staff.bulk.email');
     Route::post('/staff/toggle/{id}',[StaffController::class,'toggleStatus'])->name('admin.staff.toggle');
     Route::get('/staff/{id}/view',[StaffController::class,'view'])->name('admin.staff.view');
+    Route::get('admin/staff/export',[StaffController::class, 'export'])->name('admin.staff.export');
+
 
 
 
