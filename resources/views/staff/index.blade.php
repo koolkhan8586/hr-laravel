@@ -12,6 +12,12 @@
                 Download Sample
             </a>
 
+            <a href="{{ route('admin.staff.export') }}"
+   class="bg-indigo-600 text-white px-4 py-2 rounded text-sm">
+    Export Staff
+</a>
+
+
             <form action="{{ route('admin.staff.import') }}"
                   method="POST"
                   enctype="multipart/form-data"
