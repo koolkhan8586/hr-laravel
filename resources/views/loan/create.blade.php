@@ -3,7 +3,7 @@
 
 <h2 class="text-2xl font-bold mb-6">Assign Loan</h2>
 
-<form action="{{ route('loan.store') }}" method="POST" class="space-y-4">
+<form action="{{ route('admin.loan.store') }}" method="POST" class="space-y-4">
 @csrf
 
 <div class="mt-4">
