@@ -74,8 +74,8 @@ class LoanController extends Controller
 
     public function create()
     {
-        $users = User::where('role', 'employee')->get();
-        return view('loan.create', compact('users'));
+        $employees = User::where('role', 'employee')->get();
+return view('loan.create', compact('employees'));
     }
 
     public function store(Request $request)
