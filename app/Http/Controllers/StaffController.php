@@ -7,27 +7,40 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
-use Maatwebsite\Excel\Facades\Excel;
-use App\Exports\StaffExport;
-use App\Mail\WelcomeEmployeeMail;
 use Illuminate\Support\Str;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\StaffSampleExport;
 
 class StaffController extends Controller
 {
+
     /*
     |--------------------------------------------------------------------------
     | Staff List
     |--------------------------------------------------------------------------
     */
-    public function index()
+    public function index(Request $request)
     {
-        $staff = Staff::with('user')->get();
+        $query = Staff::with('user');
+
+        if ($request->search) {
+            $query->whereHas('user', function ($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        if ($request->department) {
+            $query->where('department', $request->department);
+        }
+
+        $staff = $query->orderByDesc('created_at')->get();
+
         return view('staff.index', compact('staff'));
     }
 
     /*
     |--------------------------------------------------------------------------
-    | Show Create Form
+    | Create Staff
     |--------------------------------------------------------------------------
     */
     public function create()
@@ -37,7 +50,7 @@ class StaffController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Store New Staff
+    | Store Staff
     |--------------------------------------------------------------------------
     */
     public function store(Request $request)
@@ -48,69 +61,68 @@ class StaffController extends Controller
             'employee_id' => 'required|unique:staff,employee_id',
             'department' => 'required',
             'designation' => 'required',
-            'salary' => 'required|numeric',
-            'joining_date' => 'required|date'
+            'salary' => 'required|numeric'
         ]);
 
-        // Default password (NOT changing as you requested)
-        $password = '12345678';
+        $password = Str::random(8);
 
-        // Create User
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($password),
             'role' => 'employee',
-            'annual_leave_balance' => 14
+            'force_password_change' => true
         ]);
 
-        // Create Staff Record
         Staff::create([
             'user_id' => $user->id,
             'employee_id' => $request->employee_id,
             'department' => $request->department,
             'designation' => $request->designation,
             'salary' => $request->salary,
-            'joining_date' => $request->joining_date
+            'status' => 'active'
         ]);
 
-        // Send Email with Credentials
+        // Send Welcome Email
         Mail::raw(
-            "Welcome to HR Management System\n\n".
-            "Login URL: " . url('/login') . "\n".
-            "Email: {$user->email}\n".
-            "Password: {$password}\n\n".
-            "Please change your password after login.",
-            function ($message) use ($user) {
-                $message->to($user->email)
-                        ->subject('Your HR System Login Credentials');
+            "Welcome to HR System\n\nLogin URL: " . url('/login') .
+            "\nEmail: " . $request->email .
+            "\nPassword: " . $password,
+            function ($message) use ($request) {
+                $message->to($request->email)
+                        ->subject('Welcome to HR System');
             }
         );
 
-        return redirect()->route('staff.index')
-            ->with('success', 'Staff Created & Email Sent Successfully');
+        return redirect()->route('admin.staff.index')
+            ->with('success', 'Staff Added Successfully');
     }
 
     /*
-|--------------------------------------------------------------------------
-| Export Staff
-|--------------------------------------------------------------------------
-*/
-public function export()
-{
-    return Excel::download(new StaffExport, 'staff_list.xlsx');
-}
+    |--------------------------------------------------------------------------
+    | Download Sample File
+    |--------------------------------------------------------------------------
+    */
+    public function downloadSample()
+    {
+        return Excel::download(new StaffSampleExport, 'staff_sample.xlsx');
+    }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Import Staff
+    |--------------------------------------------------------------------------
+    */
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,csv'
+        ]);
 
-/*
-|--------------------------------------------------------------------------
-| Download Sample File
-|--------------------------------------------------------------------------
-*/
-public function downloadSample()
-{
-    return Excel::download(new StaffSampleExport, 'staff_sample.xlsx');
-}
+        Excel::import(new \App\Imports\StaffImport, $request->file('file'));
+
+        return back()->with('success', 'Staff Imported Successfully');
+    }
 
     /*
     |--------------------------------------------------------------------------
@@ -132,92 +144,66 @@ public function downloadSample()
     {
         $staff = Staff::findOrFail($id);
 
-        $request->validate([
-            'name' => 'required',
-            'email' => 'required|email|unique:users,email,' . $staff->user_id,
-            'department' => 'required',
-            'designation' => 'required',
-            'salary' => 'required|numeric',
-        ]);
-
-        // Update User
-        $staff->user->update([
-            'name' => $request->name,
-            'email' => $request->email,
-        ]);
-
-        // Update Staff
         $staff->update([
             'department' => $request->department,
             'designation' => $request->designation,
-            'salary' => $request->salary,
+            'salary' => $request->salary
         ]);
 
-        return redirect()->route('staff.index')
+        return redirect()->route('admin.staff.index')
             ->with('success', 'Staff Updated Successfully');
     }
 
     /*
     |--------------------------------------------------------------------------
-    | Reset Password
+    | Delete Staff
     |--------------------------------------------------------------------------
     */
-    public function resetPassword($id)
+    public function destroy($id)
     {
         $staff = Staff::findOrFail($id);
-        $user = $staff->user;
 
-        $newPassword = '12345678';
+        $staff->user()->delete();
+        $staff->delete();
 
-        $user->update([
-            'password' => Hash::make($newPassword)
+        return back()->with('success', 'Staff Deleted Successfully');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Toggle Status
+    |--------------------------------------------------------------------------
+    */
+    public function toggleStatus($id)
+    {
+        $staff = Staff::findOrFail($id);
+
+        $staff->update([
+            'status' => $staff->status == 'active' ? 'inactive' : 'active'
         ]);
 
-        Mail::raw(
-            "Your password has been reset.\n\n".
-            "Login URL: " . url('/login') . "\n".
-            "Email: {$user->email}\n".
-            "New Password: {$newPassword}",
-            function ($message) use ($user) {
-                $message->to($user->email)
-                        ->subject('Password Reset');
+        return back();
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Bulk Delete
+    |--------------------------------------------------------------------------
+    */
+    public function bulkDelete(Request $request)
+    {
+        if (!$request->staff_ids) {
+            return back()->with('error', 'No staff selected.');
+        }
+
+        foreach ($request->staff_ids as $id) {
+            $staff = Staff::find($id);
+            if ($staff) {
+                $staff->user()->delete();
+                $staff->delete();
             }
-        );
+        }
 
-        return back()->with('success', 'Password Reset & Email Sent');
+        return back()->with('success', 'Selected staff deleted.');
     }
-
-    public function destroy($id)
-{
-    $staff = Staff::findOrFail($id);
-
-    $user = $staff->user;
-
-    // Delete related records first
-
-    // Salaries
-    $user->salaries()->delete();
-
-    // Leaves
-    $user->leaves()->delete();
-
-    // Loans + loan payments
-    foreach ($user->loans as $loan) {
-        $loan->payments()->delete();
-        $loan->delete();
-    }
-
-    // Attendances
-    $user->attendances()->delete();
-
-    // Delete staff
-    $staff->delete();
-
-    // Delete user
-    $user->delete();
-
-    return back()->with('success','Employee Deleted Completely');
-}
-
-
 }
