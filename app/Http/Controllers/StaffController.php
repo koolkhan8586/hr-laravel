@@ -7,6 +7,10 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\StaffExport;
+use App\Mail\WelcomeEmployeeMail;
+use Illuminate\Support\Str;
 
 class StaffController extends Controller
 {
@@ -86,6 +90,29 @@ class StaffController extends Controller
         return redirect()->route('staff.index')
             ->with('success', 'Staff Created & Email Sent Successfully');
     }
+
+    /*
+|--------------------------------------------------------------------------
+| Export Staff
+|--------------------------------------------------------------------------
+*/
+public function export()
+{
+    return Excel::download(new StaffExport, 'staff_list.xlsx');
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| Download Sample File
+|--------------------------------------------------------------------------
+*/
+public function downloadSample()
+{
+    $file = public_path('samples/staff_sample.xlsx');
+
+    return response()->download($file);
+}
 
     /*
     |--------------------------------------------------------------------------
