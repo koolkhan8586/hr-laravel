@@ -230,22 +230,39 @@ public function destroy($id)
 public function adminStore(Request $request)
 {
     $request->validate([
-        'user_id' => 'required',
-        'type' => 'required',
-        'days' => 'required|numeric|min:0.5',
-        'status' => 'required'
+        'user_id'   => 'required|exists:users,id',
+        'type'      => 'required|in:Annual,WOP',
+        'from_date' => 'required|date',
+        'to_date'   => 'required|date|after_or_equal:from_date',
+        'duration'  => 'required|in:full,half',
+        'status'    => 'required|in:pending,approved,rejected'
     ]);
 
-    Leave::create([
-        'user_id' => $request->user_id,
-        'type' => $request->type,
-        'days' => $request->days,
-        'status' => $request->status
+    // Calculate number of days
+    $from = \Carbon\Carbon::parse($request->from_date);
+    $to   = \Carbon\Carbon::parse($request->to_date);
+
+    $days = $from->diffInDays($to) + 1;
+
+    // If half day selected
+    if ($request->duration == 'half') {
+        $days = 0.5;
+    }
+
+    \App\Models\Leave::create([
+        'user_id'   => $request->user_id,
+        'type'      => $request->type,
+        'days'      => $days,
+        'from_date' => $request->from_date,
+        'to_date'   => $request->to_date,
+        'duration'  => $request->duration,
+        'status'    => $request->status,
     ]);
 
     return redirect()->route('admin.leave.index')
-        ->with('success','Leave Added Successfully');
+        ->with('success', 'Leave added successfully.');
 }
+
 public function adminEdit($id)
 {
     $leave = Leave::findOrFail($id);
