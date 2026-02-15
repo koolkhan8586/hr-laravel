@@ -166,14 +166,33 @@ class StaffController extends Controller
 {
     $staff = Staff::findOrFail($id);
 
-    // Delete related user
-    $staff->user()->delete();
+    $user = $staff->user;
 
-    // Delete staff record
+    // Delete related records first
+
+    // Salaries
+    $user->salaries()->delete();
+
+    // Leaves
+    $user->leaves()->delete();
+
+    // Loans + loan payments
+    foreach ($user->loans as $loan) {
+        $loan->payments()->delete();
+        $loan->delete();
+    }
+
+    // Attendances
+    $user->attendances()->delete();
+
+    // Delete staff
     $staff->delete();
 
-    return redirect()->route('staff.index')
-        ->with('success', 'Staff Deleted Successfully');
+    // Delete user
+    $user->delete();
+
+    return back()->with('success','Employee Deleted Completely');
 }
+
 
 }
