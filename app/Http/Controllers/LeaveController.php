@@ -230,33 +230,38 @@ public function destroy($id)
 public function adminStore(Request $request)
 {
     $request->validate([
-        'user_id'   => 'required|exists:users,id',
-        'type'      => 'required|in:Annual,WOP',
-        'from_date' => 'required|date',
-        'to_date'   => 'required|date|after_or_equal:from_date',
-        'duration'  => 'required|in:full,half',
-        'status'    => 'required|in:pending,approved,rejected'
+        'user_id'       => 'required|exists:users,id',
+        'type'          => 'required|in:annual,sick,without_pay',
+        'start_date'    => 'required|date',
+        'end_date'      => 'required|date|after_or_equal:start_date',
+        'duration_type' => 'required|in:full_day,half_day',
+        'status'        => 'required|in:pending,approved,rejected'
     ]);
 
-    // Calculate number of days
-    $from = \Carbon\Carbon::parse($request->from_date);
-    $to   = \Carbon\Carbon::parse($request->to_date);
+    $start = \Carbon\Carbon::parse($request->start_date);
+    $end   = \Carbon\Carbon::parse($request->end_date);
 
-    $days = $from->diffInDays($to) + 1;
+    $totalDays = $start->diffInDays($end) + 1;
 
-    // If half day selected
-    if ($request->duration == 'half') {
-        $days = 0.5;
+    // Handle half day
+    if ($request->duration_type == 'half_day') {
+        $calculatedDays = 0.5;
+    } else {
+        $calculatedDays = $totalDays;
     }
 
     \App\Models\Leave::create([
-        'user_id'   => $request->user_id,
-        'type'      => $request->type,
-        'days'      => $days,
-        'from_date' => $request->from_date,
-        'to_date'   => $request->to_date,
-        'duration'  => $request->duration,
-        'status'    => $request->status,
+        'user_id'        => $request->user_id,
+        'type'           => $request->type,
+        'start_date'     => $request->start_date,
+        'end_date'       => $request->end_date,
+        'duration'       => $request->duration_type == 'half_day' ? 'half' : 'full',
+        'duration_type'  => $request->duration_type,
+        'half_day_type'  => $request->half_day_type ?? null,
+        'days'           => $calculatedDays,
+        'calculated_days'=> $calculatedDays,
+        'status'         => $request->status,
+        'reason'         => $request->reason
     ]);
 
     return redirect()->route('admin.leave.index')
