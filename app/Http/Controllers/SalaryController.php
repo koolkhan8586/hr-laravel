@@ -336,6 +336,14 @@ public function destroy($id)
 
     return back()->with('success', 'Salary Deleted Successfully');
 }
+    public function edit($id)
+{
+    $salary = Salary::findOrFail($id);
+    $users = User::where('role','employee')->get();
+
+    return view('salary.edit', compact('salary','users'));
+}
+
 
     /*
     |--------------------------------------------------------------------------
