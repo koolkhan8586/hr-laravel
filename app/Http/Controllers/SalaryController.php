@@ -348,12 +348,13 @@ public function update(Request $request, $id)
     $salary = Salary::findOrFail($id);
 
     $request->validate([
-        'basic_salary' => 'required|numeric',
         'month' => 'required|integer',
         'year' => 'required|integer',
+        'basic_salary' => 'required|numeric',
     ]);
 
-    $gross = 
+    // === Calculate Gross ===
+    $gross =
         $request->basic_salary +
         ($request->invigilation ?? 0) +
         ($request->t_payment ?? 0) +
@@ -361,7 +362,9 @@ public function update(Request $request, $id)
         ($request->increment ?? 0) +
         ($request->other_earnings ?? 0);
 
+    // === Calculate Deductions ===
     $deductions =
+        ($request->extra_leaves ?? 0) +
         ($request->income_tax ?? 0) +
         ($request->loan_deduction ?? 0) +
         ($request->insurance ?? 0) +
@@ -370,16 +373,29 @@ public function update(Request $request, $id)
     $net = $gross - $deductions;
 
     $salary->update([
-        'basic_salary' => $request->basic_salary,
         'month' => $request->month,
         'year' => $request->year,
+
+        'basic_salary' => $request->basic_salary,
+        'invigilation' => $request->invigilation ?? 0,
+        't_payment' => $request->t_payment ?? 0,
+        'eidi' => $request->eidi ?? 0,
+        'increment' => $request->increment ?? 0,
+        'other_earnings' => $request->other_earnings ?? 0,
+
+        'extra_leaves' => $request->extra_leaves ?? 0,
+        'income_tax' => $request->income_tax ?? 0,
+        'loan_deduction' => $request->loan_deduction ?? 0,
+        'insurance' => $request->insurance ?? 0,
+        'other_deductions' => $request->other_deductions ?? 0,
+
         'gross_total' => $gross,
         'total_deductions' => $deductions,
         'net_salary' => $net,
     ]);
 
     return redirect()->route('admin.salary.index')
-        ->with('success','Salary Updated Successfully');
+        ->with('success', 'Salary Updated Successfully');
 }
 
 
