@@ -9,7 +9,19 @@
             Staff Management
         </h2>
 
-        <div class="flex items-center gap-4">
+        <div class="flex items-center gap-3 flex-wrap">
+
+            {{-- Export Staff --}}
+            <a href="{{ route('admin.staff.export') }}"
+               class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded shadow text-sm">
+                Export
+            </a>
+
+            {{-- Download Sample --}}
+            <a href="{{ route('admin.staff.sample') }}"
+               class="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded shadow text-sm">
+                Download Sample
+            </a>
 
             {{-- Import Staff --}}
             <form action="{{ route('admin.staff.import') }}"
@@ -38,7 +50,7 @@
     </div>
 
 
-    {{-- ================= SUCCESS MESSAGE ================= --}}
+    {{-- ================= SUCCESS / ERROR MESSAGE ================= --}}
     @if(session('success'))
         <div class="bg-green-100 text-green-700 p-3 rounded mb-6">
             {{ session('success') }}
@@ -100,7 +112,7 @@
                         {{-- ================= ACTION BUTTONS ================= --}}
                         <td class="p-3 text-center">
 
-                            <div class="flex justify-center items-center gap-2">
+                            <div class="flex justify-center items-center gap-2 flex-wrap">
 
                                 {{-- Edit --}}
                                 <a href="{{ route('admin.staff.edit', $item->id) }}"
@@ -122,7 +134,8 @@
                                 {{-- Delete --}}
                                 <form action="{{ route('admin.staff.destroy', $item->id) }}"
                                       method="POST"
-                                      onsubmit="return confirm('Are you sure you want to delete this staff member?')">
+                                      onsubmit="return confirm('Are you sure you want to delete this staff member?')"
+                                      class="inline">
                                     @csrf
                                     @method('DELETE')
 
