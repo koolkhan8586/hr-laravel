@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\StaffSampleExport;
+use App\Exports\StaffExport;
+
 
 class StaffController extends Controller
 {
@@ -153,6 +155,13 @@ class StaffController extends Controller
         return redirect()->route('admin.staff.index')
             ->with('success', 'Staff Updated Successfully');
     }
+    public function export()
+{
+    return \Maatwebsite\Excel\Facades\Excel::download(
+        new StaffExport,
+        'staff_list.xlsx'
+    );
+}
 
     /*
     |--------------------------------------------------------------------------
