@@ -1,86 +1,75 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8">
-<title>Salary Slip</title>
+    <meta charset="utf-8">
+    <title>Salary Slip</title>
 
-<style>
-body {
-    font-family: DejaVu Sans, sans-serif;
-    font-size: 13px;
-    color: #333;
-}
+    <style>
+        body {
+            font-family: DejaVu Sans, sans-serif;
+            font-size: 12px;
+            margin: 0;
+        }
 
-.header {
-    text-align: center;
-    margin-bottom: 25px;
-}
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #0f5132;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+        }
 
-.header h1 {
-    margin: 0;
-    font-size: 20px;
-    color: #0f5c2e;
-}
+        .logo {
+            height: 70px;
+            margin-bottom: 5px;
+        }
 
-.header h2 {
-    margin: 2px 0;
-    font-size: 14px;
-    font-weight: normal;
-}
+        .company {
+            font-size: 16px;
+            font-weight: bold;
+            color: #0f5132;
+        }
 
-.section-title {
-    font-weight: bold;
-    margin-top: 25px;
-    margin-bottom: 10px;
-    font-size: 14px;
-}
+        .sub-title {
+            font-size: 13px;
+            margin-top: 4px;
+        }
 
-table {
-    width: 100%;
-    border-collapse: collapse;
-}
+        .info-table,
+        .salary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
 
-td {
-    padding: 6px 4px;
-}
+        .info-table td {
+            padding: 4px 6px;
+        }
 
-.label {
-    font-weight: bold;
-}
+        .salary-table th,
+        .salary-table td {
+            border: 1px solid #ddd;
+            padding: 6px;
+        }
 
-.amount {
-    text-align: right;
-}
+        .salary-table th {
+            background: #0f5132;
+            color: white;
+        }
 
-.total-row {
-    font-weight: bold;
-    border-top: 1px solid #000;
-    padding-top: 8px;
-}
+        .deduction {
+            color: red;
+        }
 
-.net-box {
-    margin-top: 25px;
-    padding: 12px;
-    background: #0f5c2e;
-    color: #fff;
-    text-align: center;
-    font-weight: bold;
-    font-size: 16px;
-}
+        .total {
+            font-weight: bold;
+            background: #f3f3f3;
+        }
 
-.footer {
-    margin-top: 60px;
-    text-align: right;
-}
-
-.small-note {
-    margin-top: 30px;
-    font-size: 11px;
-    text-align: center;
-    color: #777;
-}
-</style>
-
+        .footer {
+            margin-top: 20px;
+            text-align: right;
+        }
+    </style>
 </head>
 <body>
 
