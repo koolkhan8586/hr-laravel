@@ -79,31 +79,33 @@ return view('loan.create', compact('employees'));
     }
 
     public function store(Request $request)
-    {
-        $request->validate([
-            'user_id' => 'required',
-            'amount' => 'required|numeric|min:1',
-            'opening_balance' => 'nullable|numeric|min:0',
-            'installments' => 'required|integer|min:1',
-        ]);
+{
+    $request->validate([
+        'user_id' => 'required',
+        'amount' => 'required|numeric|min:1',
+        'installments' => 'required|integer|min:1',
+        'opening_balance' => 'nullable|numeric|min:0',
+    ]);
 
-        $opening = $request->opening_balance ?? 0;
-        $monthly = $request->amount / $request->installments;
+    $opening = $request->opening_balance ?? 0;
 
-        Loan::create([
-            'user_id' => $request->user_id,
-            'amount' => $request->amount,
-            'opening_balance' => $opening,
-            'installments' => $request->installments,
-            'monthly_deduction' => $monthly,
-            'remaining_balance' => $request->amount,
-            'status' => 'approved'
-        ]);
+    $totalAmount = $request->amount + $opening;
 
-        return redirect()->route('admin.loan.index')
-            ->with('success', 'Loan Created Successfully');
-    }
+    $monthly = $totalAmount / $request->installments;
 
+    Loan::create([
+        'user_id' => $request->user_id,
+        'amount' => $request->amount,
+        'opening_balance' => $opening,
+        'installments' => $request->installments,
+        'monthly_deduction' => $monthly,
+        'remaining_balance' => $totalAmount,
+        'status' => 'approved'
+    ]);
+
+    return redirect()->route('admin.loan.index')
+        ->with('success','Loan created successfully');
+}
     public function approve($id)
     {
         $loan = Loan::findOrFail($id);
