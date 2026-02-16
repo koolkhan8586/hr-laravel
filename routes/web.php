@@ -102,6 +102,28 @@ Route::middleware(['auth', 'admin'])
     Route::get('/staff/{id}/view',[StaffController::class,'view'])->name('admin.staff.view');
     Route::get('admin/staff/export',[StaffController::class, 'export'])->name('admin.staff.export');
 
+    /*
+|--------------------------------------------------------------------------
+| Admin Attendance Management
+|--------------------------------------------------------------------------
+*/
+Route::get('/attendance', [AttendanceController::class,'adminIndex'])
+    ->name('admin.attendance.index');
+
+Route::get('/attendance/create', [AttendanceController::class,'create'])
+    ->name('admin.attendance.create');
+
+Route::post('/attendance/store', [AttendanceController::class,'store'])
+    ->name('admin.attendance.store');
+
+Route::get('/attendance/{id}/edit', [AttendanceController::class,'edit'])
+    ->name('admin.attendance.edit');
+
+Route::put('/attendance/{id}', [AttendanceController::class,'update'])
+    ->name('admin.attendance.update');
+
+Route::delete('/attendance/{id}', [AttendanceController::class,'destroy'])
+    ->name('admin.attendance.delete');
 
 
 
