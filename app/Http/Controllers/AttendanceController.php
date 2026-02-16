@@ -19,11 +19,13 @@ class AttendanceController extends Controller
     */
     public function index(Request $request)
     {
-        $month = $request->month ?? now()->format('Y-m');
+        $month = $request->month ?? now('Asia/Karachi')->format('Y-m');
+
+        $monthCarbon = Carbon::parse($month);
 
         $records = Attendance::where('user_id', auth()->id())
-            ->whereMonth('clock_in', Carbon::parse($month)->month)
-            ->whereYear('clock_in', Carbon::parse($month)->year)
+            ->whereMonth('clock_in', $monthCarbon->month)
+            ->whereYear('clock_in', $monthCarbon->year)
             ->orderByDesc('clock_in')
             ->get();
 
@@ -37,12 +39,13 @@ class AttendanceController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Clock In
+    | Clock In (Pakistan Time + Late Detection)
     |--------------------------------------------------------------------------
     */
     public function clockIn(Request $request)
     {
-        $today = now()->toDateString();
+        $now = Carbon::now('Asia/Karachi');
+        $today = $now->toDateString();
 
         $exists = Attendance::where('user_id', auth()->id())
             ->whereDate('clock_in', $today)
@@ -52,20 +55,16 @@ class AttendanceController extends Controller
             return response()->json(['message'=>'Already clocked in'], 400);
         }
 
-        $clockIn = now();
-
-        // Late detection (after 9:15 AM)
-        $lateTime = Carbon::createFromTime(9,30,0);
-
-        $isLate = $clockIn->gt($lateTime);
+        // HR Rules
+        $lateAfter = Carbon::createFromTime(9, 45, 0, 'Asia/Karachi');
+        $status = $now->gt($lateAfter) ? 'late' : 'present';
 
         Attendance::create([
-            'user_id' => auth()->id(),
-            'clock_in' => $clockIn,
-            'latitude' => $request->latitude,
+            'user_id'   => auth()->id(),
+            'clock_in'  => $now,
+            'latitude'  => $request->latitude,
             'longitude' => $request->longitude,
-            'is_late' => $isLate,
-            'status' => $isLate ? 'late' : 'present'
+            'status'    => $status,
         ]);
 
         return response()->json(['success'=>true]);
@@ -73,7 +72,7 @@ class AttendanceController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Clock Out
+    | Clock Out (Half Day Detection)
     |--------------------------------------------------------------------------
     */
     public function clockOut()
@@ -87,71 +86,97 @@ class AttendanceController extends Controller
             return response()->json(['message'=>'No active clock in'], 400);
         }
 
-        $attendance->clock_out = now();
+        $now = Carbon::now('Asia/Karachi');
+
+        $attendance->clock_out = $now;
 
         $hours = Carbon::parse($attendance->clock_in)
-            ->diffInMinutes(now()) / 60;
+            ->diffInMinutes($now) / 60;
 
         $attendance->total_hours = round($hours,2);
+
+        // Working Hours Rule Engine
+        if ($hours < 4) {
+            $attendance->status = 'half_day';
+        } elseif ($attendance->status !== 'late') {
+            $attendance->status = 'present';
+        }
+
         $attendance->save();
 
         return response()->json(['success'=>true]);
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Admin Edit Attendance
+    |--------------------------------------------------------------------------
+    */
     public function edit($id)
-{
-    $attendance = \App\Models\Attendance::with('user')->findOrFail($id);
-
-    return view('attendance.edit', compact('attendance'));
-}
-
-    public function update(Request $request, $id)
-{
-    $attendance = \App\Models\Attendance::findOrFail($id);
-
-    $request->validate([
-        'clock_in'  => 'required|date',
-        'clock_out' => 'nullable|date|after_or_equal:clock_in',
-    ]);
-
-    $clockIn  = \Carbon\Carbon::parse($request->clock_in);
-    $clockOut = $request->clock_out
-        ? \Carbon\Carbon::parse($request->clock_out)
-        : null;
-
-    $totalHours = null;
-
-    if ($clockOut) {
-        $totalHours = $clockIn->diffInMinutes($clockOut) / 60;
+    {
+        $attendance = Attendance::with('user')->findOrFail($id);
+        return view('attendance.edit', compact('attendance'));
     }
-
-    // Late detection (after 9:00 AM)
-    $status = $clockIn->format('H:i:s') > '09:00:00' ? 'late' : 'present';
-
-    $attendance->update([
-        'clock_in'    => $clockIn,
-        'clock_out'   => $clockOut,
-        'total_hours' => $totalHours,
-        'status'      => $status,
-    ]);
-
-    return redirect()->route('admin.attendance.index')
-        ->with('success', 'Attendance updated successfully');
-}
-
 
     /*
     |--------------------------------------------------------------------------
-    | Admin Dashboard
+    | Admin Update Attendance
+    |--------------------------------------------------------------------------
+    */
+    public function update(Request $request, $id)
+    {
+        $attendance = Attendance::findOrFail($id);
+
+        $request->validate([
+            'clock_in'  => 'required|date',
+            'clock_out' => 'nullable|date|after_or_equal:clock_in',
+        ]);
+
+        $clockIn  = Carbon::parse($request->clock_in, 'Asia/Karachi');
+        $clockOut = $request->clock_out
+            ? Carbon::parse($request->clock_out, 'Asia/Karachi')
+            : null;
+
+        $totalHours = null;
+        $status = 'present';
+
+        if ($clockOut) {
+            $totalHours = $clockIn->diffInMinutes($clockOut) / 60;
+
+            if ($totalHours < 4) {
+                $status = 'half_day';
+            }
+        }
+
+        // Late detection
+        if ($clockIn->format('H:i:s') > '09:15:00') {
+            $status = 'late';
+        }
+
+        $attendance->update([
+            'clock_in'    => $clockIn,
+            'clock_out'   => $clockOut,
+            'total_hours' => $totalHours,
+            'status'      => $status,
+        ]);
+
+        return redirect()->route('admin.attendance.index')
+            ->with('success', 'Attendance updated successfully');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Admin Dashboard (Latest on Top)
     |--------------------------------------------------------------------------
     */
     public function adminIndex(Request $request)
     {
-        $month = $request->month ?? now()->format('Y-m');
+        $month = $request->month ?? now('Asia/Karachi')->format('Y-m');
+        $monthCarbon = Carbon::parse($month);
 
         $records = Attendance::with('user')
-            ->whereMonth('clock_in', Carbon::parse($month)->month)
-            ->whereYear('clock_in', Carbon::parse($month)->year)
+            ->whereMonth('clock_in', $monthCarbon->month)
+            ->whereYear('clock_in', $monthCarbon->year)
             ->orderByDesc('clock_in')
             ->get();
 
@@ -171,21 +196,21 @@ class AttendanceController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Attendance Percentage
+    | Attendance Percentage Calculator
     |--------------------------------------------------------------------------
     */
     public function percentage($userId, $month)
     {
         $monthCarbon = Carbon::parse($month);
-
         $totalDays = $monthCarbon->daysInMonth;
 
-        $present = Attendance::where('user_id',$userId)
+        $presentDays = Attendance::where('user_id',$userId)
             ->whereMonth('clock_in',$monthCarbon->month)
             ->whereYear('clock_in',$monthCarbon->year)
+            ->whereIn('status',['present','late','half_day'])
             ->count();
 
-        return round(($present / $totalDays) * 100,2);
+        return round(($presentDays / $totalDays) * 100,2);
     }
 
     /*
@@ -199,5 +224,23 @@ class AttendanceController extends Controller
             new AttendanceExport($request->month),
             'attendance.xlsx'
         );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Monthly Analytics API
+    |--------------------------------------------------------------------------
+    */
+    public function analytics($month)
+    {
+        $monthCarbon = Carbon::parse($month);
+
+        $data = Attendance::selectRaw('status, COUNT(*) as total')
+            ->whereMonth('clock_in',$monthCarbon->month)
+            ->whereYear('clock_in',$monthCarbon->year)
+            ->groupBy('status')
+            ->pluck('total','status');
+
+        return response()->json($data);
     }
 }
