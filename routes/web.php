@@ -120,6 +120,10 @@ Route::middleware(['auth', 'admin'])
     Route::delete('/attendance/{id}', [AttendanceController::class,'destroy'])
         ->name('attendance.destroy');
 
+    Route::get('/attendance/analytics/{month}',[AttendanceController::class,'analytics'])
+    ->name('admin.attendance.analytics');
+
+
     /*
     |--------------------------------------------------------------------------
     | Leave Management (Admin) (UNCHANGED)
