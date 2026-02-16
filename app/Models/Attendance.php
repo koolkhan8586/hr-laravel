@@ -12,7 +12,13 @@ class Attendance extends Model
         'clock_out',
         'latitude',
         'longitude',
-        'total_hours'
+        'total_hours',
+        'status'
+    ];
+
+    protected $casts = [
+        'clock_in'  => 'datetime',
+        'clock_out' => 'datetime',
     ];
 
     public function user()
@@ -20,4 +26,5 @@ class Attendance extends Model
         return $this->belongsTo(User::class);
     }
 }
+
 
