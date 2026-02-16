@@ -85,8 +85,11 @@ td {
 <body>
 
 <div class="header">
-    <h1>THE UNIVERSITY OF LAHORE</h1>
-    <h2>City Campus Lahore</h2>
+    <img src="{{ public_path('UOL-Green-V1.png') }}" class="logo">
+    <div class="company">Lahore School of Accountancy and Finance (LSAF)</div>
+    <div class="sub-title">
+        Salary Slip - {{ date('F', mktime(0,0,0,$salary->month,1)) }} {{ $salary->year }}
+    </div>
 </div>
 
 <table>
