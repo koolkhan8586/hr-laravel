@@ -110,6 +110,9 @@ Route::middleware(['auth', 'admin'])
     Route::get('/attendance/export', [AttendanceController::class,'export'])
         ->name('attendance.export');
 
+    Route::get('/attendance/analytics/{month}',[AttendanceController::class,'analytics'])
+    ->name('admin.attendance.analytics');
+        
     Route::get('/attendance/{id}/edit', [AttendanceController::class,'edit'])
         ->name('attendance.edit');
 
@@ -120,8 +123,7 @@ Route::middleware(['auth', 'admin'])
     Route::delete('/attendance/{id}', [AttendanceController::class,'destroy'])
         ->name('attendance.destroy');
 
-    Route::get('/attendance/analytics/{month}',[AttendanceController::class,'analytics'])
-    ->name('admin.attendance.analytics');
+    
 
 
     /*
