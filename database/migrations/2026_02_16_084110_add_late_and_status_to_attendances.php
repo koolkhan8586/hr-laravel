@@ -12,7 +12,17 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('attendances', function (Blueprint $table) {
-            //
+
+            // Late flag
+            $table->boolean('is_late')
+                  ->default(false)
+                  ->after('total_hours');
+
+            // Attendance status
+            $table->enum('status', ['present', 'late', 'absent'])
+                  ->default('present')
+                  ->after('is_late');
+
         });
     }
 
@@ -22,7 +32,10 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('attendances', function (Blueprint $table) {
-            //
+
+            $table->dropColumn('is_late');
+            $table->dropColumn('status');
+
         });
     }
 };
