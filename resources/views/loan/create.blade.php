@@ -6,15 +6,13 @@
 <form action="{{ route('admin.loan.store') }}" method="POST" class="space-y-4">
 @csrf
 
-<div class="mt-4">
-    <label class="block text-sm font-medium text-gray-700">
-        Opening Remaining Balance (Optional)
-    </label>
+<div class="mb-4">
+    <label class="block font-medium mb-1">Opening Balance</label>
     <input type="number"
-           name="remaining_balance"
            step="0.01"
-           placeholder="Leave empty for full amount"
-           class="w-full border rounded px-3 py-2 mt-1">
+           name="opening_balance"
+           class="w-full border rounded px-3 py-2"
+           placeholder="Enter opening balance (optional)">
 </div>
 
 <select name="user_id" class="w-full border p-2 rounded">
