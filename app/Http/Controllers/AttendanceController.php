@@ -55,7 +55,7 @@ class AttendanceController extends Controller
         $clockIn = now();
 
         // Late detection (after 9:15 AM)
-        $lateTime = Carbon::createFromTime(9,15,0);
+        $lateTime = Carbon::createFromTime(9,30,0);
 
         $isLate = $clockIn->gt($lateTime);
 
@@ -97,6 +97,54 @@ class AttendanceController extends Controller
 
         return response()->json(['success'=>true]);
     }
+
+    public function edit($id)
+{
+    $attendance = \App\Models\Attendance::with('user')->findOrFail($id);
+
+    return view('attendance.edit', compact('attendance'));
+}
+
+    public function update(Request $request, $id)
+{
+    $attendance = \App\Models\Attendance::findOrFail($id);
+
+    $request->validate([
+        'clock_in'  => 'required|date',
+        'clock_out' => 'nullable|date|after_or_equal:clock_in',
+    ]);
+
+    $clockIn  = \Carbon\Carbon::parse($request->clock_in);
+    $clockOut = $request->clock_out
+        ? \Carbon\Carbon::parse($request->clock_out)
+        : null;
+
+    $totalHours = null;
+
+    if ($clockOut) {
+        $totalHours = $clockIn->diffInMinutes($clockOut) / 60;
+    }
+
+    // Late detection (after 9:00 AM)
+    $status = $clockIn->format('H:i:s') > '09:00:00' ? 'late' : 'present';
+
+    $attendance->update([
+        'clock_in'    => $clockIn,
+        'clock_out'   => $clockOut,
+        'total_hours' => $totalHours,
+        'status'      => $status,
+    ]);
+
+    return redirect()->route('admin.attendance.index')
+        ->with('success', 'Attendance updated successfully');
+}
+public function destroy($id)
+{
+    $attendance = \App\Models\Attendance::findOrFail($id);
+    $attendance->delete();
+
+    return back()->with('success', 'Attendance deleted successfully');
+}
 
     /*
     |--------------------------------------------------------------------------
