@@ -138,13 +138,7 @@ class AttendanceController extends Controller
     return redirect()->route('admin.attendance.index')
         ->with('success', 'Attendance updated successfully');
 }
-public function destroy($id)
-{
-    $attendance = \App\Models\Attendance::findOrFail($id);
-    $attendance->delete();
 
-    return back()->with('success', 'Attendance deleted successfully');
-}
 
     /*
     |--------------------------------------------------------------------------
