@@ -10,26 +10,29 @@
                value="{{ $month }}"
                class="border rounded px-3 py-2">
 
-        <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow">
+        <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
             Filter
         </button>
 
         <a href="{{ route('admin.attendance.export',['month'=>$month]) }}"
-           class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow">
+           class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
            Export Excel
         </a>
     </form>
 
-    {{-- SUMMARY CARDS --}}
     @php
         $present = $records->where('status','present')->count();
-        $late    = $records->where('status','late')->count();
-        $absent  = $records->where('status','absent')->count();
+        $late = $records->where('status','late')->count();
+        $absent = $records->where('status','absent')->count();
         $totalHours = round($records->sum('total_hours'),2);
+
         $daysInMonth = \Carbon\Carbon::parse($month)->daysInMonth;
-        $percentage = $daysInMonth > 0 ? round(($present/$daysInMonth)*100,2) : 0;
+        $percentage = $daysInMonth > 0
+            ? round((($present+$late)/$daysInMonth)*100,2)
+            : 0;
     @endphp
 
+    {{-- SUMMARY CARDS --}}
     <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
 
         <div class="bg-green-100 rounded-xl shadow p-6 text-center">
@@ -59,104 +62,112 @@
 
     </div>
 
-    {{-- CHART --}}
-    <div class="max-w-3xl mx-auto mb-10">
-        <canvas id="attendanceChart"></canvas>
+    {{-- DONUT CHART --}}
+    <div class="flex justify-center mb-10">
+        <div style="width:400px; height:400px;">
+            <canvas id="attendanceChart"></canvas>
+        </div>
     </div>
 
-    {{-- TABLE --}}
-    <div class="bg-white shadow rounded overflow-hidden">
-        <table class="w-full">
-            <thead class="bg-gray-200">
-                <tr>
-                    <th class="p-3 text-left">Employee</th>
-                    <th class="p-3 text-left">Date</th>
-                    <th class="p-3 text-left">Clock In</th>
-                    <th class="p-3 text-left">Clock Out</th>
-                    <th class="p-3 text-left">Hours</th>
-                    <th class="p-3 text-left">Status</th>
-                    <th class="p-3 text-left">Action</th>
-                </tr>
-            </thead>
+    {{-- ATTENDANCE TABLE --}}
+    <table class="w-full bg-white shadow rounded overflow-hidden">
+        <thead class="bg-gray-200 text-gray-700">
+        <tr>
+            <th class="p-3 text-left">Employee</th>
+            <th class="p-3 text-left">Date</th>
+            <th class="p-3 text-left">Clock In</th>
+            <th class="p-3 text-left">Clock Out</th>
+            <th class="p-3 text-left">Hours</th>
+            <th class="p-3 text-left">Status</th>
+            <th class="p-3 text-left">Action</th>
+        </tr>
+        </thead>
 
-            <tbody>
-            @foreach($records as $r)
-                <tr class="border-t hover:bg-gray-50">
+        <tbody>
+        @foreach($records as $r)
+        <tr class="border-t hover:bg-gray-50">
 
-                    <td class="p-3">{{ $r->user->name }}</td>
+            <td class="p-3">{{ $r->user->name }}</td>
 
-                    <td class="p-3">
-                        {{ \Carbon\Carbon::parse($r->clock_in)->format('Y-m-d') }}
-                    </td>
+            <td class="p-3">
+                {{ \Carbon\Carbon::parse($r->clock_in)
+                    ->timezone('Asia/Karachi')
+                    ->format('Y-m-d') }}
+            </td>
 
-                    {{-- Clock In with Map --}}
-                    <td class="p-3">
-                        @if($r->latitude)
-                            <a target="_blank"
-                               href="https://www.google.com/maps?q={{ $r->latitude }},{{ $r->longitude }}"
-                               class="text-blue-600 underline">
-                                {{ \Carbon\Carbon::parse($r->clock_in)->format('H:i:s') }}
-                            </a>
-                        @else
-                            {{ \Carbon\Carbon::parse($r->clock_in)->format('H:i:s') }}
-                        @endif
-                    </td>
+            {{-- Clock In with Map --}}
+            <td class="p-3">
+                @if($r->latitude && $r->longitude)
+                    <a target="_blank"
+                       class="text-blue-600 underline"
+                       href="https://www.google.com/maps?q={{ $r->latitude }},{{ $r->longitude }}">
+                        {{ \Carbon\Carbon::parse($r->clock_in)
+                            ->timezone('Asia/Karachi')
+                            ->format('H:i:s') }}
+                    </a>
+                @else
+                    {{ \Carbon\Carbon::parse($r->clock_in)
+                        ->timezone('Asia/Karachi')
+                        ->format('H:i:s') }}
+                @endif
+            </td>
 
-                    {{-- Clock Out --}}
-                    <td class="p-3">
-                        @if($r->clock_out)
-                            {{ \Carbon\Carbon::parse($r->clock_out)->format('H:i:s') }}
-                        @else
-                            -
-                        @endif
-                    </td>
+            {{-- Clock Out --}}
+            <td class="p-3">
+                @if($r->clock_out)
+                    {{ \Carbon\Carbon::parse($r->clock_out)
+                        ->timezone('Asia/Karachi')
+                        ->format('H:i:s') }}
+                @else
+                    -
+                @endif
+            </td>
 
-                    <td class="p-3">
-                        {{ $r->total_hours ?? '-' }}
-                    </td>
+            <td class="p-3">
+                {{ $r->total_hours ?? '-' }}
+            </td>
 
-                    <td class="p-3">
-                        @if($r->status=='late')
-                            <span class="text-yellow-600 font-semibold">Late</span>
-                        @elseif($r->status=='absent')
-                            <span class="text-red-600 font-semibold">Absent</span>
-                        @else
-                            <span class="text-green-600 font-semibold">Present</span>
-                        @endif
-                    </td>
+            <td class="p-3">
+                @if($r->status=='late')
+                    <span class="text-yellow-600 font-bold">Late</span>
+                @elseif($r->status=='absent')
+                    <span class="text-red-600 font-bold">Absent</span>
+                @elseif($r->status=='half-day')
+                    <span class="text-purple-600 font-bold">Half Day</span>
+                @else
+                    <span class="text-green-600 font-bold">Present</span>
+                @endif
+            </td>
 
-                    <td class="p-3 space-x-2">
+            <td class="p-3 space-x-2">
 
-                        <a href="{{ route('admin.attendance.edit',$r->id) }}"
-                           class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-xs shadow">
-                           Edit
-                        </a>
+                <a href="{{ route('admin.attendance.edit',$r->id) }}"
+                   class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-xs shadow">
+                   Edit
+                </a>
 
-                        <form action="{{ route('admin.attendance.destroy',$r->id) }}"
-                              method="POST"
-                              class="inline"
-                              onsubmit="return confirm('Delete this attendance?')">
-                            @csrf
-                            @method('DELETE')
+                <form action="{{ route('admin.attendance.destroy',$r->id) }}"
+                      method="POST"
+                      class="inline"
+                      onsubmit="return confirm('Delete this attendance?')">
+                    @csrf
+                    @method('DELETE')
 
-                            <button type="submit"
-                                    class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs shadow">
-                                Delete
-                            </button>
-                        </form>
+                    <button type="submit"
+                            class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs shadow">
+                        Delete
+                    </button>
+                </form>
 
-                    </td>
-
-                </tr>
-            @endforeach
-            </tbody>
-        </table>
-    </div>
+            </td>
+        </tr>
+        @endforeach
+        </tbody>
+    </table>
 
 </div>
 
-
-{{-- CHART SCRIPT --}}
+{{-- CHART JS --}}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 fetch("{{ route('admin.attendance.analytics',['month'=>$month]) }}")
@@ -171,11 +182,19 @@ fetch("{{ route('admin.attendance.analytics',['month'=>$month]) }}")
                     data.present ?? 0,
                     data.late ?? 0,
                     data.absent ?? 0
-                ]
+                ],
+                backgroundColor: [
+                    '#22c55e',
+                    '#facc15',
+                    '#ef4444'
+                ],
+                borderWidth: 0
             }]
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
+            cutout: '65%',
             plugins: {
                 legend: {
                     position: 'top'
