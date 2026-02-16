@@ -156,7 +156,7 @@ fetch("{{ route('admin.attendance.analytics',$month) }}")
                            Edit
                         </a>
 
-                        <form action="{{ route('admin.attendance.destroy',$r->id) }}"
+                        <form action="{{ route('admin.attendance.delete',$r->id) }}"
                               method="POST"
                               class="inline"
                               onsubmit="return confirm('Delete this attendance?')">
