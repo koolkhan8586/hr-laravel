@@ -1,4 +1,4 @@
-<?php
+    <?php
 
 namespace App\Http\Controllers;
 
@@ -169,10 +169,14 @@ return view('loan.create', compact('employees'));
 
         $request->validate([
             'amount' => 'required|numeric|min:1',
+            'opening_balance' => 'nullable|numeric|min:0'
             'installments' => 'required|integer|min:1',
         ]);
 
+          $openingBalance = $request->opening_balance ?? 0;
+
         $monthly = $request->amount / $request->installments;
+        
 
         // If no payments yet → reset remaining balance
         if ($loan->payments()->count() == 0) {
@@ -184,6 +188,7 @@ return view('loan.create', compact('employees'));
 
         $loan->update([
             'amount' => $request->amount,
+            'opening_balance' => 'nullable|numeric|min:0'
             'installments' => $request->installments,
             'monthly_deduction' => $monthly,
             'remaining_balance' => $remaining,
