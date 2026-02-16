@@ -99,33 +99,37 @@ Route::middleware(['auth', 'admin'])
 |--------------------------------------------------------------------------
 */
 
-Route::get('/attendance', [AttendanceController::class,'adminIndex'])
-    ->name('admin.attendance.index');
+Route::get('/attendance',
+    [AttendanceController::class,'adminIndex']
+)->name('admin.attendance.index');
 
-Route::get('/attendance/export', 
-    [AttendanceController::class, 'export']
+Route::get('/attendance/export',
+    [AttendanceController::class,'export']
 )->name('admin.attendance.export');
 
-/* 🔥 ADD THIS RIGHT HERE */
 Route::get('/attendance/analytics/{month}',
     [AttendanceController::class,'analytics']
 )->name('admin.attendance.analytics');
 
-Route::get('/attendance/create', [AttendanceController::class,'create'])
-    ->name('admin.attendance.create');
+Route::get('/attendance/create',
+    [AttendanceController::class,'create']
+)->name('admin.attendance.create');
 
-Route::post('/attendance/store', [AttendanceController::class,'store'])
-    ->name('admin.attendance.store');
+Route::post('/attendance/store',
+    [AttendanceController::class,'store']
+)->name('admin.attendance.store');
 
-/* KEEP THIS AFTER ANALYTICS ROUTE */
-Route::get('/attendance/{id}/edit', [AttendanceController::class,'edit'])
-    ->name('admin.attendance.edit');
+Route::get('/attendance/{id}/edit',
+    [AttendanceController::class,'edit']
+)->name('admin.attendance.edit');
 
-Route::put('/attendance/{id}', [AttendanceController::class,'update'])
-    ->name('admin.attendance.update');
+Route::put('/attendance/{id}',
+    [AttendanceController::class,'update']
+)->name('admin.attendance.update');
 
-Route::delete('/attendance/{id}', [AttendanceController::class,'destroy'])
-    ->name('admin.attendance.delete');
+Route::delete('/attendance/{id}',
+    [AttendanceController::class,'destroy']
+)->name('admin.attendance.delete');
 
     
 
