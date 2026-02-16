@@ -6,23 +6,25 @@ use App\Models\Attendance;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\AttendanceExport;
 
 class AttendanceController extends Controller
 {
+
     /*
     |--------------------------------------------------------------------------
-    | EMPLOYEE SECTION
+    | Employee Attendance View
     |--------------------------------------------------------------------------
     */
-
     public function index(Request $request)
     {
         $month = $request->month ?? now()->format('Y-m');
 
         $records = Attendance::where('user_id', auth()->id())
-            ->whereMonth('created_at', Carbon::parse($month)->month)
-            ->whereYear('created_at', Carbon::parse($month)->year)
-            ->orderByDesc('created_at')
+            ->whereMonth('clock_in', Carbon::parse($month)->month)
+            ->whereYear('clock_in', Carbon::parse($month)->year)
+            ->orderByDesc('clock_in')
             ->get();
 
         $active = Attendance::where('user_id', auth()->id())
@@ -30,29 +32,50 @@ class AttendanceController extends Controller
             ->latest()
             ->first();
 
-        return view('attendance.index', compact('records','active','month'));
+        return view('attendance.index', compact('records','month','active'));
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Clock In
+    |--------------------------------------------------------------------------
+    */
     public function clockIn(Request $request)
     {
-        $active = Attendance::where('user_id', auth()->id())
-            ->whereNull('clock_out')
-            ->first();
+        $today = now()->toDateString();
 
-        if ($active) {
-            return response()->json(['error'=>'Already clocked in'], 400);
+        $exists = Attendance::where('user_id', auth()->id())
+            ->whereDate('clock_in', $today)
+            ->exists();
+
+        if ($exists) {
+            return response()->json(['message'=>'Already clocked in'], 400);
         }
+
+        $clockIn = now();
+
+        // Late detection (after 9:15 AM)
+        $lateTime = Carbon::createFromTime(9,15,0);
+
+        $isLate = $clockIn->gt($lateTime);
 
         Attendance::create([
             'user_id' => auth()->id(),
-            'clock_in' => now(),
+            'clock_in' => $clockIn,
             'latitude' => $request->latitude,
-            'longitude' => $request->longitude
+            'longitude' => $request->longitude,
+            'is_late' => $isLate,
+            'status' => $isLate ? 'late' : 'present'
         ]);
 
         return response()->json(['success'=>true]);
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Clock Out
+    |--------------------------------------------------------------------------
+    */
     public function clockOut()
     {
         $attendance = Attendance::where('user_id', auth()->id())
@@ -61,14 +84,15 @@ class AttendanceController extends Controller
             ->first();
 
         if (!$attendance) {
-            return response()->json(['error'=>'No active clock-in'], 400);
+            return response()->json(['message'=>'No active clock in'], 400);
         }
 
         $attendance->clock_out = now();
-        $attendance->total_hours =
-            Carbon::parse($attendance->clock_in)
-                ->floatDiffInHours(now());
 
+        $hours = Carbon::parse($attendance->clock_in)
+            ->diffInMinutes(now()) / 60;
+
+        $attendance->total_hours = round($hours,2);
         $attendance->save();
 
         return response()->json(['success'=>true]);
@@ -76,99 +100,62 @@ class AttendanceController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | ADMIN SECTION
+    | Admin Dashboard
     |--------------------------------------------------------------------------
     */
-
     public function adminIndex(Request $request)
     {
         $month = $request->month ?? now()->format('Y-m');
 
         $records = Attendance::with('user')
-            ->whereMonth('created_at', Carbon::parse($month)->month)
-            ->whereYear('created_at', Carbon::parse($month)->year)
-            ->orderByDesc('created_at')
+            ->whereMonth('clock_in', Carbon::parse($month)->month)
+            ->whereYear('clock_in', Carbon::parse($month)->year)
+            ->orderByDesc('clock_in')
             ->get();
 
-        $employees = User::where('role','employee')->get();
-
-        return view('attendance.admin-index',
-            compact('records','employees','month'));
+        return view('attendance.admin-index', compact('records','month'));
     }
 
-    public function create()
-    {
-        $employees = User::where('role','employee')->get();
-        return view('attendance.create', compact('employees'));
-    }
-
-    public function store(Request $request)
-    {
-        $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'clock_in' => 'required|date',
-            'clock_out' => 'nullable|date|after:clock_in'
-        ]);
-
-        $hours = null;
-
-        if ($request->clock_out) {
-            $hours = Carbon::parse($request->clock_in)
-                ->floatDiffInHours($request->clock_out);
-        }
-
-        Attendance::create([
-            'user_id' => $request->user_id,
-            'clock_in' => $request->clock_in,
-            'clock_out' => $request->clock_out,
-            'total_hours' => $hours
-        ]);
-
-        return redirect()->route('admin.attendance.index')
-            ->with('success','Attendance Added Successfully');
-    }
-
-    public function edit($id)
-    {
-        $attendance = Attendance::findOrFail($id);
-        $employees = User::where('role','employee')->get();
-
-        return view('attendance.edit',
-            compact('attendance','employees'));
-    }
-
-    public function update(Request $request, $id)
-    {
-        $attendance = Attendance::findOrFail($id);
-
-        $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'clock_in' => 'required|date',
-            'clock_out' => 'nullable|date|after:clock_in'
-        ]);
-
-        $hours = null;
-
-        if ($request->clock_out) {
-            $hours = Carbon::parse($request->clock_in)
-                ->floatDiffInHours($request->clock_out);
-        }
-
-        $attendance->update([
-            'user_id' => $request->user_id,
-            'clock_in' => $request->clock_in,
-            'clock_out' => $request->clock_out,
-            'total_hours' => $hours
-        ]);
-
-        return redirect()->route('admin.attendance.index')
-            ->with('success','Attendance Updated Successfully');
-    }
-
+    /*
+    |--------------------------------------------------------------------------
+    | Delete Attendance
+    |--------------------------------------------------------------------------
+    */
     public function destroy($id)
     {
         Attendance::findOrFail($id)->delete();
+        return back()->with('success','Attendance deleted');
+    }
 
-        return back()->with('success','Attendance Deleted');
+    /*
+    |--------------------------------------------------------------------------
+    | Attendance Percentage
+    |--------------------------------------------------------------------------
+    */
+    public function percentage($userId, $month)
+    {
+        $monthCarbon = Carbon::parse($month);
+
+        $totalDays = $monthCarbon->daysInMonth;
+
+        $present = Attendance::where('user_id',$userId)
+            ->whereMonth('clock_in',$monthCarbon->month)
+            ->whereYear('clock_in',$monthCarbon->year)
+            ->count();
+
+        return round(($present / $totalDays) * 100,2);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Export Excel
+    |--------------------------------------------------------------------------
+    */
+    public function export(Request $request)
+    {
+        return Excel::download(
+            new AttendanceExport($request->month),
+            'attendance.xlsx'
+        );
     }
 }
