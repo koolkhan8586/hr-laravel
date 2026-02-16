@@ -83,7 +83,7 @@ return view('loan.create', compact('employees'));
         $request->validate([
             'user_id' => 'required',
             'amount' => 'required|numeric|min:1',
-            'opening_balance' => 'nullable|numeric|min:0'
+            'opening_balance' => 'nullable|numeric|min:0',
             'installments' => 'required|integer|min:1',
         ]);
 
