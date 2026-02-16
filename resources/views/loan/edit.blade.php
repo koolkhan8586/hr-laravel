@@ -20,6 +20,13 @@
                        class="w-full border rounded px-3 py-2 bg-gray-100">
             </div>
 
+            <div class="mb-3">
+    <label>Opening Balance</label>
+    <input type="number"
+           name="opening_balance"
+           value="{{ $loan->opening_balance }}"
+           class="form-control">
+</div>
             <div class="mb-4">
                 <label class="block text-sm font-medium mb-1">
                     Loan Amount
