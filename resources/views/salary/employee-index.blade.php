@@ -61,9 +61,10 @@
                     </td>
                     <td class="p-3">
                         <a href="{{ route('salary.download', $salary->id) }}"
-                           class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs">
-                            Download
-                        </a>
+   class="bg-blue-600 text-white px-3 py-1 rounded text-xs">
+    Download / Print
+</a>
+
                     </td>
                 </tr>
                 @endforeach
