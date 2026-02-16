@@ -40,15 +40,25 @@
             Present
         @endif
     </td>
-    <td class="p-2">
-        <form method="POST"
-              action="{{ route('admin.attendance.delete',$r->id) }}">
-            @csrf @method('DELETE')
-            <button class="bg-red-600 text-white px-3 py-1 rounded text-xs">
-                Delete
-            </button>
-        </form>
-    </td>
+    <td class="p-2 space-x-2">
+
+    <a href="{{ route('admin.attendance.edit',$r->id) }}"
+       class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-xs">
+       Edit
+    </a>
+
+    <form action="{{ route('admin.attendance.destroy',$r->id) }}"
+          method="POST"
+          class="inline"
+          onsubmit="return confirm('Delete this attendance?')">
+        @csrf
+        @method('DELETE')
+        <button class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs">
+            Delete
+        </button>
+    </form>
+
+</td>
 </tr>
 @endforeach
 </tbody>
