@@ -87,6 +87,7 @@ return view('loan.create', compact('employees'));
             'installments' => 'required|integer|min:1',
         ]);
 
+        $opening = $request->opening_balance ?? 0;
         $monthly = $request->amount / $request->installments;
 
         Loan::create([
