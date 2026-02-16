@@ -27,7 +27,6 @@ class AttendanceExport implements FromCollection
                 return [
                     'Employee'=>$r->user->name,
                     'Date'=>$r->clock_in,
-                    'Date'=>$r->clock_out,
                     'Hours'=>$r->total_hours,
                     'Status'=>$r->status
                 ];
