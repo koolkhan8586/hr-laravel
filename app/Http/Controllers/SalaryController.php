@@ -192,13 +192,15 @@ public function employeeIndex()
     */
     public function post($id)
 {
-    $salary = Salary::findOrFail($id);
+    $salary = Salary::with('user')->findOrFail($id);
 
-    $salary->update([
-        'is_posted' => 1
-    ]);
+    $salary->update(['is_posted' => 1]);
 
-    return back()->with('success', 'Salary Posted Successfully');
+    // SEND EMAIL
+    Mail::to($salary->user->email)
+        ->send(new SalaryPostedMail($salary));
+
+    return back()->with('success','Salary posted & email sent');
 }
 
 
