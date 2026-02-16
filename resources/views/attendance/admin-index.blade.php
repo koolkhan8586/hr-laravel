@@ -132,7 +132,7 @@
                            Edit
                         </a>
 
-                        <form action="{{ route('admin.attendance.delete',$r->id) }}"
+                        <form action="{{ route('admin.attendance.destroy',$r->id) }}"
                               method="POST"
                               class="inline"
                               onsubmit="return confirm('Delete this attendance?')">
