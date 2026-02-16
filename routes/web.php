@@ -94,34 +94,38 @@ Route::middleware(['auth', 'admin'])
     Route::get('/staff/export',[StaffController::class, 'export'])->name('staff.export');
 
     /*
-    |--------------------------------------------------------------------------
-    | Admin Attendance Management (FIXED)
-    |--------------------------------------------------------------------------
-    */
-    Route::get('/attendance', [AttendanceController::class,'adminIndex'])
-        ->name('attendance.index');
+|--------------------------------------------------------------------------
+| Admin Attendance Management
+|--------------------------------------------------------------------------
+*/
 
-    Route::get('/attendance/create', [AttendanceController::class,'create'])
-        ->name('attendance.create');
+Route::get('/attendance', [AttendanceController::class,'adminIndex'])
+    ->name('admin.attendance.index');
 
-    Route::post('/attendance/store', [AttendanceController::class,'store'])
-        ->name('attendance.store');
+Route::get('/attendance/export', 
+    [AttendanceController::class, 'export']
+)->name('admin.attendance.export');
 
-    Route::get('/attendance/export', [AttendanceController::class,'export'])
-        ->name('attendance.export');
+/* 🔥 ADD THIS RIGHT HERE */
+Route::get('/attendance/analytics/{month}',
+    [AttendanceController::class,'analytics']
+)->name('admin.attendance.analytics');
 
-    Route::get('/attendance/analytics/{month}',[AttendanceController::class,'analytics'])
-    ->name('admin.attendance.analytics');
-        
-    Route::get('/attendance/{id}/edit', [AttendanceController::class,'edit'])
-        ->name('attendance.edit');
+Route::get('/attendance/create', [AttendanceController::class,'create'])
+    ->name('admin.attendance.create');
 
-    Route::put('/attendance/{id}', [AttendanceController::class,'update'])
-        ->name('attendance.update');
+Route::post('/attendance/store', [AttendanceController::class,'store'])
+    ->name('admin.attendance.store');
 
-    // ✅ FIXED NAME (this was your error)
-    Route::delete('/attendance/{id}', [AttendanceController::class,'destroy'])
-        ->name('attendance.destroy');
+/* KEEP THIS AFTER ANALYTICS ROUTE */
+Route::get('/attendance/{id}/edit', [AttendanceController::class,'edit'])
+    ->name('admin.attendance.edit');
+
+Route::put('/attendance/{id}', [AttendanceController::class,'update'])
+    ->name('admin.attendance.update');
+
+Route::delete('/attendance/{id}', [AttendanceController::class,'destroy'])
+    ->name('admin.attendance.delete');
 
     
 
