@@ -48,7 +48,26 @@
         </div>
     </div>
 
+    <canvas id="attendanceChart" height="100"></canvas>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+fetch("{{ route('admin.attendance.analytics',$month) }}")
+.then(res => res.json())
+.then(data => {
+    new Chart(document.getElementById('attendanceChart'), {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(data),
+            datasets: [{
+                data: Object.values(data)
+            }]
+        }
+    });
+});
+</script>
+
+    
     {{-- ATTENDANCE TABLE --}}
     <div class="bg-white shadow rounded overflow-hidden">
 
