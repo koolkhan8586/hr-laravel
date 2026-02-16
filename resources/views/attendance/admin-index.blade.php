@@ -35,8 +35,8 @@
     {{-- SUMMARY CARDS --}}
     <div class="grid grid-cols-4 gap-4 mb-6">
         <div class="bg-green-100 rounded-xl shadow p-6 text-center">
-            <div class="text-3xl font-bold text-green-700">{{ $present }}</div>
-            <div class="text-gray-600 mt-1">Present</div>
+            <div class="text-gray-600 mb-1">Present</div>
+<div class="text-4xl font-bold text-green-700">{{ $present }}</div>
         </div>
 
         <div class="bg-yellow-100 rounded-xl shadow p-6 text-center">
@@ -55,18 +55,18 @@
         </div>
 
         <div class="bg-purple-100 rounded-xl shadow p-6 text-center">
-            <div class="text-3xl font-bold text-purple-700">{{ $percentage }}%</div>
-            <div class="text-gray-600 mt-1">Attendance %</div>
-        </div>
+    <div class="text-3xl font-bold text-purple-700">{{ $percentage }}%</div>
+    <div class="text-gray-600">Attendance %</div>
+</div>
 
     </div>
 
     {{-- DONUT CHART --}}
-    <div class="flex justify-center mb-10">
-        <div style="width:400px; height:400px;">
-            <canvas id="attendanceChart"></canvas>
-        </div>
+    <div class="flex justify-center mt-8">
+    <div class="w-80">
+        <canvas id="attendanceChart"></canvas>
     </div>
+</div>
 
     {{-- ATTENDANCE TABLE --}}
     <table class="w-full bg-white shadow rounded overflow-hidden">
