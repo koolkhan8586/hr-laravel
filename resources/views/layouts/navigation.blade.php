@@ -86,6 +86,11 @@
             Staff Management
         </a>
 
+        <a href="{{ route('admin.attendance.index') }}"
+   class="block px-4 py-2 hover:bg-gray-100">
+   Attendance Management
+</a>
+
         <a href="{{ route('admin.leave.index') }}"
            class="block px-4 py-2 hover:bg-gray-100">
             Manage Leaves
