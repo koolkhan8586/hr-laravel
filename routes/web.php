@@ -115,6 +115,10 @@ Route::get('/attendance/create', [AttendanceController::class,'create'])
 
 Route::post('/attendance/store', [AttendanceController::class,'store'])
     ->name('admin.attendance.store');
+        
+Route::get('/attendance/export', 
+        [AttendanceController::class, 'export']
+    )->name('admin.attendance.export');
 
 Route::get('/attendance/{id}/edit', [AttendanceController::class,'edit'])
     ->name('admin.attendance.edit');
