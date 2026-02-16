@@ -9,20 +9,24 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('loans', function (Blueprint $table) {
-            $table->decimal('opening_balance', 12,2)
-                  ->default(0)
-                  ->after('amount');
 
-            $table->decimal('remaining_balance', 12,2)
-                  ->default(0)
-                  ->after('opening_balance');
+            if (!Schema::hasColumn('loans', 'opening_balance')) {
+                $table->decimal('opening_balance', 12,2)
+                      ->default(0)
+                      ->after('amount');
+            }
+
         });
     }
 
     public function down(): void
     {
         Schema::table('loans', function (Blueprint $table) {
-            $table->dropColumn(['opening_balance','remaining_balance']);
+
+            if (Schema::hasColumn('loans', 'opening_balance')) {
+                $table->dropColumn('opening_balance');
+            }
+
         });
     }
 };
