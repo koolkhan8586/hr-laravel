@@ -188,7 +188,7 @@ return view('loan.create', compact('employees'));
 
         $loan->update([
             'amount' => $request->amount,
-            'opening_balance' => 'nullable|numeric|min:0'
+            'opening_balance' => 'nullable|numeric|min:0',
             'installments' => $request->installments,
             'monthly_deduction' => $monthly,
             'remaining_balance' => $remaining,
