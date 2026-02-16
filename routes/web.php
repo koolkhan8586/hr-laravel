@@ -129,7 +129,7 @@ Route::put('/attendance/{id}',
 
 Route::delete('/attendance/{id}',
     [AttendanceController::class,'destroy']
-)->name('attendance.delete');
+)->name('attendance.destroy');
 
     
 
