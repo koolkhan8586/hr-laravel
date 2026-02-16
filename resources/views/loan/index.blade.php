@@ -19,6 +19,7 @@
             <thead class="bg-gray-100">
                 <tr>
                     <th class="p-3 text-left">Employee</th>
+                    <th class="p-3 text-left">Opening Balance</th>
                     <th class="p-3 text-left">Amount</th>
                     <th class="p-3 text-left">Installments</th>
                     <th class="p-3 text-left">Monthly</th>
@@ -34,10 +35,11 @@
 
                     <td class="p-3">{{ $loan->user->name }}</td>
 
+                   
                     <td class="p-3">
                         Rs {{ number_format($loan->amount,2) }}
                     </td>
-
+                    <td>{{ number_format($loan->opening_balance,2) }}</td>
                     <td class="p-3">
                         {{ $loan->installments }}
                     </td>
