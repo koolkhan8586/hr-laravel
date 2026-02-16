@@ -2,75 +2,169 @@
 
 namespace App\Http\Controllers;
 
-use App\Mail\AttendanceNotification;
-use Illuminate\Support\Facades\Mail;
 use App\Models\Attendance;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
 class AttendanceController extends Controller
 {
-    public function index(Request $request)
-{
-    $month = $request->month ?? now()->format('Y-m');
 
-    $records = Attendance::where('user_id', auth()->id())
-        ->whereRaw("DATE_FORMAT(created_at, '%Y-%m') = ?", [$month])
-        ->orderBy('created_at', 'desc')
-        ->get();
+    /*
+    |--------------------------------------------------------------------------
+    | Employee Clock In / Clock Out
+    |--------------------------------------------------------------------------
+    */
 
-    $active = Attendance::where('user_id', auth()->id())
-    ->whereNull('clock_out')
-    ->latest('clock_in')
-    ->first();
+    public function clockIn(Request $request)
+    {
+        $today = Carbon::today();
 
+        // Prevent double clock in same day
+        $exists = Attendance::where('user_id', auth()->id())
+            ->whereDate('clock_in', $today)
+            ->exists();
 
-    return view('attendance.index', compact('records', 'month', 'active'));
-}
+        if ($exists) {
+            return back()->with('error','Already clocked in today.');
+        }
 
-public function clockIn(Request $request)
-{
-    $alreadyClocked = Attendance::where('user_id', auth()->id())
-        ->whereDate('clock_in', today())
-        ->exists();
+        Attendance::create([
+            'user_id' => auth()->id(),
+            'clock_in' => now(),
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude
+        ]);
 
-    if ($alreadyClocked) {
-        return response()->json(['error' => 'Already clocked in today'], 400);
+        return back()->with('success','Clocked In Successfully');
     }
 
-    $attendance = Attendance::create([
-        'user_id' => auth()->id(),
-        'clock_in' => now(),
-        'latitude' => $request->latitude,
-        'longitude' => $request->longitude
-    ]);
+    public function clockOut()
+    {
+        $attendance = Attendance::where('user_id', auth()->id())
+            ->whereDate('clock_in', Carbon::today())
+            ->first();
 
-    Mail::to(auth()->user()->email)
-        ->send(new AttendanceNotification('Clock In', $attendance));
+        if (!$attendance) {
+            return back()->with('error','No clock-in found.');
+        }
 
-    return response()->json(['success' => true]);
-}
+        if ($attendance->clock_out) {
+            return back()->with('error','Already clocked out.');
+        }
 
-public function clockOut()
-{
-    $attendance = Attendance::where('user_id', auth()->id())
-        ->whereNull('clock_out')
-        ->latest('clock_in')
-        ->first();
+        $attendance->clock_out = now();
 
-    if (!$attendance) {
-        return response()->json(['error' => 'No active clock-in found'], 400);
+        // Calculate total hours
+        $hours = Carbon::parse($attendance->clock_in)
+                    ->diffInMinutes($attendance->clock_out) / 60;
+
+        $attendance->total_hours = round($hours,2);
+
+        $attendance->save();
+
+        return back()->with('success','Clocked Out Successfully');
     }
 
-    $attendance->clock_out = now();
+    /*
+    |--------------------------------------------------------------------------
+    | Admin Attendance Dashboard
+    |--------------------------------------------------------------------------
+    */
 
-    $attendance->total_hours =
-        \Carbon\Carbon::parse($attendance->clock_in)
-            ->diffInMinutes(now()) / 60;
+    public function adminIndex()
+    {
+        $attendances = Attendance::with('user')
+            ->orderByDesc('clock_in') // latest on top
+            ->get();
 
-    $attendance->save();
+        return view('attendance.admin-index', compact('attendances'));
+    }
 
-    return response()->json(['success' => true]);
-}
+    /*
+    |--------------------------------------------------------------------------
+    | Admin Add Attendance
+    |--------------------------------------------------------------------------
+    */
 
+    public function create()
+    {
+        $employees = User::where('role','employee')->get();
+        return view('attendance.create', compact('employees'));
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required',
+            'clock_in' => 'required|date',
+            'clock_out' => 'nullable|date'
+        ]);
+
+        $totalHours = null;
+
+        if ($request->clock_out) {
+            $totalHours = Carbon::parse($request->clock_in)
+                ->diffInMinutes(Carbon::parse($request->clock_out)) / 60;
+        }
+
+        Attendance::create([
+            'user_id' => $request->user_id,
+            'clock_in' => $request->clock_in,
+            'clock_out' => $request->clock_out,
+            'total_hours' => round($totalHours,2)
+        ]);
+
+        return redirect()->route('admin.attendance.index')
+            ->with('success','Attendance Added Successfully');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Edit Attendance
+    |--------------------------------------------------------------------------
+    */
+
+    public function edit($id)
+    {
+        $attendance = Attendance::findOrFail($id);
+        $employees = User::where('role','employee')->get();
+
+        return view('attendance.edit', compact('attendance','employees'));
+    }
+
+    public function update(Request $request, $id)
+    {
+        $attendance = Attendance::findOrFail($id);
+
+        $totalHours = null;
+
+        if ($request->clock_out) {
+            $totalHours = Carbon::parse($request->clock_in)
+                ->diffInMinutes(Carbon::parse($request->clock_out)) / 60;
+        }
+
+        $attendance->update([
+            'user_id' => $request->user_id,
+            'clock_in' => $request->clock_in,
+            'clock_out' => $request->clock_out,
+            'total_hours' => round($totalHours,2)
+        ]);
+
+        return redirect()->route('admin.attendance.index')
+            ->with('success','Attendance Updated');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Delete Attendance
+    |--------------------------------------------------------------------------
+    */
+
+    public function destroy($id)
+    {
+        Attendance::findOrFail($id)->delete();
+
+        return back()->with('success','Attendance Deleted');
+    }
 }
