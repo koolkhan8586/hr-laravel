@@ -33,7 +33,7 @@
     @endphp
 
     {{-- SUMMARY CARDS --}}
-    <div class="space-y-5 mb-8">
+    <div class="grid grid-cols-4 gap-4 mb-6">
         <div class="bg-green-100 rounded-xl shadow p-6 text-center">
             <div class="text-3xl font-bold text-green-700">{{ $present }}</div>
             <div class="text-gray-600 mt-1">Present</div>
