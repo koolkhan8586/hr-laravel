@@ -39,6 +39,19 @@
                 </select>
             </div>
 
+           <div class="mb-4">
+    <label class="block text-sm font-medium mb-1">
+        Opening Leave Balance
+    </label>
+    <input type="number"
+           name="opening_balance"
+           value="0"
+           class="w-full border rounded px-3 py-2"
+           min="0"
+           required>
+</div>
+
+            
             {{-- Leave Type --}}
             <div class="mb-4">
                 <label class="block font-medium mb-1">Leave Type</label>
