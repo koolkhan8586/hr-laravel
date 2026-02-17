@@ -125,24 +125,26 @@ public function employeeIndex()
             + ($request->other_earnings ?? 0);
 
         // Loan deduction
-        $loan = Loan::where('user_id', $salary->user_id)
-            ->where('remaining_balance', '>', 0)
-            ->first();
+        if($salary->loan_deduction > 0)
+{
+    $loan = Loan::where('user_id', $salary->user_id)
+                ->where('status','approved')
+                ->first();
 
-if ($loan) {
+    if($loan)
+    {
+        $loan->remaining_balance -= $salary->loan_deduction;
+        $loan->save();
 
-    $deduction = min($loan->monthly_deduction, $loan->remaining_balance);
-
-    $loan->remaining_balance -= $deduction;
-    $loan->save();
-
-    LoanLedger::create([
-        'loan_id' => $loan->id,
-        'amount' => $deduction,
-        'type' => 'deduction',
-        'remarks' => 'Monthly salary deduction'
-    ]);
+        LoanLedger::create([
+            'loan_id' => $loan->id,
+            'amount' => $salary->loan_deduction,
+            'type' => 'deduction',
+            'remarks' => 'Salary deduction for '.$salary->month.'/'.$salary->year
+        ]);
+    }
 }
+
 
         // Deductions
         $deductions =
