@@ -6,7 +6,7 @@
     @if($loan)
 
         {{-- ================= SUMMARY CARDS ================= --}}
-        <div class="grid grid-cols-6 md:grid-cols-4 gap-6 mb-8">
+        <div class="grid grid-cols-4 md:grid-cols-4 gap-6 mb-8">
 
             <div class="bg-white p-6 rounded shadow">
                 <p class="text-gray-500">Total Loan</p>
