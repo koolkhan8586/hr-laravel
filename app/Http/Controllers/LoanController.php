@@ -129,7 +129,7 @@ LoanLedger::create([
 {
     $loan = Loan::with('ledgers','user')->findOrFail($id);
 
-    return view('loans.ledger', compact('loan'));
+    return view('loan.ledger', compact('loan'));
 }
 
     public function approve($id)
