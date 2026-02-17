@@ -58,14 +58,15 @@ class LoanController extends Controller
 }
 
     public function myLoan()
-    {
-        $loan = Loan::with('payments')
-            ->where('user_id', auth()->id())
-            ->whereIn('status', ['approved', 'completed'])
-            ->first();
+{
+    $loan = Loan::with('ledgers')
+                ->where('user_id', auth()->id())
+                ->where('status', 'approved')
+                ->first();
 
-        return view('loan.my', compact('loan'));
-    }
+    return view('loan.my', compact('loan'));
+}
+
 
 
     /*
