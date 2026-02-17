@@ -5,6 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
+
     public function up(): void
     {
         Schema::create('leave_balances', function (Blueprint $table) {
@@ -15,8 +16,8 @@ return new class extends Migration {
                   ->cascadeOnDelete();
 
             $table->integer('opening_balance')->default(0);
-            $table->integer('used_leaves')->default(0);
-            $table->integer('remaining_leaves')->default(0);
+            $table->decimal('used_leaves', 5,2)->default(0);
+            $table->decimal('remaining_leaves', 5,2)->default(0);
 
             $table->timestamps();
         });
@@ -27,4 +28,5 @@ return new class extends Migration {
         Schema::dropIfExists('leave_balances');
     }
 };
+
 
