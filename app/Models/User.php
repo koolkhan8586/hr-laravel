@@ -70,6 +70,12 @@ public function leaves()
     return $this->hasMany(Leave::class);
 }
 
+    public function leaveBalance()
+{
+    return $this->hasOne(LeaveBalance::class);
+}
+
+
 public function loans()
 {
     return $this->hasMany(Loan::class);
