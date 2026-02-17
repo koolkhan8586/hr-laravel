@@ -11,6 +11,11 @@
            class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded shadow">
             Assign Loan
         </a>
+        <a href="{{ route('admin.loan.ledger',$loan->id) }}"
+   class="text-blue-600 hover:underline">
+   Ledger
+</a>
+
     </div>
 
     <div class="bg-white shadow rounded overflow-hidden">
