@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Salary;
 use App\Models\User;
 use App\Models\Loan;
+use App\Models\LoanLedger;
 use App\Models\LoanPayment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -124,18 +125,24 @@ public function employeeIndex()
             + ($request->other_earnings ?? 0);
 
         // Loan deduction
-        $loan = Loan::where('user_id', $request->user_id)
-            ->where('status', 'approved')
+        $loan = Loan::where('user_id', $salary->user_id)
             ->where('remaining_balance', '>', 0)
             ->first();
 
-        $loanDeduction = 0;
+if ($loan) {
 
-        if ($loan) {
-            $loanDeduction = min($loan->monthly_deduction, $loan->remaining_balance);
-            $loan->remaining_balance -= $loanDeduction;
-            $loan->save();
-        }
+    $deduction = min($loan->monthly_deduction, $loan->remaining_balance);
+
+    $loan->remaining_balance -= $deduction;
+    $loan->save();
+
+    LoanLedger::create([
+        'loan_id' => $loan->id,
+        'amount' => $deduction,
+        'type' => 'deduction',
+        'remarks' => 'Monthly salary deduction'
+    ]);
+}
 
         // Deductions
         $deductions =
