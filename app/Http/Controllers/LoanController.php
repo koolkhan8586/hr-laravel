@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\LoansExport;
 use App\Imports\LoansImport;
+use App\Models\LoanLedger;
+
 
 class LoanController extends Controller
 {
@@ -89,19 +91,36 @@ return view('loan.create', compact('employees'));
 
     $opening = $request->opening_balance ?? 0;
 
-    $totalAmount = $request->amount + $opening;
+$totalLoan = $request->amount + $opening;
 
-    $monthly = $totalAmount / $request->installments;
+$monthly = $request->amount / $request->installments;
 
-    Loan::create([
-        'user_id' => $request->user_id,
-        'amount' => $request->amount,
-        'opening_balance' => $opening,
-        'installments' => $request->installments,
-        'monthly_deduction' => $monthly,
-        'remaining_balance' => $totalAmount,
-        'status' => 'approved'
+$loan = Loan::create([
+    'user_id' => $request->user_id,
+    'amount' => $request->amount,
+    'opening_balance' => $opening,
+    'installments' => $request->installments,
+    'monthly_deduction' => $monthly,
+    'remaining_balance' => $totalLoan,
+    'status' => 'approved'
+]);
+    // Opening balance entry
+if ($opening > 0) {
+    LoanLedger::create([
+        'loan_id' => $loan->id,
+        'amount' => $opening,
+        'type' => 'opening',
+        'remarks' => 'Opening balance'
     ]);
+}
+
+// New loan entry
+LoanLedger::create([
+    'loan_id' => $loan->id,
+    'amount' => $request->amount,
+    'type' => 'loan',
+    'remarks' => 'New loan issued'
+]);
 
     return redirect()->route('admin.loan.index')
         ->with('success','Loan created successfully');
