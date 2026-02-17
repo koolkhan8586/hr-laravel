@@ -30,9 +30,18 @@ class LeaveController extends Controller
     }
 
     public function create()
-    {
-        return view('leave.create');
+{
+    // If admin → show all employees
+    if(auth()->user()->role === 'admin'){
+        $employees = \App\Models\User::where('role','employee')->get();
+        return view('leave.create', compact('employees'));
     }
+
+    // If employee → only himself
+    $employees = collect([auth()->user()]);
+    return view('leave.create', compact('employees'));
+}
+
 
     public function store(Request $request)
     {
