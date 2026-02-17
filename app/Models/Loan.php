@@ -27,4 +27,10 @@ class Loan extends Model
     {
         return $this->hasMany(LoanPayment::class);
     }
+
+    public function ledgers()
+{
+    return $this->hasMany(\App\Models\LoanLedger::class);
+}
+
 }
