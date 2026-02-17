@@ -9,12 +9,12 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
-    {
-        Schema::table('leave_balances', function (Blueprint $table) {
-            //
-        });
-    }
+    public function up()
+{
+    Schema::table('leave_balances', function (Blueprint $table) {
+        $table->integer('opening_balance')->default(0);
+    });
+}
 
     /**
      * Reverse the migrations.
