@@ -96,6 +96,12 @@
                                 Edit
                             </a>
 
+                            <a href="{{ route('admin.loan.ledger',$loan->id) }}"
+       class="text-blue-600 font-semibold">
+       Ledger
+    </a>
+
+
                             {{-- Delete --}}
                             <form action="{{ route('admin.loan.delete', $loan->id) }}"
                                   method="POST"
