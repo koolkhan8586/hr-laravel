@@ -11,10 +11,6 @@
            class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded shadow">
             Assign Loan
         </a>
-        <a href="{{ route('admin.loan.ledger',$loan->id) }}"
-   class="text-blue-600 hover:underline">
-   Ledger
-</a>
 
     </div>
 
@@ -68,6 +64,10 @@
 
                     <td class="p-3 space-x-2">
 
+                        <a href="{{ route('admin.loan.ledger',$loan->id) }}"
+       class="text-blue-600 font-semibold mr-2">
+       Ledger
+    </a>
                         <a href="{{ route('admin.loan.edit',$loan->id) }}"
                            class="bg-blue-500 text-white px-3 py-1 rounded text-sm">
                             Edit
