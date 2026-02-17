@@ -1,8 +1,11 @@
+<?php
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+class CreateLoanLedgersTable extends Migration
+{
     public function up(): void
     {
         Schema::create('loan_ledgers', function (Blueprint $table) {
@@ -12,7 +15,7 @@ return new class extends Migration {
                   ->cascadeOnDelete();
 
             $table->decimal('amount', 12,2);
-            $table->string('type'); // opening, deduction, adjustment
+            $table->string('type'); // opening, loan, deduction, adjustment
             $table->text('remarks')->nullable();
 
             $table->timestamps();
@@ -23,4 +26,4 @@ return new class extends Migration {
     {
         Schema::dropIfExists('loan_ledgers');
     }
-};
+}
