@@ -169,7 +169,7 @@ Route::delete('/attendance/{id}',
     Route::get('/loans/export', [LoanController::class,'export'])->name('loan.export');
     Route::get('/loans/import-form', [LoanController::class,'importForm'])->name('loan.import.form');
     Route::post('/loans/import', [LoanController::class,'import'])->name('loan.import');
-    Route::get('/loans/{id}/ledger',[LoanController::class,'ledger'])->name('admin.loan.ledger');
+    Route::get('/loans/{id}/ledger',[LoanController::class,'ledger'])->name('loan.ledger');
 
 
     /*
