@@ -48,6 +48,15 @@ class LoanController extends Controller
             ->with('success', 'Loan Request Submitted Successfully');
     }
 
+    public function employeeLedger($id)
+{
+    $loan = Loan::with('ledgers')
+        ->where('user_id', auth()->id())
+        ->findOrFail($id);
+
+    return view('loan.employee-ledger', compact('loan'));
+}
+
     public function myLoan()
     {
         $loan = Loan::with('payments')
