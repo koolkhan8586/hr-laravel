@@ -125,6 +125,13 @@ LoanLedger::create([
     return redirect()->route('admin.loan.index')
         ->with('success','Loan created successfully');
 }
+    public function ledger($id)
+{
+    $loan = Loan::with('ledgers','user')->findOrFail($id);
+
+    return view('loans.ledger', compact('loan'));
+}
+
     public function approve($id)
     {
         $loan = Loan::findOrFail($id);
