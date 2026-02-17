@@ -1,127 +1,283 @@
-<x-app-layout>
-<div class="max-w-7xl mx-auto py-8">
+<?php
 
-    <h2 class="text-2xl font-bold mb-6">Loan Dashboard</h2>
+namespace App\Http\Controllers;
 
-    @if($loan)
+use App\Models\Loan;
+use App\Models\User;
+use App\Models\LoanPayment;
+use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\LoansExport;
+use App\Imports\LoansImport;
+use App\Models\LoanLedger;
 
-        {{-- SUMMARY TILES --}}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
 
-            <div class="bg-white p-6 rounded-xl shadow hover:shadow-lg transition">
-                <p class="text-gray-500">Total Loan</p>
-                <h3 class="text-xl font-bold">
-                    Rs {{ number_format($loan->amount,2) }}
-                </h3>
-            </div>
+class LoanController extends Controller
+{
 
-            <div class="bg-white p-6 rounded-xl shadow hover:shadow-lg transition">
-                <p class="text-gray-500">Opening Balance</p>
-                <h3 class="text-xl font-bold text-purple-600">
-                    Rs {{ number_format($loan->opening_balance ?? 0,2) }}
-                </h3>
-            </div>
+    /*
+    |--------------------------------------------------------------------------
+    | EMPLOYEE SECTION
+    |--------------------------------------------------------------------------
+    */
 
-            <div class="bg-white p-6 rounded-xl shadow hover:shadow-lg transition">
-                <p class="text-gray-500">Monthly Deduction</p>
-                <h3 class="text-xl font-bold text-red-600">
-                    Rs {{ number_format($loan->monthly_deduction,2) }}
-                </h3>
-            </div>
+    public function apply()
+    {
+        return view('loan.apply');
+    }
 
-            <div class="bg-white p-6 rounded-xl shadow hover:shadow-lg transition">
-                <p class="text-gray-500">Remaining Balance</p>
-                <h3 class="text-xl font-bold text-blue-600">
-                    Rs {{ number_format($loan->remaining_balance,2) }}
-                </h3>
-            </div>
+    public function storeRequest(Request $request)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:1000',
+            'installments' => 'required|integer|min:1'
+        ]);
 
-        </div>
+        $monthly = $request->amount / $request->installments;
 
-        {{-- STATUS --}}
-        <div class="bg-white p-6 rounded-xl shadow mb-6">
-            <p class="text-gray-500">Status</p>
-            <h3 class="text-xl font-bold text-green-600 capitalize">
-                {{ $loan->status }}
-            </h3>
-        </div>
+        Loan::create([
+            'user_id' => auth()->id(),
+            'amount' => $request->amount,
+            'installments' => $request->installments,
+            'monthly_deduction' => $monthly,
+            'remaining_balance' => $request->amount,
+            'status' => 'pending'
+        ]);
 
-        {{-- LOAN PROGRESS --}}
-        @php
-            $paid = $loan->amount - $loan->remaining_balance;
-            $percentage = $loan->amount > 0 
-                ? round(($paid / $loan->amount) * 100,2)
-                : 0;
-        @endphp
+        return redirect()->route('loan.my')
+            ->with('success', 'Loan Request Submitted Successfully');
+    }
 
-        <div class="bg-white p-6 rounded-xl shadow mb-8">
-            <p class="text-gray-500 mb-2">Loan Progress</p>
+    public function employeeLedger($id)
+{
+    $loan = Loan::with('ledgers')
+        ->where('user_id', auth()->id())
+        ->findOrFail($id);
 
-            <div class="w-full bg-gray-200 rounded-full h-4">
-                <div class="bg-green-500 h-4 rounded-full transition-all duration-500"
-                     style="width: {{ $percentage }}%">
-                </div>
-            </div>
+    return view('loan.employee-ledger', compact('loan'));
+}
 
-            <p class="mt-2 text-sm text-gray-600">
-                {{ $percentage }}% Paid
-            </p>
-        </div>
+    public function myLoan()
+{
+    $loan = Loan::with('ledgers')
+                ->where('user_id', auth()->id())
+                ->where('status', 'approved')
+                ->first();
 
-        {{-- LEDGER HISTORY --}}
-        <h3 class="text-xl font-bold mb-4">Ledger History</h3>
+    return view('loan.my', compact('loan'));
+}
 
-        <div class="bg-white rounded-xl shadow overflow-hidden">
-            <table class="w-full text-sm">
-                <thead class="bg-gray-100">
-                    <tr>
-                        <th class="p-3 text-left">Date</th>
-                        <th class="p-3 text-left">Type</th>
-                        <th class="p-3 text-left">Amount</th>
-                        <th class="p-3 text-left">Remarks</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($loan->ledgers as $entry)
-                        <tr class="border-t hover:bg-gray-50">
-                            <td class="p-3">
-                                {{ $entry->created_at->format('d M Y') }}
-                            </td>
 
-                            <td class="p-3 capitalize">
-                                {{ $entry->type }}
-                            </td>
 
-                            <td class="p-3 font-semibold 
-                                @if($entry->type == 'deduction') text-red-600 
-                                @elseif($entry->type == 'opening') text-purple-600
-                                @else text-blue-600
-                                @endif">
-                                Rs {{ number_format($entry->amount,2) }}
-                            </td>
 
-                            <td class="p-3">
-                                {{ $entry->remarks ?? '-' }}
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="4" class="p-4 text-center text-gray-500">
-                                No ledger entries found.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+    /*
+    |--------------------------------------------------------------------------
+    | ADMIN SECTION
+    |--------------------------------------------------------------------------
+    */
 
-    @else
+    public function index()
+    {
+        $loans = Loan::with('user')
+            ->orderByDesc('created_at')
+            ->get();
 
-        <div class="bg-yellow-100 p-4 rounded-lg">
-            No approved loan found.
-        </div>
+        return view('loan.admin-index', compact('loans'));
+    }
 
-    @endif
+    public function create()
+    {
+        $employees = User::where('role', 'employee')->get();
+return view('loan.create', compact('employees'));
+    }
 
-</div>
-</x-app-layout>
+    public function store(Request $request)
+{
+    $request->validate([
+        'user_id' => 'required',
+        'amount' => 'required|numeric|min:1',
+        'installments' => 'required|integer|min:1',
+        'opening_balance' => 'nullable|numeric|min:0',
+    ]);
+
+    $opening = $request->opening_balance ?? 0;
+
+$totalLoan = $request->amount + $opening;
+
+$monthly = $request->amount / $request->installments;
+
+$loan = Loan::create([
+    'user_id' => $request->user_id,
+    'amount' => $request->amount,
+    'opening_balance' => $opening,
+    'installments' => $request->installments,
+    'monthly_deduction' => $monthly,
+    'remaining_balance' => $totalLoan,
+    'status' => 'approved'
+]);
+    // Opening balance entry
+if ($opening > 0) {
+    LoanLedger::create([
+        'loan_id' => $loan->id,
+        'amount' => $opening,
+        'type' => 'opening',
+        'remarks' => 'Opening balance'
+    ]);
+}
+
+// New loan entry
+LoanLedger::create([
+    'loan_id' => $loan->id,
+    'amount' => $request->amount,
+    'type' => 'loan',
+    'remarks' => 'New loan issued'
+]);
+
+    return redirect()->route('admin.loan.index')
+        ->with('success','Loan created successfully');
+}
+    public function ledger($id)
+{
+    $loan = Loan::with('ledgers','user')->findOrFail($id);
+
+    return view('loan.ledger', compact('loan'));
+}
+
+    public function approve($id)
+    {
+        $loan = Loan::findOrFail($id);
+
+        $loan->update([
+            'status' => 'approved',
+            'monthly_deduction' => $loan->amount / $loan->installments,
+            'remaining_balance' => $loan->amount
+        ]);
+
+        return back()->with('success', 'Loan Approved');
+    }
+
+    public function reject($id)
+    {
+        Loan::findOrFail($id)
+            ->update(['status' => 'rejected']);
+
+        return back()->with('success', 'Loan Rejected');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | IMPORT / EXPORT
+    |--------------------------------------------------------------------------
+    */
+
+    public function export()
+    {
+        return Excel::download(new LoansExport, 'loans.xlsx');
+    }
+
+    public function importForm()
+    {
+        return view('loan.import');
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,csv'
+        ]);
+
+        Excel::import(new LoansImport, $request->file('file'));
+
+        return back()->with('success', 'Loans Imported Successfully');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | EDIT / UPDATE / DELETE
+    |--------------------------------------------------------------------------
+    */
+
+    public function edit($id)
+    {
+        $loan = Loan::findOrFail($id);
+        return view('loan.edit', compact('loan'));
+    }
+
+    public function update(Request $request, $id)
+    {
+        $loan = Loan::findOrFail($id);
+
+        $request->validate([
+            'amount' => 'required|numeric|min:1',
+            'opening_balance' => 'nullable|numeric|min:0',
+            'installments' => 'required|integer|min:1',
+        ]);
+
+          $openingBalance = $request->opening_balance ?? 0;
+
+        $monthly = $request->amount / $request->installments;
+        
+
+        // If no payments yet → reset remaining balance
+        if ($loan->payments()->count() == 0) {
+            $remaining = $request->amount;
+        } else {
+            // Keep remaining balance unchanged
+            $remaining = $loan->remaining_balance;
+        }
+
+        $loan->update([
+            'amount' => $request->amount,
+            'opening_balance' => 'nullable|numeric|min:0',
+            'installments' => $request->installments,
+            'monthly_deduction' => $monthly,
+            'remaining_balance' => $remaining,
+        ]);
+
+        return redirect()->route('admin.loan.index')
+            ->with('success', 'Loan Updated Successfully');
+    }
+
+    public function destroy($id)
+    {
+        Loan::findOrFail($id)->delete();
+
+        return redirect()->route('admin.loan.index')
+            ->with('success', 'Loan Deleted Successfully');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | AUTO DEDUCTION WHEN SALARY POSTED
+    |--------------------------------------------------------------------------
+    */
+
+    public function deductLoan($loanId, $month, $year)
+    {
+        $loan = Loan::findOrFail($loanId);
+
+        if ($loan->status !== 'approved' || $loan->remaining_balance <= 0) {
+            return;
+        }
+
+        $deduction = min(
+            $loan->monthly_deduction,
+            $loan->remaining_balance
+        );
+
+        $newBalance = $loan->remaining_balance - $deduction;
+
+        LoanPayment::create([
+            'loan_id' => $loan->id,
+            'amount_paid' => $deduction,
+            'remaining_balance' => $newBalance,
+            'month' => $month,
+            'year' => $year
+        ]);
+
+        $loan->update([
+            'remaining_balance' => $newBalance,
+            'status' => $newBalance <= 0 ? 'completed' : 'approved'
+        ]);
+    }
+}
