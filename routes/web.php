@@ -159,6 +159,8 @@ Route::delete('/attendance/{id}',
     Route::post('/leave-balances/assign', [LeaveController::class,'assignLeave'])->name('leave.balance.assign');
     Route::post('/leave-balances/update/{id}', [LeaveController::class,'updateBalance'])->name('leave.balance.update');
     Route::delete('/leave-balances/delete/{id}', [LeaveController::class,'deleteBalance'])->name('leave.balance.delete');
+    Route::get('/leave-calendar',[LeaveController::class,'calendar'])->name('leave.calendar');
+
 
 
     /*
