@@ -215,7 +215,16 @@ class LeaveController extends Controller
     return back()->with('success','Leave Assigned Successfully');
 }
 
-/*
+public function balanceIndex()
+{
+    $balances = LeaveBalance::with('user')->get();
+    $employees = User::where('role','employee')->get();
+
+    return view('leave.balance', compact('balances','employees'));
+}
+
+    /*
+
 |--------------------------------------------------------------------------
 | APPROVAL LOGIC
 |--------------------------------------------------------------------------
