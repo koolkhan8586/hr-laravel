@@ -96,6 +96,12 @@
             Manage Leaves
         </a>
 
+        <a href="{{ route('admin.leave.calendar') }}"
+   class="block px-4 py-2 hover:bg-gray-100">
+   Leave Calendar
+</a>
+
+
         <a href="{{ route('admin.leave.balance.index') }}"
    class="block px-4 py-2 hover:bg-gray-100">
     Leave Allocation
