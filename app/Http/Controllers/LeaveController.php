@@ -235,47 +235,42 @@ class LeaveController extends Controller
 
     private function processApproval($leave)
 {
-    if ($leave->type === 'annual') {
-
-        $user = $leave->user;
-        $before = $user->annual_leave_balance;
-
-        if ($before < $leave->calculated_days) {
-            abort(403,'Insufficient Leave Balance');
-        }
-
-        $after = $before - $leave->calculated_days;
-
-        $user->update(['annual_leave_balance'=>$after]);
-
-        LeaveTransaction::create([
-            ...
-        ]);
+    if ($leave->type !== 'annual') {
+        return;
     }
+
+    $balance = \App\Models\LeaveBalance::firstOrCreate(
+        ['user_id' => $leave->user_id],
+        [
+            'opening_balance' => 0,
+            'used_leaves' => 0,
+            'remaining_leaves' => 0
+        ]
+    );
+
+    if ($balance->remaining_leaves < $leave->calculated_days) {
+        abort(403,'Insufficient Leave Balance');
+    }
+
+    $before = $balance->remaining_leaves;
+    $after  = $before - $leave->calculated_days;
+
+    $balance->update([
+        'used_leaves' => $balance->used_leaves + $leave->calculated_days,
+        'remaining_leaves' => $after
+    ]);
+
+    \App\Models\LeaveTransaction::create([
+        'user_id'        => $leave->user_id,
+        'leave_id'       => $leave->id,
+        'days'           => $leave->calculated_days,
+        'balance_before' => $before,
+        'balance_after'  => $after,
+        'action'         => 'approved',
+        'processed_by'   => auth()->id(),
+    ]);
 }
 
-        if($balance->remaining_leaves < $leave->calculated_days){
-            abort(403,'Insufficient Leave Balance');
-        }
-
-        $before = $balance->remaining_leaves;
-        $after  = $before - $leave->calculated_days;
-
-        $balance->update([
-            'remaining_leaves'=>$after,
-            'used_leaves'=>$balance->used_leaves + $leave->calculated_days
-        ]);
-
-        LeaveTransaction::create([
-            'user_id'=>$leave->user_id,
-            'leave_id'=>$leave->id,
-            'days'=>$leave->calculated_days,
-            'balance_before'=>$before,
-            'balance_after'=>$after,
-            'action'=>'approved',
-            'processed_by'=>auth()->id(),
-        ]);
-    }
 
 
 /*
