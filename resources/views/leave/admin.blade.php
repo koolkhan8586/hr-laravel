@@ -162,6 +162,21 @@
                         </a>
 
                         {{-- DELETE --}}
+                       
+                        <form method="POST" action="{{ route('admin.leave.assign') }}">
+    @csrf
+    <select name="user_id">
+        @foreach($employees as $emp)
+            <option value="{{ $emp->id }}">{{ $emp->name }}</option>
+        @endforeach
+    </select>
+
+    <input type="number" name="opening_balance" placeholder="Enter Leave Days">
+
+    <button type="submit">Assign Leave</button>
+</form>
+
+                        
                         <form method="POST"
                               action="{{ route('admin.leave.delete', $leave->id) }}"
                               class="inline"
