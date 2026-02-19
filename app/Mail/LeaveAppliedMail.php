@@ -16,10 +16,16 @@ class LeaveAppliedMail extends Mailable
     /**
      * Create a new message instance.
      */
-    public function __construct()
-    {
-        //
-    }
+    public function __construct($leave)
+{
+    $this->leave = $leave;
+}
+
+public function build()
+{
+    return $this->subject('New Leave Application')
+        ->view('emails.leave_applied');
+}
 
     /**
      * Get the message envelope.
