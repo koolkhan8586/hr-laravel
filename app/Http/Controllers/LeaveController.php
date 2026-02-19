@@ -58,8 +58,15 @@ class LeaveController extends Controller
         ->latest()
         ->get();
 
-    return view('leave.history', compact('leaves'));
+    $transactions = LeaveTransaction::where('user_id', auth()->id())
+        ->latest()
+        ->get();
+
+    return view('leave.history',
+        compact('leaves','transactions')
+    );
 }
+
 
 
     public function store(Request $request)
