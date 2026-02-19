@@ -124,10 +124,14 @@ class LeaveController extends Controller
 */
 
     public function adminIndex()
-    {
-        $leaves = Leave::with('user')->latest()->get();
-        return view('leave.admin', compact('leaves'));
-    }
+{
+    $leaves = Leave::with('user')->latest()->get();
+
+    $employees = User::where('role','employee')->get();
+
+    return view('leave.admin', compact('leaves','employees'));
+}
+
 
 
     public function adminCreate()
