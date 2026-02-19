@@ -235,26 +235,33 @@ public function updateBalance(Request $request, $id)
         'opening_balance' => 'required|numeric|min:0'
     ]);
 
-    $balance = \App\Models\LeaveBalance::where('user_id', $id)->first();
+    // ✅ Check user exists
+    $user = \App\Models\User::where('id', $id)
+        ->where('role', 'employee')
+        ->first();
 
-    if (!$balance) {
-        $balance = \App\Models\LeaveBalance::create([
-            'user_id' => $id,
+    if (!$user) {
+        return back()->with('error', 'Invalid employee selected');
+    }
+
+    // ✅ Safe firstOrCreate
+    $balance = \App\Models\LeaveBalance::firstOrCreate(
+        ['user_id' => $user->id],
+        [
             'opening_balance' => 0,
             'used_leaves' => 0,
             'remaining_leaves' => 0,
-        ]);
-    }
-
-    $newOpening = $request->opening_balance;
+        ]
+    );
 
     $balance->update([
-        'opening_balance' => $newOpening,
-        'remaining_leaves' => $newOpening - $balance->used_leaves
+        'opening_balance' => $request->opening_balance,
+        'remaining_leaves' => $request->opening_balance - $balance->used_leaves
     ]);
 
-    return back()->with('success','Leave Balance Updated Successfully');
+    return back()->with('success','Leave balance updated successfully');
 }
+
 
     /*
 
