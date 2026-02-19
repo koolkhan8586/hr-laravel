@@ -154,6 +154,8 @@ Route::delete('/attendance/{id}',
     Route::post('/leave/store', [LeaveController::class, 'adminStore'])->name('leave.store');
     Route::get('/leave/{id}/edit', [LeaveController::class, 'adminEdit'])->name('leave.edit');
     Route::put('/leave/{id}', [LeaveController::class, 'adminUpdate'])->name('leave.update');
+    Route::post('/leave/assign', [LeaveController::class,'assignLeave'])->name('leave.assign');
+
 
     /*
     |--------------------------------------------------------------------------
