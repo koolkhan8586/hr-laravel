@@ -12,16 +12,16 @@
     @endif
 
 
-    {{-- ============================= --}}
-    {{-- ASSIGN LEAVE SECTION --}}
-    {{-- ============================= --}}
+    {{-- ========================================= --}}
+    {{-- ASSIGN / ADD NEW LEAVE BALANCE --}}
+    {{-- ========================================= --}}
     <div class="bg-white shadow rounded p-6 mb-8">
         <h3 class="text-lg font-semibold mb-4">Assign / Add Leave Balance</h3>
 
         <form method="POST" action="{{ route('admin.leave.balance.assign') }}">
             @csrf
 
-            <div class="grid grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 
                 {{-- Employee --}}
                 <div>
@@ -57,7 +57,7 @@
                 {{-- Button --}}
                 <div class="flex items-end">
                     <button type="submit"
-                            class="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700">
+                            class="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700 w-full">
                         Assign Leave
                     </button>
                 </div>
@@ -67,9 +67,9 @@
     </div>
 
 
-    {{-- ============================= --}}
+    {{-- ========================================= --}}
     {{-- BALANCE TABLE --}}
-    {{-- ============================= --}}
+    {{-- ========================================= --}}
     <div class="bg-white shadow rounded overflow-hidden">
 
         <table class="w-full text-sm">
@@ -89,10 +89,10 @@
                 <tr class="border-t">
 
                     <td class="p-3">
-                        {{ $balance->user->name }}
+                        {{ $balance->user->name ?? '-' }}
                     </td>
 
-                    <td class="p-3">
+                    <td class="p-3 font-semibold">
                         {{ $balance->opening_balance }}
                     </td>
 
@@ -104,45 +104,52 @@
                         {{ $balance->remaining_leaves }}
                     </td>
 
-                    <td class="p-3 space-x-2">
+                    <td class="p-3">
 
-                        {{-- EDIT FORM --}}
-                        <form method="POST"
-                              action="{{ route('admin.leave.balance.update', $balance->id) }}"
-                              class="inline">
-                            @csrf
+                        <div class="flex items-center gap-2">
 
-                            <input type="number"
-                                   name="opening_balance"
-                                   value="{{ $balance->opening_balance }}"
-                                   step="0.5"
-                                   class="border px-2 py-1 rounded w-24">
+                            {{-- UPDATE FORM --}}
+                            <form method="POST"
+                                  action="{{ route('admin.leave.balance.update', $balance->user_id) }}"
+                                  class="flex items-center gap-2">
+                                @csrf
+                                @method('PUT')
 
-                            <button type="submit"
-                                    class="bg-yellow-500 text-white px-3 py-1 rounded text-xs">
-                                Update
-                            </button>
-                        </form>
+                                <input type="number"
+                                       name="opening_balance"
+                                       value="{{ $balance->opening_balance }}"
+                                       step="0.5"
+                                       min="0"
+                                       class="border px-2 py-1 rounded w-20">
 
-                        {{-- DELETE --}}
-                        <form method="POST"
-                              action="{{ route('admin.leave.balance.delete', $balance->id) }}"
-                              class="inline"
-                              onsubmit="return confirm('Are you sure?')">
-                            @csrf
-                            @method('DELETE')
+                                <button type="submit"
+                                        class="bg-yellow-500 text-white px-3 py-1 rounded text-xs hover:bg-yellow-600">
+                                    Update
+                                </button>
+                            </form>
 
-                            <button class="bg-red-600 text-white px-3 py-1 rounded text-xs">
-                                Delete
-                            </button>
-                        </form>
+                            {{-- DELETE FORM --}}
+                            <form method="POST"
+                                  action="{{ route('admin.leave.balance.delete', $balance->user_id) }}"
+                                  onsubmit="return confirm('Are you sure you want to delete this leave balance?')">
+                                @csrf
+                                @method('DELETE')
+
+                                <button class="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700">
+                                    Delete
+                                </button>
+                            </form>
+
+                        </div>
 
                     </td>
+
                 </tr>
 
                 @empty
                 <tr>
-                    <td colspan="5" class="p-4 text-center text-gray-500">
+                    <td colspan="5"
+                        class="p-4 text-center text-gray-500">
                         No Leave Balances Found
                     </td>
                 </tr>
