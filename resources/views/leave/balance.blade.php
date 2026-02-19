@@ -113,7 +113,7 @@
                                   action="{{ route('admin.leave.balance.update', $balance->user_id) }}"
                                   class="flex items-center gap-2">
                                 @csrf
-                                @method('PUT')
+                            
 
                                 <input type="number"
                                        name="opening_balance"
