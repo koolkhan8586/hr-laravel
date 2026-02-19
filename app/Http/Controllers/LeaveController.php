@@ -371,6 +371,16 @@ public function updateBalance(Request $request, $id)
     }
 
 
+    public function calendar()
+{
+    $leaves = Leave::where('status','approved')
+        ->with('user')
+        ->get();
+
+    return view('leave.calendar', compact('leaves'));
+}
+
+    
     public function destroy($id)
     {
         $leave = Leave::findOrFail($id);
