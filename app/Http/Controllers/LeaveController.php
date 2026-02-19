@@ -374,11 +374,22 @@ public function updateBalance(Request $request, $id)
 
     public function calendar()
 {
-    $leaves = Leave::where('status','approved')
-        ->with('user')
+    $leaves = \App\Models\Leave::with('user')
+        ->where('status','approved')
         ->get();
 
-    return view('leave.calendar', compact('leaves'));
+    $events = [];
+
+    foreach ($leaves as $leave) {
+        $events[] = [
+            'title' => $leave->user->name . ' (' . $leave->calculated_days . ' day)',
+            'start' => $leave->start_date,
+            'end'   => \Carbon\Carbon::parse($leave->end_date)->addDay()->format('Y-m-d'),
+            'color' => '#16a34a'
+        ];
+    }
+
+    return view('leave.calendar', compact('events'));
 }
 
     
