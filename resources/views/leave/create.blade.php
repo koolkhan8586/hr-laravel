@@ -5,7 +5,7 @@
 
     <div class="bg-white p-6 rounded shadow">
 
-        <form action="{{ route('admin.leave.store') }}" method="POST">
+        <form action="{{ route('leave.store') }}" method="POST">
             @csrf
 
             {{-- Employee --}}
