@@ -192,6 +192,25 @@ class LeaveController extends Controller
     }
 
 
+    public function assignLeave(Request $request)
+{
+    $request->validate([
+        'user_id' => 'required|exists:users,id',
+        'opening_balance' => 'required|integer|min:0'
+    ]);
+
+    $balance = LeaveBalance::updateOrCreate(
+        ['user_id' => $request->user_id],
+        [
+            'opening_balance' => $request->opening_balance,
+            'used_leaves' => 0,
+            'remaining_leaves' => $request->opening_balance
+        ]
+    );
+
+    return back()->with('success','Leave Assigned Successfully');
+}
+
 /*
 |--------------------------------------------------------------------------
 | APPROVAL LOGIC
