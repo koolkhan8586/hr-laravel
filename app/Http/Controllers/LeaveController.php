@@ -123,14 +123,33 @@ class LeaveController extends Controller
 |--------------------------------------------------------------------------
 */
 
-    public function adminIndex()
+    public function adminIndex(Request $request)
 {
-    $leaves = Leave::with('user')->latest()->get();
+    $query = Leave::with('user')->latest();
 
-    $employees = User::where('role','employee')->get();
+    if ($request->employee) {
+        $query->where('user_id', $request->employee);
+    }
+
+    if ($request->status) {
+        $query->where('status', $request->status);
+    }
+
+    if ($request->month) {
+        $query->whereMonth('start_date',
+            \Carbon\Carbon::parse($request->month)->month
+        )->whereYear('start_date',
+            \Carbon\Carbon::parse($request->month)->year
+        );
+    }
+
+    $leaves = $query->get();
+
+    $employees = \App\Models\User::where('role','employee')->get();
 
     return view('leave.admin', compact('leaves','employees'));
 }
+
 
 
 
