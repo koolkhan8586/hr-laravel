@@ -16,10 +16,18 @@ class LeaveStatusMail extends Mailable
     /**
      * Create a new message instance.
      */
-    public function __construct()
-    {
-        //
-    }
+    public $leave;
+
+public function __construct($leave)
+{
+    $this->leave = $leave;
+}
+
+public function build()
+{
+    return $this->subject('Leave Application Status Updated')
+        ->view('emails.leave_status');
+}
 
     /**
      * Get the message envelope.
