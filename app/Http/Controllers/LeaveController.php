@@ -231,20 +231,17 @@ public function balanceIndex()
 
 public function updateBalance(Request $request, $id)
 {
+    // ✅ Check user exists
+    $user = \App\Models\User::find($id);
+
+    if (!$user) {
+        return back()->with('error', 'User not found');
+    }
+
     $request->validate([
         'opening_balance' => 'required|numeric|min:0'
     ]);
 
-    // ✅ Check user exists
-    $user = \App\Models\User::where('id', $id)
-        ->where('role', 'employee')
-        ->first();
-
-    if (!$user) {
-        return back()->with('error', 'Invalid employee selected');
-    }
-
-    // ✅ Safe firstOrCreate
     $balance = \App\Models\LeaveBalance::firstOrCreate(
         ['user_id' => $user->id],
         [
@@ -254,13 +251,16 @@ public function updateBalance(Request $request, $id)
         ]
     );
 
+    $newOpening = $request->opening_balance;
+
     $balance->update([
-        'opening_balance' => $request->opening_balance,
-        'remaining_leaves' => $request->opening_balance - $balance->used_leaves
+        'opening_balance' => $newOpening,
+        'remaining_leaves' => $newOpening - $balance->used_leaves
     ]);
 
     return back()->with('success','Leave balance updated successfully');
 }
+
 
 
     /*
