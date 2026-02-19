@@ -50,6 +50,15 @@ class LeaveController extends Controller
     return view('leave.create', compact('employees'));
 }
 
+    public function history()
+{
+    $leaves = Leave::where('user_id', auth()->id())
+        ->latest()
+        ->get();
+
+    return view('leave.history', compact('leaves'));
+}
+
 
     public function store(Request $request)
     {
