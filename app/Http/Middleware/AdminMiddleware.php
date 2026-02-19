@@ -8,12 +8,17 @@ use Illuminate\Http\Request;
 class AdminMiddleware
 {
     public function handle(Request $request, Closure $next)
-    {
-        if (!auth()->check() || auth()->user()->role !== 'admin') {
-            abort(403, 'Unauthorized Access');
-        }
-
-        return $next($request);
+{
+    if (!auth()->check()) {
+        return redirect()->route('login');
     }
+
+    if (auth()->user()->role !== 'admin') {
+        abort(403);
+    }
+
+    return $next($request);
+}
+
 }
 
