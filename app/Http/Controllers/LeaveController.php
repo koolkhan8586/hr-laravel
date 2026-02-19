@@ -224,6 +224,39 @@ public function balanceIndex()
 }
 
     /*
+|--------------------------------------------------------------------------
+| LEAVE BALANCE UPDATE (ADMIN)
+|--------------------------------------------------------------------------
+*/
+
+public function updateBalance(Request $request, $id)
+{
+    $request->validate([
+        'opening_balance' => 'required|numeric|min:0'
+    ]);
+
+    $balance = \App\Models\LeaveBalance::where('user_id', $id)->first();
+
+    if (!$balance) {
+        $balance = \App\Models\LeaveBalance::create([
+            'user_id' => $id,
+            'opening_balance' => 0,
+            'used_leaves' => 0,
+            'remaining_leaves' => 0,
+        ]);
+    }
+
+    $newOpening = $request->opening_balance;
+
+    $balance->update([
+        'opening_balance' => $newOpening,
+        'remaining_leaves' => $newOpening - $balance->used_leaves
+    ]);
+
+    return back()->with('success','Leave Balance Updated Successfully');
+}
+
+    /*
 
 |--------------------------------------------------------------------------
 | APPROVAL LOGIC
