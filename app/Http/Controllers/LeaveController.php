@@ -234,17 +234,25 @@ class LeaveController extends Controller
 
 
     private function processApproval($leave)
-    {
-        if($leave->type !== 'annual') return;
+{
+    if ($leave->type === 'annual') {
 
-        $balance = LeaveBalance::firstOrCreate(
-            ['user_id'=>$leave->user_id],
-            [
-                'opening_balance'=>0,
-                'remaining_leaves'=>0,
-                'used_leaves'=>0
-            ]
-        );
+        $user = $leave->user;
+        $before = $user->annual_leave_balance;
+
+        if ($before < $leave->calculated_days) {
+            abort(403,'Insufficient Leave Balance');
+        }
+
+        $after = $before - $leave->calculated_days;
+
+        $user->update(['annual_leave_balance'=>$after]);
+
+        LeaveTransaction::create([
+            ...
+        ]);
+    }
+}
 
         if($balance->remaining_leaves < $leave->calculated_days){
             abort(403,'Insufficient Leave Balance');
