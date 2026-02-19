@@ -10,6 +10,8 @@ use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\LeaveTransactionsExport;
+use Illuminate\Support\Facades\Mail;
+
 
 class LeaveController extends Controller
 {
@@ -92,6 +94,17 @@ class LeaveController extends Controller
             'reason'         => $request->reason,
             'status'         => 'pending',
         ]);
+
+        Mail::raw(
+    "Leave Request Submitted\n\nEmployee: " . auth()->user()->name .
+    "\nFrom: " . $request->start_date .
+    "\nTo: " . $request->end_date .
+    "\nDays: " . $calculatedDays,
+    function ($message) {
+        $message->to(auth()->user()->email)
+                ->subject('Leave Request Submitted');
+    }
+);
 
         return back()->with('success','Leave Request Submitted Successfully');
     }
