@@ -12,7 +12,7 @@ class SalariesExport implements FromCollection, WithHeadings
     {
         return Salary::with('user')->get()->map(function ($salary) {
             return [
-                'Employee ID'     => $salary->employee->id ?? '',
+                'Employee ID'     => $salary->employee_id->id ?? '',
                 'Employee' => $salary->user->name ?? '',
                 'Month' => $salary->month,
                 'Year' => $salary->year,
