@@ -197,29 +197,29 @@ public function employeeIndex()
     */
     public function post($id)
 {
-    $salary = \App\Models\Salary::with('user')->findOrFail($id);
+    $salary = Salary::findOrFail($id);
 
     // ✅ Correct check
-    if ($salary->status === 'posted') {
+    if ($salary->is_posted == 1) {
         return back()->with('error', 'Salary already posted');
     }
 
-    // ✅ Update status
-    $salary->status = 'posted';
+    // ✅ Update posting flag
+    $salary->is_posted = 1;
     $salary->posted_at = now();
     $salary->save();
 
-    // ✅ Send email
+    // ✅ Send email safely
     try {
         \Mail::raw(
-            "Your salary for {$salary->month}/{$salary->year} has been posted.\n\nNet Salary: Rs {$salary->net_salary}",
+            "Your salary for {$salary->month} {$salary->year} has been posted.\n\nNet Salary: Rs {$salary->net_salary}",
             function ($message) use ($salary) {
                 $message->to($salary->user->email)
                         ->subject('Salary Posted');
             }
         );
     } catch (\Exception $e) {
-        // Do nothing if mail fails
+        \Log::error('Salary mail error: '.$e->getMessage());
     }
 
     
@@ -246,17 +246,17 @@ public function show($id)
     */
     public function unpost($id)
 {
-    $salary = \App\Models\Salary::findOrFail($id);
+    $salary = Salary::findOrFail($id);
 
-    if ($salary->status === 'draft') {
+    if ($salary->is_posted == 0) {
         return back()->with('error', 'Salary already draft');
     }
 
-    $salary->status = 'draft';
+    $salary->is_posted = 0;
     $salary->posted_at = null;
     $salary->save();
 
-    return back()->with('success', 'Salary reverted to draft');
+    return back()->with('success', 'Salary moved to draft');
 }
 
 
