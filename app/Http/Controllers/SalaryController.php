@@ -197,32 +197,32 @@ public function employeeIndex()
     */
     public function post($id)
 {
-    $salary = Salary::with('user')->findOrFail($id);
+    $salary = \App\Models\Salary::with('user')->findOrFail($id);
 
-    // Prevent double post
+    // ✅ Correct check
     if ($salary->status === 'posted') {
         return back()->with('error', 'Salary already posted');
     }
 
     // ✅ Update status
-    $salary->update([
-        'status'    => 'posted',
-        'posted_at' => now()
-    ]);
+    $salary->status = 'posted';
+    $salary->posted_at = now();
+    $salary->save();
 
-    // ✅ Send email safely
+    // ✅ Send email
     try {
-        Mail::raw(
-            "Your salary for {$salary->month} {$salary->year} has been posted.\n\nNet Salary: Rs {$salary->net_salary}",
+        \Mail::raw(
+            "Your salary for {$salary->month}/{$salary->year} has been posted.\n\nNet Salary: Rs {$salary->net_salary}",
             function ($message) use ($salary) {
                 $message->to($salary->user->email)
                         ->subject('Salary Posted');
             }
         );
     } catch (\Exception $e) {
-        \Log::error($e->getMessage());
+        // Do nothing if mail fails
     }
 
+    
     return back()->with('success','Salary posted & email sent');
 }
 
