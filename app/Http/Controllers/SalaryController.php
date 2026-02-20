@@ -205,9 +205,9 @@ public function employeeIndex()
     }
 
     // ✅ Update status FIRST
-    $salary->update([
-        'status' => 'posted',
-        'posted_at' => now()
+    $salary->status = 'posted';
+    $salary->posted_at = now();
+    $salary->save();
     ]);
 
     // ✅ Then send email
