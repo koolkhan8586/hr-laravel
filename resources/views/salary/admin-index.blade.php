@@ -55,6 +55,23 @@
             </button>
         </div>
 
+        <div class="flex gap-2 mb-4">
+    <a href="{{ route('admin.salary.export') }}"
+       class="bg-green-600 text-white px-4 py-2 rounded">
+        Export Salary
+    </a>
+
+    <a href="{{ route('admin.salary.import.form') }}"
+       class="bg-blue-600 text-white px-4 py-2 rounded">
+        Import Salary
+    </a>
+
+    <a href="{{ route('admin.salary.sample') }}"
+       class="bg-gray-600 text-white px-4 py-2 rounded">
+        Download Sample
+    </a>
+</div>
+
 
         {{-- ================= TABLE ================= --}}
         <div class="bg-white shadow rounded overflow-hidden">
