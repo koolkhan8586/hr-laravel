@@ -318,7 +318,7 @@ public function show($id)
             $salary->update(['is_posted' => true]);
 
             Mail::to($salary->user->email)
-                ->send(new SalaryPostedMail($salary));
+                ->queue(new SalaryPostedMail($salary));
         }
 
         return back()->with('success','All draft salaries posted.');
