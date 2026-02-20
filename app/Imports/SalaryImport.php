@@ -17,24 +17,23 @@ class SalaryImport implements ToCollection
 
         foreach ($rows as $index => $row) {
 
-            // Skip header
             if ($header) {
                 $header = false;
                 continue;
             }
 
-            $employeeId = trim($row[0] ?? null); // user_id column
+            $employeeCode = trim($row[0] ?? null);
 
-            if (!$employeeId) {
+            if (!$employeeCode) {
                 $this->errors[] = "Row ".($index+1)." - Employee ID missing";
                 continue;
             }
 
-            // 🔹 Find user directly by ID
-            $user = User::find($employeeId);
+            // 🔥 FIND BY employee_id COLUMN
+            $user = User::where('employee_id', $employeeCode)->first();
 
             if (!$user) {
-                $this->errors[] = "Row ".($index+1)." - Employee ID not found ({$employeeId})";
+                $this->errors[] = "Row ".($index+1)." - Employee ID not found ({$employeeCode})";
                 continue;
             }
 
@@ -46,7 +45,6 @@ class SalaryImport implements ToCollection
                 continue;
             }
 
-            // 🔹 Prevent duplicate salary
             $exists = Salary::where('user_id', $user->id)
                 ->where('month', $month)
                 ->where('year', $year)
@@ -72,7 +70,7 @@ class SalaryImport implements ToCollection
                 'loan_deduction'   => (float)($row[11] ?? 0),
                 'insurance'        => (float)($row[12] ?? 0),
                 'other_deductions' => (float)($row[13] ?? 0),
-                'is_posted'        => 0,   // Draft
+                'is_posted'        => 0
             ]);
         }
     }
