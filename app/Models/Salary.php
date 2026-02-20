@@ -32,7 +32,9 @@ class Salary extends Model
         'total_deductions',
         'net_salary',
 
-        'is_posted'
+        'is_posted',
+        'status',
+    'posted_at'
     ];
 
     protected $casts = [
