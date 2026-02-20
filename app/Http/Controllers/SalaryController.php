@@ -99,100 +99,96 @@ public function employeeIndex()
     |--------------------------------------------------------------------------
     */
     public function store(Request $request)
-    {
-        $request->validate([
-            'user_id' => 'required',
-            'month' => 'required|integer|min:1|max:12',
-            'year' => 'required|integer',
-            'basic_salary' => 'required|numeric'
-        ]);
-
-        if (Salary::where('user_id', $request->user_id)
-            ->where('month', $request->month)
-            ->where('year', $request->year)
-            ->exists()) {
-
-            return back()->with('error', 'Salary already exists for this month.');
-        }
-
-        // Earnings
-        $gross =
-            ($request->basic_salary ?? 0)
-            + ($request->invigilation ?? 0)
-            + ($request->t_payment ?? 0)
-            + ($request->eidi ?? 0)
-            + ($request->increment ?? 0)
-            + ($request->other_earnings ?? 0);
-
-        // Loan deduction
-        if($salary->loan_deduction > 0)
 {
-    $loan = Loan::where('user_id', $salary->user_id)
+    $request->validate([
+        'user_id' => 'required|exists:users,id',
+        'month'   => 'required',
+        'year'    => 'required',
+        'basic_salary' => 'required|numeric'
+    ]);
+
+    // ==========================
+    // CALCULATE EARNINGS
+    // ==========================
+    $totalEarnings =
+        ($request->basic_salary ?? 0)
+        + ($request->invigilation ?? 0)
+        + ($request->t_payment ?? 0)
+        + ($request->eidi ?? 0)
+        + ($request->increment ?? 0)
+        + ($request->other_earnings ?? 0);
+
+    // ==========================
+    // LOAN DEDUCTION
+    // ==========================
+    $loanDeduction = 0;
+    $loan = \App\Models\Loan::where('user_id', $request->user_id)
                 ->where('status','approved')
+                ->where('remaining_balance','>',0)
                 ->first();
 
-    if($loan)
-    {
-        $loan->remaining_balance -= $salary->loan_deduction;
+    if($loan){
+        $loanDeduction = $loan->monthly_installment;
+    }
+
+    // ==========================
+    // TOTAL DEDUCTIONS
+    // ==========================
+    $totalDeductions =
+        ($request->income_tax ?? 0)
+        + ($request->insurance ?? 0)
+        + ($request->extra_leaves ?? 0)
+        + ($request->other_deductions ?? 0)
+        + $loanDeduction;
+
+    $netSalary = $totalEarnings - $totalDeductions;
+
+    // ==========================
+    // CREATE SALARY
+    // ==========================
+    $salary = \App\Models\Salary::create([
+        'user_id' => $request->user_id,
+        'month'   => $request->month,
+        'year'    => $request->year,
+
+        'basic_salary'   => $request->basic_salary,
+        'invigilation'   => $request->invigilation ?? 0,
+        't_payment'      => $request->t_payment ?? 0,
+        'eidi'           => $request->eidi ?? 0,
+        'increment'      => $request->increment ?? 0,
+        'other_earnings' => $request->other_earnings ?? 0,
+
+        'income_tax'       => $request->income_tax ?? 0,
+        'insurance'        => $request->insurance ?? 0,
+        'extra_leaves'     => $request->extra_leaves ?? 0,
+        'other_deductions' => $request->other_deductions ?? 0,
+        'loan_deduction'   => $loanDeduction,
+
+        'net_salary' => $netSalary,
+        'status'     => 'draft'
+    ]);
+
+    // ==========================
+    // UPDATE LOAN BALANCE
+    // ==========================
+    if($loan && $loanDeduction > 0){
+
+        $loan->remaining_balance -= $loanDeduction;
         $loan->save();
 
-        LoanLedger::create([
+        \App\Models\LoanLedger::create([
             'loan_id' => $loan->id,
-            'amount' => $salary->loan_deduction,
-            'type' => 'deduction',
-            'remarks' => 'Salary deduction for '.$salary->month.'/'.$salary->year
+            'user_id' => $request->user_id,
+            'salary_id' => $salary->id,
+            'amount' => $loanDeduction,
+            'type'   => 'deduction'
         ]);
     }
+
+    return redirect()->route('admin.salary.index')
+        ->with('success','Salary Created Successfully');
 }
 
-
-        // Deductions
-        $deductions =
-            ($request->extra_leaves ?? 0)
-            + ($request->income_tax ?? 0)
-            + ($request->insurance ?? 0)
-            + ($request->other_deductions ?? 0)
-            + $loanDeduction;
-
-        $net = $gross - $deductions;
-
-        $salary = Salary::create([
-            'user_id' => $request->user_id,
-            'month' => $request->month,
-            'year' => $request->year,
-
-            'basic_salary' => $request->basic_salary ?? 0,
-            'invigilation' => $request->invigilation ?? 0,
-            't_payment' => $request->t_payment ?? 0,
-            'eidi' => $request->eidi ?? 0,
-            'increment' => $request->increment ?? 0,
-            'other_earnings' => $request->other_earnings ?? 0,
-
-            'extra_leaves' => $request->extra_leaves ?? 0,
-            'income_tax' => $request->income_tax ?? 0,
-            'loan_deduction' => $loanDeduction,
-            'insurance' => $request->insurance ?? 0,
-            'other_deductions' => $request->other_deductions ?? 0,
-
-            'gross_total' => $gross,
-            'total_deductions' => $deductions,
-            'net_salary' => $net,
-            'is_posted' => false
-        ]);
-
-        if ($loan && $loanDeduction > 0) {
-            LoanPayment::create([
-                'loan_id' => $loan->id,
-                'amount_paid' => $loanDeduction,
-                'remaining_balance' => $loan->remaining_balance,
-                'month' => $request->month,
-                'year' => $request->year
-            ]);
-        }
-
-        return redirect()->route('admin.salary.index')
-            ->with('success', 'Salary saved as draft.');
-    }
 
     /*
     |--------------------------------------------------------------------------
