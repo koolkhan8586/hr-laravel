@@ -246,13 +246,17 @@ public function show($id)
     */
     public function unpost($id)
 {
-    $salary = Salary::findOrFail($id);
+    $salary = \App\Models\Salary::findOrFail($id);
 
-    $salary->update([
-        'is_posted' => 0
-    ]);
+    if ($salary->status === 'draft') {
+        return back()->with('error', 'Salary already draft');
+    }
 
-    return back()->with('success', 'Salary Unposted Successfully');
+    $salary->status = 'draft';
+    $salary->posted_at = null;
+    $salary->save();
+
+    return back()->with('success', 'Salary reverted to draft');
 }
 
 
