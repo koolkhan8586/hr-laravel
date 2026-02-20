@@ -6,23 +6,18 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::table('salaries', function (Blueprint $table) {
-            //
+            $table->string('status')->default('draft')->after('net_salary');
+            $table->timestamp('posted_at')->nullable()->after('status');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('salaries', function (Blueprint $table) {
-            //
+            $table->dropColumn(['status','posted_at']);
         });
     }
 };
