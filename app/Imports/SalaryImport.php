@@ -3,7 +3,7 @@
 namespace App\Imports;
 
 use App\Models\Salary;
-use App\Models\Staff;
+use App\Models\User;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\ToCollection;
 
@@ -17,31 +17,39 @@ class SalaryImport implements ToCollection
 
         foreach ($rows as $index => $row) {
 
-            // Skip header row
+            // Skip header
             if ($header) {
                 $header = false;
                 continue;
             }
 
-            $employeeCode = trim($row[0] ?? null); // Employee ID column
+            $employeeId = trim($row[0] ?? null); // user_id column
 
-            if (!$employeeCode) {
+            if (!$employeeId) {
                 $this->errors[] = "Row ".($index+1)." - Employee ID missing";
                 continue;
             }
 
-            // 🔹 Find staff by employee_id
-            $staff = Staff::where('employee_id', $employeeCode)->first();
+            // 🔹 Find user directly by ID
+            $user = User::find($employeeId);
 
-            if (!$staff) {
-                $this->errors[] = "Row ".($index+1)." - Employee not found ({$employeeCode})";
+            if (!$user) {
+                $this->errors[] = "Row ".($index+1)." - Employee ID not found ({$employeeId})";
                 continue;
             }
 
-            // Prevent duplicate salary
-            $exists = Salary::where('user_id', $staff->user_id)
-                ->where('month', $row[1])
-                ->where('year', $row[2])
+            $month = (int)($row[1] ?? 0);
+            $year  = (int)($row[2] ?? 0);
+
+            if (!$month || !$year) {
+                $this->errors[] = "Row ".($index+1)." - Invalid month/year";
+                continue;
+            }
+
+            // 🔹 Prevent duplicate salary
+            $exists = Salary::where('user_id', $user->id)
+                ->where('month', $month)
+                ->where('year', $year)
                 ->exists();
 
             if ($exists) {
@@ -49,43 +57,22 @@ class SalaryImport implements ToCollection
                 continue;
             }
 
-            // 🔹 Salary calculations
-            $basic        = (float)($row[3] ?? 0);
-            $invigilation = (float)($row[4] ?? 0);
-            $tPayment     = (float)($row[5] ?? 0);
-            $eidi         = (float)($row[6] ?? 0);
-            $increment    = (float)($row[7] ?? 0);
-            $otherEarn    = (float)($row[8] ?? 0);
-
-            $extraLeave   = (float)($row[9] ?? 0);
-            $tax          = (float)($row[10] ?? 0);
-            $loan         = (float)($row[11] ?? 0);
-            $insurance    = (float)($row[12] ?? 0);
-            $otherDed     = (float)($row[13] ?? 0);
-
-            $gross = $basic + $invigilation + $tPayment + $eidi + $increment + $otherEarn;
-            $deductions = $extraLeave + $tax + $loan + $insurance + $otherDed;
-            $net = $gross - $deductions;
-
             Salary::create([
-                'user_id'          => $staff->user_id,
-                'month'            => $row[1],
-                'year'             => $row[2],
-                'basic_salary'     => $basic,
-                'invigilation'     => $invigilation,
-                't_payment'        => $tPayment,
-                'eidi'             => $eidi,
-                'increment'        => $increment,
-                'other_earnings'   => $otherEarn,
-                'extra_leaves'     => $extraLeave,
-                'income_tax'       => $tax,
-                'loan_deduction'   => $loan,
-                'insurance'        => $insurance,
-                'other_deductions' => $otherDed,
-                'gross_salary'     => $gross,
-                'total_deductions' => $deductions,
-                'net_salary'       => $net,
-                'status'           => 'draft', // IMPORTANT
+                'user_id'          => $user->id,
+                'month'            => $month,
+                'year'             => $year,
+                'basic_salary'     => (float)($row[3] ?? 0),
+                'invigilation'     => (float)($row[4] ?? 0),
+                't_payment'        => (float)($row[5] ?? 0),
+                'eidi'             => (float)($row[6] ?? 0),
+                'increment'        => (float)($row[7] ?? 0),
+                'other_earnings'   => (float)($row[8] ?? 0),
+                'extra_leaves'     => (float)($row[9] ?? 0),
+                'income_tax'       => (float)($row[10] ?? 0),
+                'loan_deduction'   => (float)($row[11] ?? 0),
+                'insurance'        => (float)($row[12] ?? 0),
+                'other_deductions' => (float)($row[13] ?? 0),
+                'is_posted'        => 0,   // Draft
             ]);
         }
     }
