@@ -208,7 +208,7 @@ public function employeeIndex()
     $salary->status = 'posted';
     $salary->posted_at = now();
     $salary->save();
-    ]);
+    
 
     // ✅ Then send email
     try {
