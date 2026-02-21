@@ -15,6 +15,11 @@
                 Download Sample
             </a>
 
+            <a href="{{ route('admin.salary.import.form') }}"
+               class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm">
+                Import
+            </a>
+
             <a href="{{ route('admin.salary.export') }}"
                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
                 Export
@@ -43,10 +48,10 @@
 
 
     {{-- ================= BULK ACTIONS (SEPARATE FORM) ================= --}}
-    <form method="POST">
+    <form method="POST" class="mb-4">
         @csrf
 
-        <div class="flex gap-3 mb-4">
+        <div class="flex gap-3">
 
             <button formaction="{{ route('admin.salary.bulk.post') }}"
                     class="bg-green-600 text-white px-4 py-2 rounded text-sm">
@@ -67,7 +72,7 @@
         </div>
 
         {{-- ================= TABLE ================= --}}
-        <div class="bg-white shadow rounded overflow-hidden">
+        <div class="bg-white shadow rounded overflow-hidden mt-4">
 
             <table class="w-full text-sm">
 
@@ -90,34 +95,28 @@
 
                     <tr class="border-t hover:bg-gray-50">
 
-                        {{-- Checkbox --}}
                         <td class="p-3">
                             <input type="checkbox"
                                    name="salary_ids[]"
                                    value="{{ $salary->id }}">
                         </td>
 
-                        {{-- Employee --}}
                         <td class="p-3">
                             {{ $salary->user->name ?? 'N/A' }}
                         </td>
 
-                        {{-- Month --}}
                         <td class="p-3">
                             {{ \Carbon\Carbon::create()->month($salary->month)->format('F') }}
                         </td>
 
-                        {{-- Year --}}
                         <td class="p-3">
                             {{ $salary->year }}
                         </td>
 
-                        {{-- Net Salary --}}
                         <td class="p-3 font-semibold text-green-700">
                             Rs {{ number_format($salary->net_salary,2) }}
                         </td>
 
-                        {{-- Status --}}
                         <td class="p-3">
                             @if($salary->is_posted)
                                 <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">
@@ -130,7 +129,6 @@
                             @endif
                         </td>
 
-                        {{-- ACTIONS --}}
                         <td class="p-3 text-sm">
                             <div class="flex gap-2">
 
@@ -144,23 +142,21 @@
                                     Edit
                                 </a>
 
-                                {{-- DELETE (SEPARATE FORM - NOT NESTED) --}}
+                                {{-- DELETE (SEPARATE FORM — IMPORTANT) --}}
                                 <form action="{{ route('admin.salary.delete', $salary->id) }}"
                                       method="POST"
-                                      class="inline"
                                       onsubmit="return confirm('Delete this salary?')">
                                     @csrf
                                     @method('DELETE')
-                                    <button class="text-red-600 hover:underline">
+                                    <button type="submit"
+                                            class="text-red-600 hover:underline">
                                         Delete
                                     </button>
                                 </form>
 
-                                {{-- Post / Unpost --}}
                                 @if($salary->is_posted)
                                     <form action="{{ route('admin.salary.unpost', $salary->id) }}"
-                                          method="POST"
-                                          class="inline">
+                                          method="POST">
                                         @csrf
                                         <button class="text-gray-600 hover:underline">
                                             Unpost
@@ -168,8 +164,7 @@
                                     </form>
                                 @else
                                     <form action="{{ route('admin.salary.post', $salary->id) }}"
-                                          method="POST"
-                                          class="inline">
+                                          method="POST">
                                         @csrf
                                         <button class="text-green-600 hover:underline">
                                             Post
@@ -200,11 +195,10 @@
 
 </div>
 
-{{-- Toggle Script --}}
 <script>
 function toggleAll(source) {
     let checkboxes = document.getElementsByName('salary_ids[]');
-    for(let i=0; i<checkboxes.length; i++) {
+    for (let i = 0; i < checkboxes.length; i++) {
         checkboxes[i].checked = source.checked;
     }
 }
