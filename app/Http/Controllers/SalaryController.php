@@ -199,31 +199,27 @@ public function employeeIndex()
 {
     $salary = Salary::findOrFail($id);
 
-    // ✅ Correct check
-    if ($salary->is_posted == 1) {
+    if ($salary->is_posted) {
         return back()->with('error', 'Salary already posted');
     }
 
-    // ✅ Update posting flag
     $salary->is_posted = 1;
     $salary->posted_at = now();
     $salary->save();
 
-    // ✅ Send email safely
     try {
         \Mail::raw(
-            "Your salary for {$salary->month} {$salary->year} has been posted.\n\nNet Salary: Rs {$salary->net_salary}",
+            "Your salary for {$salary->month}/{$salary->year} has been posted.\n\nNet Salary: Rs {$salary->net_salary}",
             function ($message) use ($salary) {
                 $message->to($salary->user->email)
                         ->subject('Salary Posted');
             }
         );
     } catch (\Exception $e) {
-        \Log::error('Salary mail error: '.$e->getMessage());
+        \Log::error($e->getMessage());
     }
 
-    
-    return back()->with('success','Salary posted & email sent');
+    return back()->with('success', 'Salary posted successfully');
 }
 
 
@@ -248,8 +244,8 @@ public function show($id)
 {
     $salary = Salary::findOrFail($id);
 
-    if ($salary->is_posted == 0) {
-        return back()->with('error', 'Salary already draft');
+    if (!$salary->is_posted) {
+        return back()->with('error', 'Salary already in draft');
     }
 
     $salary->is_posted = 0;
