@@ -71,25 +71,27 @@
         </div>
     @endif
 
-    {{-- ================= BULK ACTIONS ================= --}}
-    <form action="{{ route('admin.salary.bulk.post') }}"
-          method="POST"
-          id="bulkForm">
+
+    {{-- ================= BULK FORM START ================= --}}
+    <form id="bulkForm" method="POST">
         @csrf
 
         <div class="flex gap-3 mb-4">
 
-            <button formaction="{{ route('admin.salary.bulk.post') }}"
+            <button type="submit"
+                    formaction="{{ route('admin.salary.bulk.post') }}"
                     class="bg-green-600 text-white px-4 py-2 rounded text-sm">
                 Bulk Post
             </button>
 
-            <button formaction="{{ route('admin.salary.bulk.unpost') }}"
+            <button type="submit"
+                    formaction="{{ route('admin.salary.bulk.unpost') }}"
                     class="bg-gray-600 text-white px-4 py-2 rounded text-sm">
                 Bulk Unpost
             </button>
 
-            <button formaction="{{ route('admin.salary.bulk.delete') }}"
+            <button type="submit"
+                    formaction="{{ route('admin.salary.bulk.delete') }}"
                     onclick="return confirm('Delete selected salaries?')"
                     class="bg-red-600 text-white px-4 py-2 rounded text-sm">
                 Bulk Delete
@@ -104,9 +106,8 @@
 
                 <thead class="bg-gray-100">
                     <tr>
-                        <th class="p-3 text-left">
-                            <input type="checkbox"
-                                   onclick="toggleAll(this)">
+                        <th class="p-3">
+                            <input type="checkbox" onclick="toggleAll(this)">
                         </th>
                         <th class="p-3 text-left">Employee</th>
                         <th class="p-3 text-left">Month</th>
@@ -169,6 +170,7 @@
                                     Edit
                                 </a>
 
+                                {{-- DELETE FORM (SEPARATE) --}}
                                 <form action="{{ route('admin.salary.delete', $salary->id) }}"
                                       method="POST"
                                       class="inline"
@@ -180,6 +182,7 @@
                                     </button>
                                 </form>
 
+                                {{-- POST / UNPOST FORM --}}
                                 @if($salary->is_posted)
                                     <form action="{{ route('admin.salary.unpost', $salary->id) }}"
                                           method="POST"
@@ -220,14 +223,14 @@
         </div>
 
     </form>
+    {{-- ================= BULK FORM END ================= --}}
 
 </div>
 
-{{-- Toggle Script --}}
 <script>
 function toggleAll(source) {
-    checkboxes = document.getElementsByName('salary_ids[]');
-    for(var i=0; i<checkboxes.length; i++) {
+    let checkboxes = document.getElementsByName('salary_ids[]');
+    for(let i = 0; i < checkboxes.length; i++) {
         checkboxes[i].checked = source.checked;
     }
 }
