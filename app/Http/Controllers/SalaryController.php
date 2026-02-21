@@ -264,15 +264,18 @@ public function show($id)
     public function bulkPost(Request $request)
 {
     if (!$request->salary_ids) {
-        return back()->with('error','No salary selected.');
+        return back()->with('error', 'No salaries selected');
     }
 
     Salary::whereIn('id', $request->salary_ids)
-        ->update(['is_posted' => 1]);
+        ->update([
+            'is_posted' => 1,
+            'status' => 'posted',
+            'posted_at' => now()
+        ]);
 
-    return back()->with('success','Selected salaries posted successfully.');
+    return back()->with('success', 'Selected salaries posted successfully');
 }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -282,15 +285,18 @@ public function show($id)
     public function bulkUnpost(Request $request)
 {
     if (!$request->salary_ids) {
-        return back()->with('error','No salary selected.');
+        return back()->with('error', 'No salaries selected');
     }
 
     Salary::whereIn('id', $request->salary_ids)
-        ->update(['is_posted' => 0]);
+        ->update([
+            'is_posted' => 0,
+            'status' => 'draft',
+            'posted_at' => null
+        ]);
 
-    return back()->with('success','Selected salaries unposted.');
+    return back()->with('success', 'Selected salaries unposted successfully');
 }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -298,15 +304,15 @@ public function show($id)
     |--------------------------------------------------------------------------
     */
     public function bulkDelete(Request $request)
-    {
-        if (!$request->salary_ids) {
-            return back()->with('error','No salary selected.');
-        }
-
-        Salary::whereIn('id', $request->salary_ids)->delete();
-
-        return back()->with('success','Selected salaries deleted.');
+{
+    if (!$request->salary_ids) {
+        return back()->with('error', 'No salaries selected');
     }
+
+    Salary::whereIn('id', $request->salary_ids)->delete();
+
+    return back()->with('success', 'Selected salaries deleted successfully');
+}
 
     /*
     |--------------------------------------------------------------------------
@@ -356,17 +362,15 @@ public function show($id)
 
 public function destroy($id)
 {
-    $salary = \App\Models\Salary::find($id);
+    $salary = Salary::find($id);
 
     if (!$salary) {
-        return redirect()->route('admin.salary.index')
-            ->with('error', 'Salary not found');
+        return back()->with('error', 'Salary not found');
     }
 
     $salary->delete();
 
-    return redirect()->route('admin.salary.index')
-        ->with('success', 'Salary deleted successfully');
+    return back()->with('success', 'Salary deleted successfully');
 }
     public function edit($id)
 {
