@@ -99,96 +99,98 @@ public function employeeIndex()
     |--------------------------------------------------------------------------
     */
     public function store(Request $request)
-{
-    $request->validate([
-        'user_id' => 'required|exists:users,id',
-        'month'   => 'required',
-        'year'    => 'required',
-        'basic_salary' => 'required|numeric'
-    ]);
-
-    // ==========================
-    // CALCULATE EARNINGS
-    // ==========================
-    $totalEarnings =
-        ($request->basic_salary ?? 0)
-        + ($request->invigilation ?? 0)
-        + ($request->t_payment ?? 0)
-        + ($request->eidi ?? 0)
-        + ($request->increment ?? 0)
-        + ($request->other_earnings ?? 0);
-
-    // ==========================
-    // LOAN DEDUCTION
-    // ==========================
-    $loanDeduction = 0;
-    $loan = \App\Models\Loan::where('user_id', $request->user_id)
-                ->where('status','approved')
-                ->where('remaining_balance','>',0)
-                ->first();
-
-    if($loan){
-        $loanDeduction = $loan->monthly_installment;
-    }
-
-    // ==========================
-    // TOTAL DEDUCTIONS
-    // ==========================
-    $totalDeductions =
-        ($request->income_tax ?? 0)
-        + ($request->insurance ?? 0)
-        + ($request->extra_leaves ?? 0)
-        + ($request->other_deductions ?? 0)
-        + $loanDeduction;
-
-    $netSalary = $totalEarnings - $totalDeductions;
-
-    // ==========================
-    // CREATE SALARY
-    // ==========================
-    $salary = \App\Models\Salary::create([
-        'user_id' => $request->user_id,
-        'month'   => $request->month,
-        'year'    => $request->year,
-
-        'basic_salary'   => $request->basic_salary,
-        'invigilation'   => $request->invigilation ?? 0,
-        't_payment'      => $request->t_payment ?? 0,
-        'eidi'           => $request->eidi ?? 0,
-        'increment'      => $request->increment ?? 0,
-        'other_earnings' => $request->other_earnings ?? 0,
-
-        'income_tax'       => $request->income_tax ?? 0,
-        'insurance'        => $request->insurance ?? 0,
-        'extra_leaves'     => $request->extra_leaves ?? 0,
-        'other_deductions' => $request->other_deductions ?? 0,
-        'loan_deduction'   => $loanDeduction,
-
-        'net_salary' => $netSalary,
-        'status'     => 'draft'
-    ]);
-
-    // ==========================
-    // UPDATE LOAN BALANCE
-    // ==========================
-    if($loan && $loanDeduction > 0){
-
-        $loan->remaining_balance -= $loanDeduction;
-        $loan->save();
-
-        \App\Models\LoanLedger::create([
-            'loan_id' => $loan->id,
-            'user_id' => $request->user_id,
-            'salary_id' => $salary->id,
-            'amount' => $loanDeduction,
-            'type'   => 'deduction'
+    {
+        $request->validate([
+            'user_id' => 'required',
+            'month' => 'required|integer|min:1|max:12',
+            'year' => 'required|integer',
+            'basic_salary' => 'required|numeric'
         ]);
-    }
 
-    return redirect()->route('admin.salary.index')
-        ->with('success','Salary Created Successfully');
+        if (Salary::where('user_id', $request->user_id)
+            ->where('month', $request->month)
+            ->where('year', $request->year)
+            ->exists()) {
+
+            return back()->with('error', 'Salary already exists for this month.');
+        }
+
+        // Earnings
+        $gross =
+            ($request->basic_salary ?? 0)
+            + ($request->invigilation ?? 0)
+            + ($request->t_payment ?? 0)
+            + ($request->eidi ?? 0)
+            + ($request->increment ?? 0)
+            + ($request->other_earnings ?? 0);
+
+        // Loan deduction
+        $loan = Loan::where('user_id', $salary->user_id)
+            ->where('remaining_balance', '>', 0)
+            ->first();
+
+if ($loan) {
+
+    $deduction = min($loan->monthly_deduction, $loan->remaining_balance);
+
+    $loan->remaining_balance -= $deduction;
+    $loan->save();
+
+    LoanLedger::create([
+        'loan_id' => $loan->id,
+        'amount' => $deduction,
+        'type' => 'deduction',
+        'remarks' => 'Monthly salary deduction'
+    ]);
 }
 
+        // Deductions
+        $deductions =
+            ($request->extra_leaves ?? 0)
+            + ($request->income_tax ?? 0)
+            + ($request->insurance ?? 0)
+            + ($request->other_deductions ?? 0)
+            + $loanDeduction;
+
+        $net = $gross - $deductions;
+
+        $salary = Salary::create([
+            'user_id' => $request->user_id,
+            'month' => $request->month,
+            'year' => $request->year,
+
+            'basic_salary' => $request->basic_salary ?? 0,
+            'invigilation' => $request->invigilation ?? 0,
+            't_payment' => $request->t_payment ?? 0,
+            'eidi' => $request->eidi ?? 0,
+            'increment' => $request->increment ?? 0,
+            'other_earnings' => $request->other_earnings ?? 0,
+
+            'extra_leaves' => $request->extra_leaves ?? 0,
+            'income_tax' => $request->income_tax ?? 0,
+            'loan_deduction' => $loanDeduction,
+            'insurance' => $request->insurance ?? 0,
+            'other_deductions' => $request->other_deductions ?? 0,
+
+            'gross_total' => $gross,
+            'total_deductions' => $deductions,
+            'net_salary' => $net,
+            'is_posted' => false
+        ]);
+
+        if ($loan && $loanDeduction > 0) {
+            LoanPayment::create([
+                'loan_id' => $loan->id,
+                'amount_paid' => $loanDeduction,
+                'remaining_balance' => $loan->remaining_balance,
+                'month' => $request->month,
+                'year' => $request->year
+            ]);
+        }
+
+        return redirect()->route('admin.salary.index')
+            ->with('success', 'Salary saved as draft.');
+    }
 
     /*
     |--------------------------------------------------------------------------
@@ -197,29 +199,15 @@ public function employeeIndex()
     */
     public function post($id)
 {
-    $salary = Salary::findOrFail($id);
+    $salary = Salary::with('user')->findOrFail($id);
 
-    if ($salary->is_posted) {
-        return back()->with('error', 'Salary already posted');
-    }
+    $salary->update(['is_posted' => 1]);
 
-    $salary->is_posted = 1;
-    $salary->posted_at = now();
-    $salary->save();
+    // SEND EMAIL
+    Mail::to($salary->user->email)
+        ->send(new SalaryPostedMail($salary));
 
-    try {
-        \Mail::raw(
-            "Your salary for {$salary->month}/{$salary->year} has been posted.\n\nNet Salary: Rs {$salary->net_salary}",
-            function ($message) use ($salary) {
-                $message->to($salary->user->email)
-                        ->subject('Salary Posted');
-            }
-        );
-    } catch (\Exception $e) {
-        \Log::error($e->getMessage());
-    }
-
-    return back()->with('success', 'Salary posted successfully');
+    return back()->with('success','Salary posted & email sent');
 }
 
 
@@ -244,15 +232,11 @@ public function show($id)
 {
     $salary = Salary::findOrFail($id);
 
-    if (!$salary->is_posted) {
-        return back()->with('error', 'Salary already in draft');
-    }
+    $salary->update([
+        'is_posted' => 0
+    ]);
 
-    $salary->is_posted = 0;
-    $salary->posted_at = null;
-    $salary->save();
-
-    return back()->with('success', 'Salary moved to draft');
+    return back()->with('success', 'Salary Unposted Successfully');
 }
 
 
@@ -264,18 +248,15 @@ public function show($id)
     public function bulkPost(Request $request)
 {
     if (!$request->salary_ids) {
-        return back()->with('error', 'No salaries selected');
+        return back()->with('error','No salary selected.');
     }
 
     Salary::whereIn('id', $request->salary_ids)
-        ->update([
-            'is_posted' => 1,
-            'status' => 'posted',
-            'posted_at' => now()
-        ]);
+        ->update(['is_posted' => 1]);
 
-    return back()->with('success', 'Selected salaries posted successfully');
+    return back()->with('success','Selected salaries posted successfully.');
 }
+
 
     /*
     |--------------------------------------------------------------------------
@@ -285,18 +266,15 @@ public function show($id)
     public function bulkUnpost(Request $request)
 {
     if (!$request->salary_ids) {
-        return back()->with('error', 'No salaries selected');
+        return back()->with('error','No salary selected.');
     }
 
     Salary::whereIn('id', $request->salary_ids)
-        ->update([
-            'is_posted' => 0,
-            'status' => 'draft',
-            'posted_at' => null
-        ]);
+        ->update(['is_posted' => 0]);
 
-    return back()->with('success', 'Selected salaries unposted successfully');
+    return back()->with('success','Selected salaries unposted.');
 }
+
 
     /*
     |--------------------------------------------------------------------------
@@ -304,15 +282,15 @@ public function show($id)
     |--------------------------------------------------------------------------
     */
     public function bulkDelete(Request $request)
-{
-    if (!$request->salary_ids) {
-        return back()->with('error', 'No salaries selected');
+    {
+        if (!$request->salary_ids) {
+            return back()->with('error','No salary selected.');
+        }
+
+        Salary::whereIn('id', $request->salary_ids)->delete();
+
+        return back()->with('success','Selected salaries deleted.');
     }
-
-    Salary::whereIn('id', $request->salary_ids)->delete();
-
-    return back()->with('success', 'Selected salaries deleted successfully');
-}
 
     /*
     |--------------------------------------------------------------------------
@@ -327,7 +305,7 @@ public function show($id)
             $salary->update(['is_posted' => true]);
 
             Mail::to($salary->user->email)
-                ->queue(new SalaryPostedMail($salary));
+                ->send(new SalaryPostedMail($salary));
         }
 
         return back()->with('success','All draft salaries posted.');
@@ -359,18 +337,13 @@ public function show($id)
 | Delete Salary
 |--------------------------------------------------------------------------
 */
-
 public function destroy($id)
 {
-    $salary = Salary::find($id);
-
-    if (!$salary) {
-        return back()->with('error', 'Salary not found');
-    }
+    $salary = \App\Models\Salary::findOrFail($id);
 
     $salary->delete();
 
-    return back()->with('success', 'Salary deleted successfully');
+    return back()->with('success', 'Salary Deleted Successfully');
 }
     public function edit($id)
 {
