@@ -203,18 +203,15 @@ public function employeeIndex()
         return back()->with('error', 'Salary already posted');
     }
 
-    $salary->is_posted = 1;
-    $salary->posted_at = now();
-    $salary->save();
+    $salary->update([
+        'is_posted' => 1,
+        'status'    => 'posted',
+        'posted_at' => now()
+    ]);
 
     try {
-        \Mail::raw(
-            "Your salary for {$salary->month}/{$salary->year} has been posted.\n\nNet Salary: Rs {$salary->net_salary}",
-            function ($message) use ($salary) {
-                $message->to($salary->user->email)
-                        ->subject('Salary Posted');
-            }
-        );
+        Mail::to($salary->user->email)
+            ->send(new SalaryPostedMail($salary));
     } catch (\Exception $e) {
         \Log::error($e->getMessage());
     }
@@ -248,9 +245,11 @@ public function show($id)
         return back()->with('error', 'Salary already in draft');
     }
 
-    $salary->is_posted = 0;
-    $salary->posted_at = null;
-    $salary->save();
+    $salary->update([
+        'is_posted' => 0,
+        'status'    => 'draft',
+        'posted_at' => null
+    ]);
 
     return back()->with('success', 'Salary moved to draft');
 }
