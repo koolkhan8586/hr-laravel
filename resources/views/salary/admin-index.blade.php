@@ -11,28 +11,33 @@
 
         <div class="flex items-center gap-3">
 
-            {{-- Download Sample --}}
             <a href="{{ route('admin.salary.sample') }}"
-               class="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded text-sm">
+               class="bg-gray-700 text-white px-4 py-2 rounded text-sm">
                 Download Sample
             </a>
 
-            {{-- Export --}}
             <a href="{{ route('admin.salary.export') }}"
-               class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
+               class="bg-blue-600 text-white px-4 py-2 rounded text-sm">
                 Export
             </a>
 
-            {{-- Add Salary --}}
             <a href="{{ route('admin.salary.create') }}"
-               class="bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded text-sm">
+               class="bg-green-700 text-white px-4 py-2 rounded text-sm">
                 Add Salary
             </a>
+
+            <form action="{{ route('admin.salary.post.all') }}" method="POST">
+                @csrf
+                <button type="submit"
+                        class="bg-purple-600 text-white px-4 py-2 rounded text-sm">
+                    Post All Drafts
+                </button>
+            </form>
 
         </div>
     </div>
 
-    {{-- ================= MESSAGES ================= --}}
+    {{-- ================= FLASH MESSAGES ================= --}}
     @if(session('success'))
         <div class="bg-green-100 text-green-700 p-3 rounded mb-4">
             {{ session('success') }}
@@ -45,24 +50,26 @@
         </div>
     @endif
 
-
-    {{-- ================= BULK FORM ================= --}}
-    <form method="POST">
+    {{-- ================= BULK ACTIONS ================= --}}
+    <form id="bulkForm" method="POST">
         @csrf
 
         <div class="flex gap-3 mb-4">
 
-            <button formaction="{{ route('admin.salary.bulk.post') }}"
+            <button type="submit"
+                    formaction="{{ route('admin.salary.bulk.post') }}"
                     class="bg-green-600 text-white px-4 py-2 rounded text-sm">
                 Bulk Post
             </button>
 
-            <button formaction="{{ route('admin.salary.bulk.unpost') }}"
+            <button type="submit"
+                    formaction="{{ route('admin.salary.bulk.unpost') }}"
                     class="bg-gray-600 text-white px-4 py-2 rounded text-sm">
                 Bulk Unpost
             </button>
 
-            <button formaction="{{ route('admin.salary.bulk.delete') }}"
+            <button type="submit"
+                    formaction="{{ route('admin.salary.bulk.delete') }}"
                     onclick="return confirm('Delete selected salaries?')"
                     class="bg-red-600 text-white px-4 py-2 rounded text-sm">
                 Bulk Delete
@@ -113,7 +120,7 @@
                         </td>
 
                         <td class="p-3 font-semibold text-green-700">
-                            Rs {{ number_format($salary->net_salary, 2) }}
+                            Rs {{ number_format($salary->net_salary ?? 0, 2) }}
                         </td>
 
                         <td class="p-3">
@@ -128,58 +135,48 @@
                             @endif
                         </td>
 
-                        <td class="p-3">
+                        <td class="p-3 text-sm">
                             <div class="flex gap-3">
 
-                                {{-- View --}}
                                 <a href="{{ route('admin.salary.show', $salary->id) }}"
                                    class="text-blue-600 hover:underline">
                                     View
                                 </a>
 
-                                {{-- Edit --}}
                                 <a href="{{ route('admin.salary.edit', $salary->id) }}"
                                    class="text-yellow-600 hover:underline">
                                     Edit
                                 </a>
 
-                                {{-- DELETE (JS BASED TO AVOID NESTED FORM ISSUE) --}}
-                                <button type="button"
-                                        onclick="if(confirm('Delete this salary?')) document.getElementById('delete-{{ $salary->id }}').submit();"
-                                        class="text-red-600 hover:underline">
-                                    Delete
-                                </button>
-
-                                {{-- Hidden Delete Form --}}
+                                {{-- DELETE (ONLY ONE) --}}
                                 <form method="POST"
-      action="{{ route('admin.salary.delete', ['id' => $salary->id]) }}"
-      class="inline"
-      onsubmit="return confirm('Delete this salary?')">
+                                      action="{{ route('admin.salary.delete', $salary->id) }}"
+                                      onsubmit="return confirm('Delete this salary?')"
+                                      style="display:inline;">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit"
+                                            class="text-red-600 hover:underline">
+                                        Delete
+                                    </button>
+                                </form>
 
-    @csrf
-    @method('DELETE')
-
-    <button type="submit"
-            class="text-red-600 hover:underline">
-        Delete
-    </button>
-</form>
-
-                                {{-- Post / Unpost --}}
-                                @if(!$salary->is_posted)
-                                    <form action="{{ route('admin.salary.post', $salary->id) }}"
-                                          method="POST">
-                                        @csrf
-                                        <button class="text-green-600 hover:underline">
-                                            Post
-                                        </button>
-                                    </form>
-                                @else
-                                    <form action="{{ route('admin.salary.unpost', $salary->id) }}"
-                                          method="POST">
+                                @if($salary->is_posted)
+                                    <form method="POST"
+                                          action="{{ route('admin.salary.unpost', $salary->id) }}"
+                                          style="display:inline;">
                                         @csrf
                                         <button class="text-gray-600 hover:underline">
                                             Unpost
+                                        </button>
+                                    </form>
+                                @else
+                                    <form method="POST"
+                                          action="{{ route('admin.salary.post', $salary->id) }}"
+                                          style="display:inline;">
+                                        @csrf
+                                        <button class="text-green-600 hover:underline">
+                                            Post
                                         </button>
                                     </form>
                                 @endif
@@ -191,8 +188,7 @@
 
                 @empty
                     <tr>
-                        <td colspan="7"
-                            class="text-center p-6 text-gray-500">
+                        <td colspan="7" class="text-center p-6 text-gray-500">
                             No salaries found.
                         </td>
                     </tr>
@@ -202,16 +198,14 @@
             </table>
 
         </div>
-
     </form>
 
 </div>
 
-{{-- Toggle Script --}}
 <script>
 function toggleAll(source) {
     let checkboxes = document.getElementsByName('salary_ids[]');
-    for(let i=0; i<checkboxes.length; i++) {
+    for (let i = 0; i < checkboxes.length; i++) {
         checkboxes[i].checked = source.checked;
     }
 }
