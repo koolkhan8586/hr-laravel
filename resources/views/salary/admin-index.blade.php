@@ -6,31 +6,48 @@
     <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-bold">Salary Management</h2>
 
-        <div class="flex gap-3">
+        <div class="flex gap-3 items-center">
 
-            <a href="{{ route('admin.salary.sample') }}"
-               class="bg-gray-700 text-white px-4 py-2 rounded text-sm">
-                Download Sample
-            </a>
+    <a href="{{ route('admin.salary.sample') }}"
+       class="bg-gray-700 text-white px-4 py-2 rounded text-sm">
+        Download Sample
+    </a>
 
-            <a href="{{ route('admin.salary.export') }}"
-               class="bg-blue-600 text-white px-4 py-2 rounded text-sm">
-                Export
-            </a>
+    {{-- IMPORT --}}
+    <form action="{{ route('admin.salary.import') }}"
+          method="POST"
+          enctype="multipart/form-data"
+          class="flex items-center gap-2">
+        @csrf
+        <input type="file"
+               name="file"
+               required
+               class="border px-2 py-1 rounded text-sm">
 
-            <a href="{{ route('admin.salary.create') }}"
-               class="bg-green-600 text-white px-4 py-2 rounded text-sm">
-                Add Salary
-            </a>
+        <button type="submit"
+                class="bg-green-600 text-white px-4 py-2 rounded text-sm">
+            Import
+        </button>
+    </form>
 
-            <form action="{{ route('admin.salary.post.all') }}" method="POST">
-                @csrf
-                <button class="bg-purple-600 text-white px-4 py-2 rounded text-sm">
-                    Post All Drafts
-                </button>
-            </form>
+    <a href="{{ route('admin.salary.export') }}"
+       class="bg-blue-600 text-white px-4 py-2 rounded text-sm">
+        Export
+    </a>
 
-        </div>
+    <a href="{{ route('admin.salary.create') }}"
+       class="bg-green-700 text-white px-4 py-2 rounded text-sm">
+        Add Salary
+    </a>
+
+    <form action="{{ route('admin.salary.post.all') }}" method="POST">
+        @csrf
+        <button class="bg-purple-600 text-white px-4 py-2 rounded text-sm">
+            Post All Drafts
+        </button>
+    </form>
+
+</div>
     </div>
 
     {{-- MESSAGES --}}
