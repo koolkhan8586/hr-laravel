@@ -144,17 +144,19 @@
                                 </a>
 
                                 {{-- INDIVIDUAL DELETE (SEPARATE FORM) --}}
-                                <form action="{{ route('admin.salary.delete', $salary->id) }}"
-                                      method="POST"
-                                      style="display:inline;"
-                                      onsubmit="return confirm('Delete this salary?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit"
-                                            class="text-red-600 hover:underline">
-                                        Delete
-                                    </button>
-                                </form>
+                                <form action="{{ url('admin/salary/'.$salary->id) }}"
+      method="POST"
+      style="display:inline;"
+      onsubmit="return confirm('Delete this salary?')">
+
+    @csrf
+    @method('DELETE')
+
+    <button type="submit"
+            class="text-red-600 hover:underline">
+        Delete
+    </button>
+</form>
 
                                 @if($salary->is_posted)
                                     <form action="{{ route('admin.salary.unpost', $salary->id) }}"
