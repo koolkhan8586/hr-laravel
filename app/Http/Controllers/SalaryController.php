@@ -362,15 +362,17 @@ public function show($id)
 
 public function destroy($id)
 {
-    $salary = Salary::find($id);
+    $salary = \App\Models\Salary::where('id', $id)->first();
 
     if (!$salary) {
-        return back()->with('error', 'Salary not found');
+        return redirect()->route('admin.salary.index')
+            ->with('error', 'Salary not found');
     }
 
     $salary->delete();
 
-    return back()->with('success', 'Salary deleted successfully');
+    return redirect()->route('admin.salary.index')
+        ->with('success', 'Salary deleted successfully');
 }
     public function edit($id)
 {
