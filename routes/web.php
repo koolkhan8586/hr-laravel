@@ -202,6 +202,6 @@ Route::delete('/attendance/{id}',
     Route::post('/salary/unpost/{id}', [SalaryController::class,'unpost'])->name('salary.unpost');
     Route::get('/salary/{id}/edit', [SalaryController::class,'edit'])->name('salary.edit');
     Route::put('/salary/{id}', [SalaryController::class,'update'])->name('salary.update');
-    Route::delete('/salary/{id}', [SalaryController::class,'destroy'])->name('salary.delete');
+    Route::delete('admin/salary/{id}', [SalaryController::class,'destroy'])->name('admin.salary.delete');
     Route::get('/salary/{id}', [SalaryController::class,'show'])->name('salary.show');
 });
