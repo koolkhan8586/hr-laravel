@@ -7,6 +7,39 @@
             Salary Management
         </h2>
 
+     <form method="GET" class="flex gap-3 mb-4">
+
+    <select name="employee" class="border px-3 py-2 rounded text-sm">
+        <option value="">All Employees</option>
+        @foreach($employees as $emp)
+            <option value="{{ $emp->id }}"
+                {{ request('employee') == $emp->id ? 'selected' : '' }}>
+                {{ $emp->name }}
+            </option>
+        @endforeach
+    </select>
+
+    <select name="month" class="border px-3 py-2 rounded text-sm">
+        <option value="">All Months</option>
+        @for($m=1;$m<=12;$m++)
+            <option value="{{ $m }}"
+                {{ request('month') == $m ? 'selected' : '' }}>
+                {{ \Carbon\Carbon::create()->month($m)->format('F') }}
+            </option>
+        @endfor
+    </select>
+
+    <input type="number" name="year"
+           value="{{ request('year') }}"
+           placeholder="Year"
+           class="border px-3 py-2 rounded text-sm">
+
+    <button type="submit"
+            class="bg-blue-600 text-white px-4 py-2 rounded text-sm">
+        Filter
+    </button>
+
+</form>
         <div class="flex gap-3">
             <a href="{{ route('admin.salary.sample') }}"
                class="bg-gray-700 text-white px-4 py-2 rounded text-sm">
