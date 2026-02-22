@@ -359,8 +359,11 @@ public function show($id)
 | Delete Salary
 |--------------------------------------------------------------------------
 */
-
 public function destroy($id)
+{
+    dd($id);
+}
+/*public function destroy($id)
 {
     $salary = \App\Models\Salary::where('id', $id)->first();
 
@@ -373,7 +376,7 @@ public function destroy($id)
 
     return redirect()->route('admin.salary.index')
         ->with('success', 'Salary deleted successfully');
-}
+}*/
     public function edit($id)
 {
     $salary = Salary::findOrFail($id);
