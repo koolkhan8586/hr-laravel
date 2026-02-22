@@ -2,9 +2,65 @@
 
 <div class="max-w-7xl mx-auto py-8 px-6">
 
-    <h2 class="text-2xl font-bold mb-6">Salary Management</h2>
+    {{-- ================= HEADER ================= --}}
+    <div class="flex justify-between items-center mb-6">
 
-    {{-- MESSAGES --}}
+        <h2 class="text-2xl font-bold text-gray-800">
+            Salary Management
+        </h2>
+
+        <div class="flex items-center gap-3">
+
+            {{-- Download Sample --}}
+            <a href="{{ route('admin.salary.sample') }}"
+               class="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded text-sm shadow">
+                Download Sample
+            </a>
+
+            {{-- Import Salary --}}
+            <form action="{{ route('admin.salary.import') }}"
+                  method="POST"
+                  enctype="multipart/form-data"
+                  class="flex items-center gap-2">
+                @csrf
+                <input type="file"
+                       name="file"
+                       required
+                       class="border rounded px-2 py-1 text-sm">
+
+                <button type="submit"
+                        class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm shadow">
+                    Import
+                </button>
+            </form>
+
+            {{-- Export --}}
+            <a href="{{ route('admin.salary.export') }}"
+               class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm shadow">
+                Export
+            </a>
+
+            {{-- Add Salary --}}
+            <a href="{{ route('admin.salary.create') }}"
+               class="bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded text-sm shadow">
+                Add Salary
+            </a>
+
+            {{-- Post All Drafts --}}
+            <form action="{{ route('admin.salary.post.all') }}"
+                  method="POST">
+                @csrf
+                <button type="submit"
+                        class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm shadow">
+                    Post All Drafts
+                </button>
+            </form>
+
+        </div>
+    </div>
+
+
+    {{-- ================= SUCCESS / ERROR ================= --}}
     @if(session('success'))
         <div class="bg-green-100 text-green-700 p-3 rounded mb-4">
             {{ session('success') }}
@@ -18,102 +74,153 @@
     @endif
 
 
-    {{-- BULK ACTIONS FORM --}}
-    <form id="bulkForm" method="POST">
+    {{-- ================= BULK ACTIONS ================= --}}
+    <form method="POST" id="bulkForm">
         @csrf
 
         <div class="flex gap-3 mb-4">
             <button formaction="{{ route('admin.salary.bulk.post') }}"
-                    class="bg-green-600 text-white px-4 py-2 rounded">
+                    class="bg-green-600 text-white px-4 py-2 rounded text-sm">
                 Bulk Post
             </button>
 
             <button formaction="{{ route('admin.salary.bulk.unpost') }}"
-                    class="bg-gray-600 text-white px-4 py-2 rounded">
+                    class="bg-gray-600 text-white px-4 py-2 rounded text-sm">
                 Bulk Unpost
             </button>
 
             <button formaction="{{ route('admin.salary.bulk.delete') }}"
-                    onclick="return confirm('Delete selected salaries?')"
-                    class="bg-red-600 text-white px-4 py-2 rounded">
+                    class="bg-red-600 text-white px-4 py-2 rounded text-sm"
+                    onclick="return confirm('Delete selected salaries?')">
                 Bulk Delete
             </button>
         </div>
 
+
+        {{-- ================= TABLE ================= --}}
         <div class="bg-white shadow rounded overflow-hidden">
+
             <table class="w-full text-sm">
-                <thead class="bg-gray-100">
+
+                <thead class="bg-gray-100 text-gray-700">
                     <tr>
-                        <th class="p-3">
-                            <input type="checkbox" onclick="toggleAll(this)">
+                        <th class="p-3 text-center">
+                            <input type="checkbox" id="selectAll">
                         </th>
-                        <th class="p-3">Employee</th>
-                        <th class="p-3">Month</th>
-                        <th class="p-3">Year</th>
-                        <th class="p-3">Net Salary</th>
-                        <th class="p-3">Status</th>
-                        <th class="p-3">Actions</th>
+                        <th class="p-3 text-left">Employee</th>
+                        <th class="p-3 text-left">Month</th>
+                        <th class="p-3 text-left">Year</th>
+                        <th class="p-3 text-left">Net Salary</th>
+                        <th class="p-3 text-left">Status</th>
+                        <th class="p-3 text-center">Action</th>
                     </tr>
                 </thead>
 
                 <tbody>
-                @foreach($salaries as $salary)
-                    <tr class="border-t">
-                        <td class="p-3">
-                            <input type="checkbox"
-                                   name="salary_ids[]"
-                                   value="{{ $salary->id }}">
-                        </td>
+                    @forelse($salaries as $salary)
 
-                        <td class="p-3">{{ $salary->user->name ?? 'N/A' }}</td>
-                        <td class="p-3">{{ \Carbon\Carbon::create()->month($salary->month)->format('F') }}</td>
-                        <td class="p-3">{{ $salary->year }}</td>
-                        <td class="p-3 text-green-700 font-semibold">
-                            Rs {{ number_format($salary->net_salary,2) }}
-                        </td>
+                        <tr class="border-t hover:bg-gray-50">
 
-                        <td class="p-3">
-                            @if($salary->is_posted)
-                                <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">
-                                    Posted
-                                </span>
-                            @else
-                                <span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs">
-                                    Draft
-                                </span>
-                            @endif
-                        </td>
+                            <td class="p-3 text-center">
+                                <input type="checkbox"
+                                       name="ids[]"
+                                       value="{{ $salary->id }}">
+                            </td>
 
-                        <td class="p-3">
+                            <td class="p-3">
+                                {{ $salary->user->name ?? '-' }}
+                            </td>
 
-                            {{-- INDIVIDUAL DELETE FORM (OUTSIDE BULK FORM) --}}
-                            <form method="POST"
-                                  action="{{ route('admin.salary.delete', $salary->id) }}"
-                                  style="display:inline;"
-                                  onsubmit="return confirm('Delete this salary?')">
-                                @csrf
-                                @method('DELETE')
-                                <button class="text-red-600">Delete</button>
-                            </form>
+                            <td class="p-3">
+                                {{ $salary->month }}
+                            </td>
 
-                        </td>
-                    </tr>
-                @endforeach
+                            <td class="p-3">
+                                {{ $salary->year }}
+                            </td>
+
+                            <td class="p-3 font-semibold text-green-700">
+                                Rs {{ number_format($salary->net_salary,2) }}
+                            </td>
+
+                            <td class="p-3">
+                                @if($salary->status == 'draft')
+                                    <span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs">
+                                        Draft
+                                    </span>
+                                @else
+                                    <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">
+                                        Posted
+                                    </span>
+                                @endif
+                            </td>
+
+                            <td class="p-3 text-center">
+
+                                <div class="flex justify-center gap-2">
+
+                                    <a href="{{ route('admin.salary.show', $salary->id) }}"
+                                       class="text-blue-600 text-sm">
+                                        View
+                                    </a>
+
+                                    <a href="{{ route('admin.salary.edit', $salary->id) }}"
+                                       class="text-yellow-600 text-sm">
+                                        Edit
+                                    </a>
+
+                                    <form action="{{ route('admin.salary.delete', $salary->id) }}"
+                                          method="POST"
+                                          onsubmit="return confirm('Delete this salary?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit"
+                                                class="text-red-600 text-sm">
+                                            Delete
+                                        </button>
+                                    </form>
+
+                                    @if($salary->status == 'draft')
+                                        <form action="{{ route('admin.salary.post', $salary->id) }}"
+                                              method="POST">
+                                            @csrf
+                                            <button type="submit"
+                                                    class="text-green-600 text-sm">
+                                                Post
+                                            </button>
+                                        </form>
+                                    @endif
+
+                                </div>
+
+                            </td>
+
+                        </tr>
+
+                    @empty
+                        <tr>
+                            <td colspan="7"
+                                class="text-center p-6 text-gray-500">
+                                No salaries found.
+                            </td>
+                        </tr>
+                    @endforelse
                 </tbody>
+
             </table>
+
         </div>
 
     </form>
 
 </div>
 
+{{-- Select All Script --}}
 <script>
-function toggleAll(source) {
-    let checkboxes = document.getElementsByName('salary_ids[]');
-    for (let i = 0; i < checkboxes.length; i++) {
-        checkboxes[i].checked = source.checked;
-    }
-}
+document.getElementById('selectAll').addEventListener('click', function(){
+    let checkboxes = document.querySelectorAll('input[name="ids[]"]');
+    checkboxes.forEach(cb => cb.checked = this.checked);
+});
 </script>
 
 </x-app-layout>
