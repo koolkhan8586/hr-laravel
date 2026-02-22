@@ -151,13 +151,19 @@
                                 </button>
 
                                 {{-- Hidden Delete Form --}}
-                                <form id="delete-{{ $salary->id }}"
-                                      action="{{ route('admin.salary.delete', $salary->id) }}"
-                                      method="POST"
-                                      style="display:none;">
-                                    @csrf
-                                    @method('DELETE')
-                                </form>
+                                <form method="POST"
+      action="{{ route('admin.salary.delete', ['id' => $salary->id]) }}"
+      class="inline"
+      onsubmit="return confirm('Delete this salary?')">
+
+    @csrf
+    @method('DELETE')
+
+    <button type="submit"
+            class="text-red-600 hover:underline">
+        Delete
+    </button>
+</form>
 
                                 {{-- Post / Unpost --}}
                                 @if(!$salary->is_posted)
