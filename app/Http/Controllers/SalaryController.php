@@ -338,19 +338,19 @@ public function show($id)
         'file' => 'required|mimes:xlsx,csv'
     ]);
 
-    $import = new \App\Imports\SalaryImport;
-
-    \Maatwebsite\Excel\Facades\Excel::import($import, $request->file('file'));
+    $import = new SalaryImport();
+    Excel::import($import, $request->file('file'));
 
     if (!empty($import->errors)) {
         return back()->with('error', implode(' | ', $import->errors));
     }
 
-    foreach ($import->rows as $row) {
-        \App\Models\Salary::create($row);
-    }
+    // 🔹 Store preview in session
+    session(['salary_preview' => $import->rows]);
 
-    return back()->with('success', 'Salary Imported Successfully as Draft');
+    return view('salary.preview', [
+        'rows' => $import->rows
+    ]);
 }
 
     /*
