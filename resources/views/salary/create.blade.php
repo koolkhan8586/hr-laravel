@@ -44,6 +44,7 @@
 
 <input type="number" name="extra_leaves" placeholder="Extra Leaves" class="border p-2 rounded">
 <input type="number" name="income_tax" placeholder="Income Tax" class="border p-2 rounded">
+<input type="number" name="loan_deduction" placeholder="Loan Deduction" class="border p-2 rounded">
 <input type="number" name="insurance" placeholder="Insurance" class="border p-2 rounded">
 <input type="number" name="other_deductions" placeholder="Other Deductions" class="border p-2 rounded">
 
