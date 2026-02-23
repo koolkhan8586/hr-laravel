@@ -204,4 +204,5 @@ Route::delete('/attendance/{id}',
     Route::put('/salary/{id}', [SalaryController::class,'update'])->name('salary.update');
     Route::delete('/salary/{id}', [SalaryController::class,'destroy'])->name('salary.delete');
     Route::get('/salary/{id}', [SalaryController::class,'show'])->name('salary.show');
+    Route::post('/salary/import-confirm', [SalaryController::class,'confirmImport'])->name('salary.import.confirm');
 });
