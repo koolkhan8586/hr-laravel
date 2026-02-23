@@ -2,44 +2,51 @@
 
 <div class="max-w-7xl mx-auto py-8 px-6">
 
-    <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-bold text-gray-800">
-            Salary Management
-        </h2>
+    {{-- ================= HEADER ================= --}}
+    <div class="flex justify-between items-start mb-6">
 
-     <form method="GET" class="flex gap-3 mb-4">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-800">
+                Salary Management
+            </h2>
 
-    <select name="employee" class="border px-3 py-2 rounded text-sm">
-        <option value="">All Employees</option>
-        @foreach($employees as $emp)
-            <option value="{{ $emp->id }}"
-                {{ request('employee') == $emp->id ? 'selected' : '' }}>
-                {{ $emp->name }}
-            </option>
-        @endforeach
-    </select>
+            {{-- FILTER FORM --}}
+            <form method="GET" class="flex gap-3 mt-4">
 
-    <select name="month" class="border px-3 py-2 rounded text-sm">
-        <option value="">All Months</option>
-        @for($m=1;$m<=12;$m++)
-            <option value="{{ $m }}"
-                {{ request('month') == $m ? 'selected' : '' }}>
-                {{ \Carbon\Carbon::create()->month($m)->format('F') }}
-            </option>
-        @endfor
-    </select>
+                <select name="employee" class="border px-3 py-2 rounded text-sm">
+                    <option value="">All Employees</option>
+                    @foreach($employees as $emp)
+                        <option value="{{ $emp->id }}"
+                            {{ request('employee') == $emp->id ? 'selected' : '' }}>
+                            {{ $emp->name }}
+                        </option>
+                    @endforeach
+                </select>
 
-    <input type="number" name="year"
-           value="{{ request('year') }}"
-           placeholder="Year"
-           class="border px-3 py-2 rounded text-sm">
+                <select name="month" class="border px-3 py-2 rounded text-sm">
+                    <option value="">All Months</option>
+                    @for($m=1;$m<=12;$m++)
+                        <option value="{{ $m }}"
+                            {{ request('month') == $m ? 'selected' : '' }}>
+                            {{ \Carbon\Carbon::create()->month($m)->format('F') }}
+                        </option>
+                    @endfor
+                </select>
 
-    <button type="submit"
-            class="bg-blue-600 text-white px-4 py-2 rounded text-sm">
-        Filter
-    </button>
+                <input type="number"
+                       name="year"
+                       value="{{ request('year') }}"
+                       placeholder="Year"
+                       class="border px-3 py-2 rounded text-sm">
 
-</form>
+                <button type="submit"
+                        class="bg-blue-600 text-white px-4 py-2 rounded text-sm">
+                    Filter
+                </button>
+            </form>
+        </div>
+
+        {{-- ACTION BUTTONS --}}
         <div class="flex gap-3">
             <a href="{{ route('admin.salary.sample') }}"
                class="bg-gray-700 text-white px-4 py-2 rounded text-sm">
@@ -58,7 +65,7 @@
         </div>
     </div>
 
-    {{-- IMPORT --}}
+    {{-- ================= IMPORT ================= --}}
     <div class="mb-6">
         <form action="{{ route('admin.salary.import') }}"
               method="POST"
@@ -74,7 +81,7 @@
         </form>
     </div>
 
-    {{-- SUCCESS / ERROR --}}
+    {{-- ================= ALERTS ================= --}}
     @if(session('success'))
         <div class="bg-green-100 text-green-700 p-3 rounded mb-4">
             {{ session('success') }}
@@ -87,7 +94,8 @@
         </div>
     @endif
 
-    {{-- BULK ACTION FORM (ONLY FOR CHECKBOXES) --}}
+
+    {{-- ================= BULK FORM (ONLY BUTTONS) ================= --}}
     <form method="POST" id="bulkForm">
         @csrf
 
@@ -108,134 +116,133 @@
                 Bulk Delete
             </button>
         </div>
-
-        <div class="bg-white shadow rounded overflow-hidden">
-            <table class="w-full text-sm">
-                <thead class="bg-gray-100">
-                    <tr>
-                        <th class="p-3">
-                            <input type="checkbox" onclick="toggleAll(this)">
-                        </th>
-                        <th class="p-3 text-left">Employee</th>
-                        <th class="p-3 text-left">Month</th>
-                        <th class="p-3 text-left">Year</th>
-                        <th class="p-3 text-left">Net Salary</th>
-                        <th class="p-3 text-left">Status</th>
-                        <th class="p-3 text-left">Actions</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                @forelse($salaries as $salary)
-                    <tr class="border-t hover:bg-gray-50">
-
-                        <td class="p-3">
-                            <input type="checkbox"
-                                   name="salary_ids[]"
-                                   value="{{ $salary->id }}">
-                        </td>
-
-                        <td class="p-3">
-                            {{ $salary->user->name ?? 'N/A' }}
-                        </td>
-
-                        <td class="p-3">
-                            {{ \Carbon\Carbon::create()->month($salary->month)->format('F') }}
-                        </td>
-
-                        <td class="p-3">
-                            {{ $salary->year }}
-                        </td>
-
-                        <td class="p-3 font-semibold text-green-700">
-                            Rs {{ number_format($salary->net_salary ?? 0, 2) }}
-                        </td>
-
-                        <td class="p-3">
-                            @if($salary->is_posted)
-                                <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">
-                                    Posted
-                                </span>
-                            @else
-                                <span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs">
-                                    Draft
-                                </span>
-                            @endif
-                        </td>
-
-                        <td class="p-3">
-                            <div class="flex gap-3">
-
-                                <a href="{{ route('admin.salary.show', $salary->id) }}"
-                                   class="text-blue-600 hover:underline">
-                                    View
-                                </a>
-
-                                <a href="{{ route('admin.salary.edit', $salary->id) }}"
-                                   class="text-yellow-600 hover:underline">
-                                    Edit
-                                </a>
-
-                                {{-- INDIVIDUAL DELETE (SEPARATE FORM) --}}
-                                <form action="{{ url('admin/salary/'.$salary->id) }}"
-      method="POST"
-      style="display:inline;"
-      onsubmit="return confirm('Delete this salary?')">
-
-    @csrf
-    @method('DELETE')
-
-    <button type="submit"
-            class="text-red-600 hover:underline">
-        Delete
-    </button>
-</form>
-
-                                @if($salary->is_posted)
-                                    <form action="{{ route('admin.salary.unpost', $salary->id) }}"
-                                          method="POST">
-                                        @csrf
-                                        <button class="text-gray-600 hover:underline">
-                                            Unpost
-                                        </button>
-                                    </form>
-                                @else
-                                    <form action="{{ route('admin.salary.post', $salary->id) }}"
-                                          method="POST">
-                                        @csrf
-                                        <button class="text-green-600 hover:underline">
-                                            Post
-                                        </button>
-                                    </form>
-                                @endif
-
-                            </div>
-                        </td>
-
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="7"
-                            class="text-center p-6 text-gray-500">
-                            No salaries found.
-                        </td>
-                    </tr>
-                @endforelse
-                </tbody>
-
-            </table>
-        </div>
-
     </form>
+
+
+    {{-- ================= TABLE ================= --}}
+    <div class="bg-white shadow rounded overflow-hidden">
+        <table class="w-full text-sm">
+
+            <thead class="bg-gray-100">
+                <tr>
+                    <th class="p-3">
+                        <input type="checkbox" onclick="toggleAll(this)">
+                    </th>
+                    <th class="p-3 text-left">Employee</th>
+                    <th class="p-3 text-left">Month</th>
+                    <th class="p-3 text-left">Year</th>
+                    <th class="p-3 text-left">Net Salary</th>
+                    <th class="p-3 text-left">Status</th>
+                    <th class="p-3 text-left">Actions</th>
+                </tr>
+            </thead>
+
+            <tbody>
+            @forelse($salaries as $salary)
+                <tr class="border-t hover:bg-gray-50">
+
+                    {{-- CHECKBOX (Linked to bulkForm) --}}
+                    <td class="p-3">
+                        <input type="checkbox"
+                               name="salary_ids[]"
+                               value="{{ $salary->id }}"
+                               form="bulkForm">
+                    </td>
+
+                    <td class="p-3">
+                        {{ $salary->user->name ?? 'N/A' }}
+                    </td>
+
+                    <td class="p-3">
+                        {{ \Carbon\Carbon::create()->month($salary->month)->format('F') }}
+                    </td>
+
+                    <td class="p-3">
+                        {{ $salary->year }}
+                    </td>
+
+                    <td class="p-3 font-semibold text-green-700">
+                        Rs {{ number_format($salary->net_salary ?? 0, 2) }}
+                    </td>
+
+                    <td class="p-3">
+                        @if($salary->is_posted)
+                            <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">
+                                Posted
+                            </span>
+                        @else
+                            <span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs">
+                                Draft
+                            </span>
+                        @endif
+                    </td>
+
+                    <td class="p-3">
+                        <div class="flex gap-3">
+
+                            <a href="{{ route('admin.salary.show', $salary->id) }}"
+                               class="text-blue-600 hover:underline">
+                                View
+                            </a>
+
+                            <a href="{{ route('admin.salary.edit', $salary->id) }}"
+                               class="text-yellow-600 hover:underline">
+                                Edit
+                            </a>
+
+                            {{-- INDIVIDUAL DELETE --}}
+                            <form action="{{ route('admin.salary.delete', $salary->id) }}"
+                                  method="POST"
+                                  onsubmit="return confirm('Delete this salary?')">
+                                @csrf
+                                @method('DELETE')
+                                <button class="text-red-600 hover:underline">
+                                    Delete
+                                </button>
+                            </form>
+
+                            {{-- POST / UNPOST --}}
+                            @if($salary->is_posted)
+                                <form action="{{ route('admin.salary.unpost', $salary->id) }}"
+                                      method="POST">
+                                    @csrf
+                                    <button class="text-gray-600 hover:underline">
+                                        Unpost
+                                    </button>
+                                </form>
+                            @else
+                                <form action="{{ route('admin.salary.post', $salary->id) }}"
+                                      method="POST">
+                                    @csrf
+                                    <button class="text-green-600 hover:underline">
+                                        Post
+                                    </button>
+                                </form>
+                            @endif
+
+                        </div>
+                    </td>
+
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="7"
+                        class="text-center p-6 text-gray-500">
+                        No salaries found.
+                    </td>
+                </tr>
+            @endforelse
+            </tbody>
+
+        </table>
+    </div>
 
 </div>
 
 <script>
 function toggleAll(source) {
-    let checkboxes = document.getElementsByName('salary_ids[]');
-    for (let i = 0; i < checkboxes.length; i++) {
-        checkboxes[i].checked = source.checked;
-    }
+    let checkboxes = document.querySelectorAll('input[name="salary_ids[]"]');
+    checkboxes.forEach(cb => cb.checked = source.checked);
 }
 </script>
 
