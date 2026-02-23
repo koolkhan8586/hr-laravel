@@ -9,6 +9,7 @@ use Maatwebsite\Excel\Concerns\ToCollection;
 
 class SalaryImport implements ToCollection
 {
+    public array $rows = [];
     public array $errors = [];
 
     public function collection(Collection $rows)
@@ -22,57 +23,44 @@ class SalaryImport implements ToCollection
                 continue;
             }
 
-            $employeeId = trim($row[0] ?? null);
+            $userId = (int) $row[0];
 
-            if (!$employeeId) {
-                $this->errors[] = "Row ".($index+1)." - Employee ID missing";
+            $user = \App\Models\User::find($userId);
+
+            if (!$user) {
+                $this->errors[] = "Row ".($index+1)." - Invalid User ID ({$userId})";
                 continue;
             }
 
-            // ✅ FIND STAFF BY employee_id (CORRECT TABLE)
-            $staff = Staff::where('employee_id', $employeeId)->first();
-
-            if (!$staff) {
-                $this->errors[] = "Row ".($index+1)." - Employee ID not found ({$employeeId})";
-                continue;
-            }
-
-            $month = (int)($row[1] ?? 0);
-            $year  = (int)($row[2] ?? 0);
-
-            if (!$month || !$year) {
-                $this->errors[] = "Row ".($index+1)." - Invalid month/year";
-                continue;
-            }
-
-            // Prevent duplicate salary
-            $exists = Salary::where('user_id', $staff->user_id)
-                ->where('month', $month)
-                ->where('year', $year)
+            // Duplicate prevention
+            $exists = \App\Models\Salary::where('user_id', $userId)
+                ->where('month', $row[1])
+                ->where('year', $row[2])
                 ->exists();
 
             if ($exists) {
-                $this->errors[] = "Row ".($index+1)." - Salary already exists";
+                $this->errors[] = "Row ".($index+1)." - Salary already exists for this month/year";
                 continue;
             }
 
-            Salary::create([
-                'user_id'        => $staff->user_id,
-                'month'          => $month,
-                'year'           => $year,
-                'basic_salary'   => (float)($row[3] ?? 0),
-                'invigilation'   => (float)($row[4] ?? 0),
-                't_payment'      => (float)($row[5] ?? 0),
-                'eidi'           => (float)($row[6] ?? 0),
-                'increment'      => (float)($row[7] ?? 0),
-                'other_earnings' => (float)($row[8] ?? 0),
-                'extra_leaves'   => (float)($row[9] ?? 0),
-                'income_tax'     => (float)($row[10] ?? 0),
-                'loan_deduction' => (float)($row[11] ?? 0),
-                'insurance'      => (float)($row[12] ?? 0),
-                'other_deductions' => (float)($row[13] ?? 0),
-                'is_posted'      => 0, // IMPORTANT (your system uses is_posted)
-            ]);
+            $this->rows[] = [
+                'user_id' => $userId,
+                'month'   => $row[1],
+                'year'    => $row[2],
+                'basic_salary' => $row[3] ?? 0,
+                'invigilation' => $row[4] ?? 0,
+                't_payment'    => $row[5] ?? 0,
+                'eidi'         => $row[6] ?? 0,
+                'increment'    => $row[7] ?? 0,
+                'other_earnings' => $row[8] ?? 0,
+                'extra_leaves'   => $row[9] ?? 0,
+                'income_tax'     => $row[10] ?? 0,
+                'loan_deduction' => $row[11] ?? 0,
+                'insurance'      => $row[12] ?? 0,
+                'other_deductions' => $row[13] ?? 0,
+                'status' => 'draft',
+                'is_posted' => 0
+            ];
         }
     }
 }
