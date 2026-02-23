@@ -373,6 +373,26 @@ public function destroy($id)
     return redirect()->route('admin.salary.index')
         ->with('success', 'Salary deleted successfully');
 }
+    
+    public function confirmImport()
+{
+    $rows = session('salary_preview');
+
+    if (!$rows) {
+        return redirect()->route('admin.salary.index')
+            ->with('error','No preview data found');
+    }
+
+    foreach ($rows as $row) {
+        Salary::create($row);
+    }
+
+    session()->forget('salary_preview');
+
+    return redirect()->route('admin.salary.index')
+        ->with('success','Salary Imported Successfully');
+}
+    
     public function edit($id)
 {
     $salary = Salary::findOrFail($id);
