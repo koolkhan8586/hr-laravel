@@ -6,7 +6,7 @@ use App\Models\Salary;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 
-class SalaryExport implements FromCollection, WithHeadings
+class SalariesExport implements FromCollection, WithHeadings
 {
     public function collection()
     {
