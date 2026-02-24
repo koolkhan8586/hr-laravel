@@ -6,31 +6,29 @@ use App\Models\Salary;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 
-class SalariesExport implements FromCollection, WithHeadings
+class SalaryExport implements FromCollection, WithHeadings
 {
     public function collection()
     {
         return Salary::with('user')->get()->map(function ($salary) {
             return [
-                'Employee Code' => $salary->user->employee_code,
-            'Employee Name' => $salary->user->name,
-                'Month' => $salary->month,
-                'Year' => $salary->year,
-                'Basic Salary' => $salary->basic_salary,
-                'Invigilation' => $salary->invigilation,
-                'T Payment' => $salary->t_payment,
-                'Eidi' => $salary->eidi,
-                'Increment' => $salary->increment,
-                'Other Earnings' => $salary->other_earnings,
-                'Extra Leaves' => $salary->extra_leaves,
-                'Income Tax' => $salary->income_tax,
-                'Loan Deduction' => $salary->loan_deduction,
-                'Insurance' => $salary->insurance,
-                'Other Deductions' => $salary->other_deductions,
-                'Gross Total' => $salary->gross_total,
-                'Total Deductions' => $salary->total_deductions,
-                'Net Salary' => $salary->net_salary,
-                'Status' => $salary->is_posted ? 'Posted' : 'Draft',
+                'employee_code'   => $salary->user->employee_code ?? '',
+                'employee_name'   => $salary->user->name ?? '',
+                'month'           => $salary->month,
+                'year'            => $salary->year,
+                'basic_salary'    => $salary->basic_salary,
+                'invigilation'    => $salary->invigilation,
+                't_payment'       => $salary->t_payment,
+                'eidi'            => $salary->eidi,
+                'increment'       => $salary->increment,
+                'other_earnings'  => $salary->other_earnings,
+                'extra_leaves'    => $salary->extra_leaves,
+                'income_tax'      => $salary->income_tax,
+                'loan_deduction'  => $salary->loan_deduction,
+                'insurance'       => $salary->insurance,
+                'other_deductions'=> $salary->other_deductions,
+                'net_salary'      => $salary->net_salary,
+                'status'          => $salary->is_posted ? 'Posted' : 'Draft',
             ];
         });
     }
@@ -38,8 +36,8 @@ class SalariesExport implements FromCollection, WithHeadings
     public function headings(): array
     {
         return [
-            'Employee ID',
-            'Employee',
+            'Employee Code',
+            'Employee Name',
             'Month',
             'Year',
             'Basic Salary',
@@ -53,10 +51,8 @@ class SalariesExport implements FromCollection, WithHeadings
             'Loan Deduction',
             'Insurance',
             'Other Deductions',
-            'Gross Total',
-            'Total Deductions',
             'Net Salary',
-            'Status'
+            'Status',
         ];
     }
 }
