@@ -27,6 +27,10 @@ class Salary extends Model
         'insurance',
         'other_deductions',
 
+        // NEW (add these)
+        'gross_total',
+        'total_deductions',
+
         // Final
         'net_salary',
 
@@ -40,12 +44,6 @@ class Salary extends Model
         'is_posted' => 'boolean',
         'posted_at' => 'datetime',
     ];
-
-    /*
-    |--------------------------------------------------------------------------
-    | AUTO CALCULATE NET SALARY
-    |--------------------------------------------------------------------------
-    */
 
     protected static function boot()
     {
@@ -68,33 +66,21 @@ class Salary extends Model
                 ($salary->insurance ?? 0) +
                 ($salary->other_deductions ?? 0);
 
+            // SAVE THESE ALSO
+            $salary->gross_total = $totalEarnings;
+            $salary->total_deductions = $totalDeductions;
+
             $salary->net_salary = $totalEarnings - $totalDeductions;
 
-            // Sync is_posted with status
-            if ($salary->status === 'posted') {
-                $salary->is_posted = true;
-            } else {
-                $salary->is_posted = false;
-            }
+            // Sync status
+            $salary->is_posted = $salary->status === 'posted';
         });
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | RELATION
-    |--------------------------------------------------------------------------
-    */
 
     public function user()
     {
         return $this->belongsTo(User::class);
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | HELPER METHODS
-    |--------------------------------------------------------------------------
-    */
 
     public function post()
     {
