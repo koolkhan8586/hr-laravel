@@ -46,7 +46,6 @@
             <div>
                 <label class="block font-semibold mb-1">Employee Code</label>
                 <input type="text"
-                       name="employee_code"
                        value="{{ old('employee_code', $staff->user->employee_code) }}"
                        class="w-full border p-2 rounded uppercase"
                        required>
