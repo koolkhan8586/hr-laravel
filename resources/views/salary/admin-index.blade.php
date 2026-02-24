@@ -128,6 +128,7 @@
                     <th class="p-3">
                         <input type="checkbox" onclick="toggleAll(this)">
                     </th>
+                    <th class="p-3 text-left">Emp Code</th>
                     <th class="p-3 text-left">Employee</th>
                     <th class="p-3 text-left">Month</th>
                     <th class="p-3 text-left">Year</th>
@@ -150,8 +151,12 @@
                     </td>
 
                     <td class="p-3">
-                        {{ $salary->user->name ?? 'N/A' }}
-                    </td>
+    {{ $salary->user->employee_code ?? '-' }}
+</td>
+
+<td class="p-3">
+    {{ $salary->user->name ?? 'N/A' }}
+</td>
 
                     <td class="p-3">
                         {{ \Carbon\Carbon::create()->month($salary->month)->format('F') }}
