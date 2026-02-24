@@ -12,7 +12,6 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\StaffSampleExport;
 use App\Exports\StaffExport;
 
-
 class StaffController extends Controller
 {
 
@@ -58,36 +57,37 @@ class StaffController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required',
-            'email' => 'required|email|unique:users,email',
-            'employee_id' => 'required|unique:staff,employee_id',
-            'department' => 'required',
-            'designation' => 'required',
-            'salary' => 'required|numeric'
+            'name'          => 'required',
+            'email'         => 'required|email|unique:users,email',
+            'employee_code' => 'required|unique:users,employee_code',
+            'department'    => 'required',
+            'designation'   => 'required',
+            'salary'        => 'required|numeric'
         ]);
 
         $password = Str::random(8);
 
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($password),
-            'role' => 'employee',
+            'name'          => $request->name,
+            'email'         => $request->email,
+            'employee_code' => strtoupper($request->employee_code),
+            'password'      => Hash::make($password),
+            'role'          => 'employee',
             'force_password_change' => true
         ]);
 
         Staff::create([
-            'user_id' => $user->id,
-            'employee_id' => $request->employee_id,
+            'user_id'    => $user->id,
             'department' => $request->department,
-            'designation' => $request->designation,
-            'salary' => $request->salary,
-            'status' => 'active'
+            'designation'=> $request->designation,
+            'salary'     => $request->salary,
+            'status'     => 'active'
         ]);
 
         // Send Welcome Email
         Mail::raw(
             "Welcome to HR System\n\nLogin URL: " . url('/login') .
+            "\nEmployee Code: " . $request->employee_code .
             "\nEmail: " . $request->email .
             "\nPassword: " . $password,
             function ($message) use ($request) {
@@ -144,24 +144,44 @@ class StaffController extends Controller
     */
     public function update(Request $request, $id)
     {
-        $staff = Staff::findOrFail($id);
+        $staff = Staff::with('user')->findOrFail($id);
 
+        $request->validate([
+            'name'          => 'required',
+            'email'         => 'required|email|unique:users,email,' . $staff->user->id,
+            'employee_code' => 'required|unique:users,employee_code,' . $staff->user->id,
+            'department'    => 'required',
+            'designation'   => 'required',
+            'salary'        => 'required|numeric'
+        ]);
+
+        // Update User Table
+        $staff->user->update([
+            'name'          => $request->name,
+            'email'         => $request->email,
+            'employee_code' => strtoupper($request->employee_code),
+        ]);
+
+        // Update Staff Table
         $staff->update([
-            'department' => $request->department,
+            'department'  => $request->department,
             'designation' => $request->designation,
-            'salary' => $request->salary
+            'salary'      => $request->salary
         ]);
 
         return redirect()->route('admin.staff.index')
             ->with('success', 'Staff Updated Successfully');
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Export Staff
+    |--------------------------------------------------------------------------
+    */
     public function export()
-{
-    return \Maatwebsite\Excel\Facades\Excel::download(
-        new StaffExport,
-        'staff_list.xlsx'
-    );
-}
+    {
+        return Excel::download(new StaffExport, 'staff_list.xlsx');
+    }
 
     /*
     |--------------------------------------------------------------------------
