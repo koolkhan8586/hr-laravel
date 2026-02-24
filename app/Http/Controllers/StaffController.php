@@ -25,10 +25,11 @@ class StaffController extends Controller
         $query = Staff::with('user');
 
         if ($request->search) {
-            $query->whereHas('user', function ($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->search . '%');
-            });
-        }
+    $query->whereHas('user', function ($q) use ($request) {
+        $q->where('name', 'like', '%' . $request->search . '%')
+          ->orWhere('employee_code', 'like', '%' . $request->search . '%');
+    });
+}
 
         if ($request->department) {
             $query->where('department', $request->department);
@@ -55,36 +56,50 @@ class StaffController extends Controller
     |--------------------------------------------------------------------------
     */
     public function store(Request $request)
-    {
-        $request->validate([
-            'name'          => 'required',
-            'email'         => 'required|email|unique:users,email',
-            'employee_code' => 'required|unique:users,employee_code',
-            'department'    => 'required',
-            'designation'   => 'required',
-            'salary'        => 'required|numeric'
-        ]);
+{
+    $request->validate([
+        'name' => 'required',
+        'email' => 'required|email|unique:users,email',
+        'department' => 'required',
+        'designation' => 'required',
+        'salary' => 'required|numeric',
+        'joining_date' => 'required|date'
+    ]);
 
-        $password = Str::random(8);
+    // AUTO GENERATE EMPLOYEE CODE
+    $lastUser = User::whereNotNull('employee_code')
+        ->orderByDesc('id')
+        ->first();
 
-        $user = User::create([
-            'name'          => $request->name,
-            'email'         => $request->email,
-            'employee_code' => strtoupper($request->employee_code),
-            'password'      => Hash::make($password),
-            'role'          => 'employee',
-            'force_password_change' => true
-        ]);
+    if ($lastUser && preg_match('/EMP(\d+)/', $lastUser->employee_code, $matches)) {
+        $nextNumber = (int)$matches[1] + 1;
+    } else {
+        $nextNumber = 1;
+    }
 
-        Staff::create([
-            'user_id'    => $user->id,
-            'department' => $request->department,
-            'designation'=> $request->designation,
-            'salary'     => $request->salary,
-            'status'     => 'active'
-        ]);
+    $employeeCode = 'EMP' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
 
-        // Send Welcome Email
+    $password = \Str::random(8);
+
+    $user = User::create([
+        'name' => $request->name,
+        'email' => $request->email,
+        'employee_code' => $employeeCode,
+        'password' => \Hash::make($password),
+        'role' => 'employee',
+        'force_password_change' => true
+    ]);
+
+    Staff::create([
+        'user_id' => $user->id,
+        'department' => $request->department,
+        'designation' => $request->designation,
+        'salary' => $request->salary,
+        'joining_date' => $request->joining_date,
+        'status' => 'active'
+    ]);
+    
+    // Send Welcome Email
         Mail::raw(
             "Welcome to HR System\n\nLogin URL: " . url('/login') .
             "\nEmployee Code: " . $request->employee_code .
@@ -97,7 +112,7 @@ class StaffController extends Controller
         );
 
         return redirect()->route('admin.staff.index')
-            ->with('success', 'Staff Added Successfully');
+        ->with('success', 'Staff Added Successfully (Code: '.$employeeCode.')');
     }
 
     /*
