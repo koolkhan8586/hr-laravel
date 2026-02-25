@@ -361,6 +361,21 @@ public function allocationUpdate(Request $request)
 
     return back()->with('success', 'Leave Allocation Updated Successfully');
 }
+
+public function updateAllocation(Request $request, $id)
+{
+    $request->validate([
+        'annual_leave_balance' => 'required|numeric|min:0'
+    ]);
+
+    $user = \App\Models\User::findOrFail($id);
+
+    $user->update([
+        'annual_leave_balance' => $request->annual_leave_balance
+    ]);
+
+    return back()->with('success', 'Leave allocation updated successfully.');
+}    
 /*
 |--------------------------------------------------------------------------
 | EXPORT + PAYROLL
