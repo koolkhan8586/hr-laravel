@@ -349,18 +349,6 @@ public function allocationIndex()
 |--------------------------------------------------------------------------
 */
 
-public function allocationUpdate(Request $request)
-{
-    foreach ($request->balances as $userId => $balance) {
-
-        \App\Models\User::where('id', $userId)
-            ->update([
-                'annual_leave_balance' => $balance
-            ]);
-    }
-
-    return back()->with('success', 'Leave Allocation Updated Successfully');
-}
 
 public function updateAllocation(Request $request, $id)
 {
