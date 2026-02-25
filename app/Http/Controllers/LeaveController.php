@@ -147,7 +147,12 @@ class LeaveController extends Controller
         return view('leave.admin', compact('leaves','employees'));
     }
 
+    public function balanceIndex()
+{
+    $employees = \App\Models\User::where('role', 'employee')->get();
 
+    return view('admin.leave.balance-index', compact('employees'));
+}
 /*
 |--------------------------------------------------------------------------
 | APPROVAL LOGIC
