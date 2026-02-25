@@ -151,7 +151,7 @@ class LeaveController extends Controller
 {
     $employees = \App\Models\User::where('role', 'employee')->get();
 
-    return view('admin.leave.balance-index', compact('employees'));
+    return view('leave.balance-index', compact('employees'));
 }
 /*
 |--------------------------------------------------------------------------
