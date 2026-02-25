@@ -32,17 +32,17 @@
 
 
     {{-- ================= HEADER ================= --}}
-    <div class="flex justify-between items-center mb-6">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <h2 class="text-2xl font-bold">My Leaves</h2>
 
-        <div class="space-x-2">
+        <div class="flex gap-2">
             <a href="{{ route('leave.history') }}"
-               class="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded shadow">
+               class="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded shadow text-sm">
                 View History
             </a>
 
             <a href="{{ route('leave.create') }}"
-               class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow">
+               class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow text-sm">
                 Apply Leave
             </a>
         </div>
@@ -58,15 +58,15 @@
 
 
     {{-- ================= LEAVE TABLE ================= --}}
-    <div class="bg-white shadow rounded overflow-hidden">
+    <div class="bg-white shadow rounded overflow-x-auto">
 
-        <table class="w-full text-sm">
+        <table class="min-w-full text-sm">
             <thead class="bg-gray-100 text-gray-700">
                 <tr>
                     <th class="p-3 text-left">Type</th>
                     <th class="p-3 text-left">From</th>
                     <th class="p-3 text-left">To</th>
-                    <th class="p-3 text-left">Duration</th>
+                    <th class="p-3 text-left hidden md:table-cell">Duration</th>
                     <th class="p-3 text-left">Days</th>
                     <th class="p-3 text-left">Status</th>
                 </tr>
@@ -76,19 +76,19 @@
                 @forelse($leaves as $leave)
                 <tr class="border-t hover:bg-gray-50 transition">
 
-                    <td class="p-3 capitalize">
+                    <td class="p-3 capitalize whitespace-nowrap">
                         {{ str_replace('_',' ',$leave->type) }}
                     </td>
 
-                    <td class="p-3">
+                    <td class="p-3 whitespace-nowrap">
                         {{ \Carbon\Carbon::parse($leave->start_date)->format('d M Y') }}
                     </td>
 
-                    <td class="p-3">
+                    <td class="p-3 whitespace-nowrap">
                         {{ \Carbon\Carbon::parse($leave->end_date)->format('d M Y') }}
                     </td>
 
-                    <td class="p-3 capitalize">
+                    <td class="p-3 capitalize hidden md:table-cell">
                         {{ str_replace('_',' ',$leave->duration_type ?? 'full_day') }}
                     </td>
 
