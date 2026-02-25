@@ -330,7 +330,37 @@ class LeaveController extends Controller
         return back()->with('success','Leave Deleted');
     }
 
+/*
+|--------------------------------------------------------------------------
+| Leave Allocation Page (Opening Balance)
+|--------------------------------------------------------------------------
+*/
 
+public function allocationIndex()
+{
+    $employees = \App\Models\User::where('role', 'employee')->get();
+
+    return view('leave.balance-index', compact('employees'));
+}
+
+/*
+|--------------------------------------------------------------------------
+| Update Opening Leave Balance
+|--------------------------------------------------------------------------
+*/
+
+public function allocationUpdate(Request $request)
+{
+    foreach ($request->balances as $userId => $balance) {
+
+        \App\Models\User::where('id', $userId)
+            ->update([
+                'annual_leave_balance' => $balance
+            ]);
+    }
+
+    return back()->with('success', 'Leave Allocation Updated Successfully');
+}
 /*
 |--------------------------------------------------------------------------
 | EXPORT + PAYROLL
