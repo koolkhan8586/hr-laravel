@@ -102,7 +102,7 @@
 </a>
 
 
-        <a href="{{ route('admin.leave.balance.index') }}"
+        <a href="{{ route('admin.leave.allocation.index') }}"
    class="block px-4 py-2 hover:bg-gray-100">
     Leave Allocation
 </a>
