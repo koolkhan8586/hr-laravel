@@ -155,8 +155,7 @@ Route::delete('/attendance/{id}',
     Route::get('/leave/{id}/edit', [LeaveController::class, 'adminEdit'])->name('leave.edit');
     Route::put('/leave/{id}', [LeaveController::class, 'adminUpdate'])->name('leave.update');
     Route::post('/leave/assign', [LeaveController::class,'assignLeave'])->name('leave.assign');
-    Route::get('/leave-balances', [LeaveController::class,'balanceIndex'])->name('leave.balance.index');
-    Route::post('/leave-balances/assign', [LeaveController::class,'assignLeave'])->name('leave.balance.assign');
+    Route::get('/leave-balances', [LeaveController::class,'balanceIndex'])->name('leave.balance');
     Route::post('/leave-balances/update/{id}', [LeaveController::class,'updateBalance'])->name('leave.balance.update');
     Route::delete('/leave-balances/delete/{id}', [LeaveController::class,'deleteBalance'])->name('leave.balance.delete');
     Route::get('/leave-calendar',[LeaveController::class,'calendar'])->name('leave.calendar');
