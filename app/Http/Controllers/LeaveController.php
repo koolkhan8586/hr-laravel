@@ -360,20 +360,29 @@ class LeaveController extends Controller
     }
 
     public function updateAllocation(Request $request, $id)
-    {
-        $request->validate([
-            'annual_leave_balance' => 'required|numeric|min:0'
-        ]);
+{
+    $request->validate([
+        'annual_leave_balance' => 'required|numeric|min:0'
+    ]);
 
-        $user = User::findOrFail($id);
+    $balance = \App\Models\LeaveBalance::firstOrCreate(
+        ['user_id' => $id],
+        [
+            'opening_balance'   => 0,
+            'used_leaves'       => 0,
+            'remaining_leaves'  => 0
+        ]
+    );
 
-        $user->update([
-            'annual_leave_balance' => $request->annual_leave_balance
-        ]);
+    $newOpening = $request->annual_leave_balance;
 
-        return back()->with('success','Leave Allocation Updated Successfully');
-    }
+    $balance->update([
+        'opening_balance'  => $newOpening,
+        'remaining_leaves' => $newOpening - $balance->used_leaves
+    ]);
 
+    return back()->with('success', 'Leave allocation updated successfully.');
+}
 
 /*
 |--------------------------------------------------------------------------
