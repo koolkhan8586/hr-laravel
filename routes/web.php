@@ -141,29 +141,26 @@ Route::delete('/attendance/{id}',
     | Leave Management (Admin) (UNCHANGED)
     |--------------------------------------------------------------------------
     */
-    Route::get('/leaves', [LeaveController::class, 'adminIndex'])->name('leave.index');
-    Route::post('/leave/approve/{id}', [LeaveController::class, 'approve'])->name('leave.approve');
-    Route::post('/leave/reject/{id}', [LeaveController::class, 'reject'])->name('leave.reject');
-    Route::get('/leave-transactions', [LeaveController::class, 'adminTransactions'])->name('leave.transactions');
-    Route::get('/leave-transactions/export', [LeaveController::class, 'exportTransactions'])->name('leave.transactions.export');
-    Route::get('/leave/export', [LeaveController::class, 'export'])->name('leave.export');
-    Route::post('/leave/revert/{id}', [LeaveController::class, 'revert'])->name('leave.revert');
-    Route::delete('/leave/delete/{id}', [LeaveController::class, 'destroy'])->name('leave.delete');
-    Route::get('/payroll-summary', [LeaveController::class, 'payrollSummary'])->name('payroll.summary');
-    Route::get('/leave/create', [LeaveController::class, 'adminCreate'])->name('leave.create');
-    Route::post('/leave/store', [LeaveController::class, 'adminStore'])->name('leave.store');
-    Route::get('/leave/{id}/edit', [LeaveController::class, 'adminEdit'])->name('leave.edit');
-    Route::put('/leave/{id}', [LeaveController::class, 'adminUpdate'])->name('leave.update');
-    Route::post('/leave/assign', [LeaveController::class,'assignLeave'])->name('leave.assign');
-    Route::get('/leave-allocation', [LeaveController::class, 'allocationIndex'])->name('leave.allocation.index');
-    Route::post('/leave-allocation/update/{id}', [LeaveController::class, 'updateAllocation'])->name('leave.allocation.update');
-    Route::post('/leave-balances/update/{id}', [LeaveController::class,'updateBalance'])->name('leave.balance.update');
-    Route::delete('/leave-balances/delete/{id}', [LeaveController::class,'deleteBalance'])->name('leave.balance.delete');
-    Route::get('/leave-calendar',[LeaveController::class,'calendar'])->name('leave.calendar');
-    Route::post('/leave/recalculate', [LeaveController::class, 'recalculateBalances'])->name('leave.recalculate');
-    Route::post('/leave/reset-year',[LeaveController::class, 'resetYearlyBalance'])->name('leave.reset.year');
+Route::get('/leaves', [LeaveController::class, 'adminIndex'])->name('leave.index');
+Route::post('/leave/approve/{id}', [LeaveController::class, 'approve'])->name('leave.approve');
+Route::post('/leave/reject/{id}', [LeaveController::class, 'reject'])->name('leave.reject');
+Route::post('/leave/revert/{id}', [LeaveController::class, 'revert'])->name('leave.revert');
+Route::delete('/leave/delete/{id}', [LeaveController::class, 'destroy'])->name('leave.delete');
 
+Route::get('/leave-transactions', [LeaveController::class, 'adminTransactions'])->name('leave.transactions');
+Route::get('/leave-transactions/export', [LeaveController::class, 'exportTransactions'])->name('leave.transactions.export');
 
+Route::get('/leave-calendar',[LeaveController::class,'calendar'])->name('leave.calendar');
+
+Route::get('/leave-allocation', [LeaveController::class, 'allocationIndex'])->name('leave.allocation.index');
+Route::post('/leave-allocation/update/{id}', [LeaveController::class, 'updateAllocation'])->name('leave.allocation.update');
+
+Route::post('/leave/recalculate', [LeaveController::class, 'recalculateBalances'])->name('leave.recalculate');
+Route::post('/leave/reset-year',[LeaveController::class, 'resetYearlyBalance'])->name('leave.reset.year');
+
+Route::get('/payroll-summary', [LeaveController::class, 'payrollSummary'])->name('payroll.summary');
+
+Route::post('/leave/store', [LeaveController::class, 'store'])->name('leave.store');
 
     /*
     |--------------------------------------------------------------------------
