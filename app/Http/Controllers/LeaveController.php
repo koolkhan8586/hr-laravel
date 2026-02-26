@@ -411,6 +411,48 @@ class LeaveController extends Controller
     }
 
 
+    public function recalculateBalances()
+{
+    $employees = \App\Models\User::where('role','employee')->get();
+
+    foreach ($employees as $employee) {
+
+        $approvedLeaves = \App\Models\Leave::where('user_id',$employee->id)
+            ->where('type','annual')
+            ->where('status','approved')
+            ->sum('calculated_days');
+
+        $balance = \App\Models\LeaveBalance::firstOrCreate(
+            ['user_id' => $employee->id],
+            [
+                'opening_balance'  => 0,
+                'used_leaves'      => 0,
+                'remaining_leaves' => 0
+            ]
+        );
+
+        $balance->update([
+            'used_leaves'      => $approvedLeaves,
+            'remaining_leaves' => $balance->opening_balance - $approvedLeaves
+        ]);
+    }
+
+    return back()->with('success','All Leave Balances Recalculated Successfully');
+}
+
+    public function resetYearlyBalance()
+{
+    $balances = \App\Models\LeaveBalance::all();
+
+    foreach ($balances as $balance) {
+        $balance->update([
+            'used_leaves'      => 0,
+            'remaining_leaves' => $balance->opening_balance
+        ]);
+    }
+
+    return back()->with('success','Yearly Leave Reset Successfully');
+}
 /*
 |--------------------------------------------------------------------------
 | EXPORT + PAYROLL
