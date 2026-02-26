@@ -161,6 +161,7 @@ Route::post('/leave/reset-year',[LeaveController::class, 'resetYearlyBalance'])-
 Route::get('/payroll-summary', [LeaveController::class, 'payrollSummary'])->name('payroll.summary');
 
 Route::post('/leave/store', [LeaveController::class, 'store'])->name('leave.store');
+    Route::get('/leave/{id}/edit', [LeaveController::class, 'adminEdit'])->name('leave.edit');
 
     /*
     |--------------------------------------------------------------------------
