@@ -177,16 +177,48 @@ class LeaveController extends Controller
 */
 
     public function approve($id)
-    {
-        $leave = Leave::findOrFail($id);
+{
+    $leave = Leave::with('user')->findOrFail($id);
 
-        if($leave->status === 'approved'){
-            return back()->with('error','Already Approved');
+    if ($leave->status === 'approved') {
+        return back()->with('error', 'Already Approved');
+    }
+
+    if ($leave->type === 'annual') {
+
+        $balance = LeaveBalance::firstOrCreate(
+            ['user_id' => $leave->user_id],
+            [
+                'opening_balance' => 0,
+                'used_leaves' => 0,
+                'remaining_leaves' => 0
+            ]
+        );
+
+        if ($balance->remaining_leaves < $leave->calculated_days) {
+            return back()->with('error', 'Insufficient Leave Balance');
         }
 
-        $this->processApproval($leave);
+        $before = $balance->remaining_leaves;
+        $after  = $before - $leave->calculated_days;
 
-        $leave->update(['status'=>'approved']);
+        $balance->update([
+            'used_leaves' => $balance->used_leaves + $leave->calculated_days,
+            'remaining_leaves' => $after
+        ]);
+
+        LeaveTransaction::create([
+            'user_id'        => $leave->user_id,
+            'leave_id'       => $leave->id,
+            'days'           => $leave->calculated_days,
+            'balance_before' => $before,
+            'balance_after'  => $after,
+            'action'         => 'approved',
+            'processed_by'   => auth()->id(),
+        ]);
+    }
+
+    $leave->update(['status' => 'approved']);
 
         Mail::raw(
             "Your Leave Has Been Approved\n\nFrom: ".$leave->start_date.
