@@ -46,20 +46,6 @@
                     <td class="p-3">
                         {{ $employee->name }}
                     </td>
-
-                    <form method="POST" action="{{ route('admin.leave.recalculate') }}">
-    @csrf
-    <button class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded mb-4">
-        🔄 Recalculate All Balances
-    </button>
-</form>
-
-                    <form method="POST" action="{{ route('admin.leave.reset.year') }}">
-    @csrf
-    <button class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded mb-4">
-        🔁 Reset Yearly Leave
-    </button>
-</form>
                    
                     {{-- OPENING BALANCE EDIT --}}
                     <td class="p-3">
@@ -97,6 +83,19 @@
                         Current Balance: 
                         <strong>{{ $balance->remaining_leaves }}</strong>
                     </td>
+                    <form method="POST" action="{{ route('admin.leave.recalculate') }}">
+    @csrf
+    <button class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded mb-4">
+        🔄 Recalculate All Balances
+    </button>
+</form>
+
+                    <form method="POST" action="{{ route('admin.leave.reset.year') }}">
+    @csrf
+    <button class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded mb-4">
+        🔁 Reset Yearly Leave
+    </button>
+</form>
 
                 </tr>
             @endforeach
