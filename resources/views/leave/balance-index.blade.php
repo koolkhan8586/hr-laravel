@@ -6,6 +6,7 @@
         Leave Allocation Management
     </h2>
 
+    {{-- SUCCESS MESSAGE --}}
     @if(session('success'))
         <div class="bg-green-100 text-green-700 p-3 rounded mb-4">
             {{ session('success') }}
@@ -13,52 +14,82 @@
     @endif
 
     <div class="bg-white shadow rounded overflow-hidden">
+
         <table class="w-full text-sm">
             <thead class="bg-gray-100">
                 <tr>
                     <th class="p-3 text-left">Employee</th>
                     <th class="p-3 text-left">Opening Balance</th>
+                    <th class="p-3 text-left">Used</th>
+                    <th class="p-3 text-left">Remaining</th>
                     <th class="p-3 text-left">Action</th>
                 </tr>
             </thead>
 
             <tbody>
             @foreach($employees as $employee)
+
+                @php
+                    $balance = \App\Models\LeaveBalance::firstOrCreate(
+                        ['user_id' => $employee->id],
+                        [
+                            'opening_balance' => 0,
+                            'used_leaves' => 0,
+                            'remaining_leaves' => 0
+                        ]
+                    );
+                @endphp
+
                 <tr class="border-t">
 
+                    {{-- EMPLOYEE NAME --}}
                     <td class="p-3">
                         {{ $employee->name }}
                     </td>
 
+                    {{-- OPENING BALANCE EDIT --}}
                     <td class="p-3">
                         <form method="POST"
                               action="{{ route('admin.leave.allocation.update', $employee->id) }}"
-                              class="flex gap-2">
+                              class="flex gap-2 items-center">
 
                             @csrf
 
                             <input type="number"
                                    name="annual_leave_balance"
-                                   value="{{ $employee->annual_leave_balance ?? 0 }}"
+                                   value="{{ $balance->opening_balance }}"
                                    min="0"
                                    class="border px-3 py-1 rounded w-24">
 
                             <button type="submit"
-                                    class="bg-blue-600 text-white px-3 py-1 rounded text-sm">
+                                    class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">
                                 Update
                             </button>
                         </form>
                     </td>
 
-                    <td class="p-3">
+                    {{-- USED LEAVES --}}
+                    <td class="p-3 font-semibold text-red-600">
+                        {{ $balance->used_leaves }}
+                    </td>
+
+                    {{-- REMAINING --}}
+                    <td class="p-3 font-semibold text-green-600">
+                        {{ $balance->remaining_leaves }}
+                    </td>
+
+                    {{-- INFO --}}
+                    <td class="p-3 text-gray-500">
                         Current Balance: 
-                        <strong>{{ $employee->annual_leave_balance ?? 0 }}</strong>
+                        <strong>{{ $balance->remaining_leaves }}</strong>
                     </td>
 
                 </tr>
             @endforeach
             </tbody>
+
         </table>
+
     </div>
 
 </div>
