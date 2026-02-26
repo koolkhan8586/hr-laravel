@@ -363,6 +363,27 @@ class LeaveController extends Controller
         return back()->with('success','Leave allocation updated successfully.');
     }
 
+
+    public function calendar()
+    {
+        $leaves = Leave::with('user')
+            ->where('status','approved')
+            ->get();
+
+        $events = [];
+
+        foreach ($leaves as $leave) {
+            $events[] = [
+                'title' => $leave->user->name.' ('.$leave->calculated_days.' day)',
+                'start' => $leave->start_date,
+                'end'   => Carbon::parse($leave->end_date)->addDay()->format('Y-m-d'),
+                'color' => '#16a34a'
+            ];
+        }
+
+        return view('leave.calendar', compact('events'));
+    }
+
 /*
 |--------------------------------------------------------------------------
 | RECALCULATE + RESET
