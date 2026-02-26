@@ -161,6 +161,7 @@ Route::delete('/attendance/{id}',
     Route::delete('/leave-balances/delete/{id}', [LeaveController::class,'deleteBalance'])->name('leave.balance.delete');
     Route::get('/leave-calendar',[LeaveController::class,'calendar'])->name('leave.calendar');
     Route::post('/leave/recalculate', [LeaveController::class, 'recalculateBalances'])->name('leave.recalculate');
+    Route::post('/leave/reset-year',[LeaveController::class, 'resetYearlyBalance'])->name('leave.reset.year');
 
 
 
