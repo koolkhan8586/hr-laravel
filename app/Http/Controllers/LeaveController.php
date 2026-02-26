@@ -178,12 +178,13 @@ class LeaveController extends Controller
 
     public function approve($id)
 {
-    $leave = Leave::with('user')->findOrFail($id);
+    $leave = Leave::findOrFail($id);
 
     if ($leave->status === 'approved') {
         return back()->with('error', 'Already Approved');
     }
 
+    // Only check balance for annual leave
     if ($leave->type === 'annual') {
 
         $balance = LeaveBalance::firstOrCreate(
@@ -196,7 +197,7 @@ class LeaveController extends Controller
         );
 
         if ($balance->remaining_leaves < $leave->calculated_days) {
-            return back()->with('error', 'Insufficient Leave Balance');
+            return back()->with('error', 'Insufficient Leave Balance. Please allocate leave first.');
         }
 
         $before = $balance->remaining_leaves;
