@@ -63,21 +63,27 @@ class LeaveController extends Controller
         return view('leave.history', compact('leaves','transactions'));
     }
 
+/*
+|--------------------------------------------------------------------------
+| STORE LEAVE (ADMIN + EMPLOYEE)
+|--------------------------------------------------------------------------
+*/
+
     public function store(Request $request)
     {
         $request->validate([
-    'employee_id' => auth()->user()->role === 'admin'
-                        ? 'required|exists:users,id'
-                        : 'nullable',
-    'type'          => 'required|in:annual,without_pay',
-    'start_date'    => 'required|date',
-    'end_date'      => 'required|date|after_or_equal:start_date',
-    'duration_type' => 'required|in:full_day,half_day',
-    'reason'        => 'nullable|string'
-]);
+            'employee_id' => auth()->user()->role === 'admin'
+                ? 'required|exists:users,id'
+                : 'nullable',
+            'type'          => 'required|in:annual,without_pay',
+            'start_date'    => 'required|date',
+            'end_date'      => 'required|date|after_or_equal:start_date',
+            'duration_type' => 'required|in:full_day,half_day',
+            'reason'        => 'nullable|string'
+        ]);
 
         $userId = auth()->user()->role === 'admin'
-            ? $request->user_id
+            ? $request->employee_id
             : auth()->id();
 
         $start = Carbon::parse($request->start_date);
@@ -88,9 +94,7 @@ class LeaveController extends Controller
             : $start->diffInDays($end) + 1;
 
         $leave = Leave::create([
-            'user_id' => auth()->user()->role === 'admin'
-                ? $request->employee_id
-                : auth()->id(),
+            'user_id'        => $userId,
             'type'           => $request->type,
             'start_date'     => $request->start_date,
             'end_date'       => $request->end_date,
@@ -102,7 +106,11 @@ class LeaveController extends Controller
             'status'         => auth()->user()->role === 'admin' ? 'approved' : 'pending',
         ]);
 
-        // ================= EMAIL LOGIC =================
+        /*
+        |--------------------------------------------------------------------------
+        | EMAIL LOGIC (UNCHANGED)
+        |--------------------------------------------------------------------------
+        */
 
         if(auth()->user()->role === 'employee'){
             $admins = User::where('role','admin')->get();
@@ -138,10 +146,9 @@ class LeaveController extends Controller
         return back()->with('success','Leave Created Successfully');
     }
 
-
 /*
 |--------------------------------------------------------------------------
-| ADMIN SECTION
+| ADMIN INDEX
 |--------------------------------------------------------------------------
 */
 
@@ -169,57 +176,23 @@ class LeaveController extends Controller
         return view('leave.admin', compact('leaves','employees'));
     }
 
-
 /*
 |--------------------------------------------------------------------------
-| APPROVE / REJECT
+| APPROVE
 |--------------------------------------------------------------------------
 */
 
     public function approve($id)
-{
-    $leave = Leave::findOrFail($id);
+    {
+        $leave = Leave::findOrFail($id);
 
-    if ($leave->status === 'approved') {
-        return back()->with('error', 'Already Approved');
-    }
-
-    // Only check balance for annual leave
-    if ($leave->type === 'annual') {
-
-        $balance = LeaveBalance::firstOrCreate(
-            ['user_id' => $leave->user_id],
-            [
-                'opening_balance' => 0,
-                'used_leaves' => 0,
-                'remaining_leaves' => 0
-            ]
-        );
-
-        if ($balance->remaining_leaves < $leave->calculated_days) {
-            return back()->with('error', 'Insufficient Leave Balance. Please allocate leave first.');
+        if ($leave->status === 'approved') {
+            return back()->with('error','Already Approved');
         }
 
-        $before = $balance->remaining_leaves;
-        $after  = $before - $leave->calculated_days;
+        $this->processApproval($leave);
 
-        $balance->update([
-            'used_leaves' => $balance->used_leaves + $leave->calculated_days,
-            'remaining_leaves' => $after
-        ]);
-
-        LeaveTransaction::create([
-            'user_id'        => $leave->user_id,
-            'leave_id'       => $leave->id,
-            'days'           => $leave->calculated_days,
-            'balance_before' => $before,
-            'balance_after'  => $after,
-            'action'         => 'approved',
-            'processed_by'   => auth()->id(),
-        ]);
-    }
-
-    $leave->update(['status' => 'approved']);
+        $leave->update(['status'=>'approved']);
 
         Mail::raw(
             "Your Leave Has Been Approved\n\nFrom: ".$leave->start_date.
@@ -234,28 +207,9 @@ class LeaveController extends Controller
         return back()->with('success','Leave Approved');
     }
 
-    public function reject($id)
-    {
-        $leave = Leave::findOrFail($id);
-
-        $leave->update(['status'=>'rejected']);
-
-        Mail::raw(
-            "Your Leave Has Been Rejected\n\nFrom: ".$leave->start_date.
-            "\nTo: ".$leave->end_date,
-            function ($message) use ($leave) {
-                $message->to($leave->user->email)
-                    ->subject('Leave Rejected');
-            }
-        );
-
-        return back()->with('success','Leave Rejected');
-    }
-
-
 /*
 |--------------------------------------------------------------------------
-| PROCESS APPROVAL
+| PROCESS APPROVAL (FIXED SAFE VERSION)
 |--------------------------------------------------------------------------
 */
 
@@ -295,6 +249,29 @@ class LeaveController extends Controller
         ]);
     }
 
+/*
+|--------------------------------------------------------------------------
+| REJECT
+|--------------------------------------------------------------------------
+*/
+
+    public function reject($id)
+    {
+        $leave = Leave::findOrFail($id);
+
+        $leave->update(['status'=>'rejected']);
+
+        Mail::raw(
+            "Your Leave Has Been Rejected\n\nFrom: ".$leave->start_date.
+            "\nTo: ".$leave->end_date,
+            function ($message) use ($leave) {
+                $message->to($leave->user->email)
+                    ->subject('Leave Rejected');
+            }
+        );
+
+        return back()->with('success','Leave Rejected');
+    }
 
 /*
 |--------------------------------------------------------------------------
@@ -311,8 +288,10 @@ class LeaveController extends Controller
             $balance = LeaveBalance::where('user_id',$leave->user_id)->first();
 
             if($balance){
-                $balance->increment('remaining_leaves',$leave->calculated_days);
-                $balance->decrement('used_leaves',$leave->calculated_days);
+                $balance->update([
+                    'used_leaves' => $balance->used_leaves - $leave->calculated_days,
+                    'remaining_leaves' => $balance->remaining_leaves + $leave->calculated_days
+                ]);
             }
         }
 
@@ -320,7 +299,6 @@ class LeaveController extends Controller
 
         return back()->with('success','Leave Reverted');
     }
-
 
 /*
 |--------------------------------------------------------------------------
@@ -336,8 +314,10 @@ class LeaveController extends Controller
             $balance = LeaveBalance::where('user_id',$leave->user_id)->first();
 
             if($balance){
-                $balance->increment('remaining_leaves',$leave->calculated_days);
-                $balance->decrement('used_leaves',$leave->calculated_days);
+                $balance->update([
+                    'used_leaves' => $balance->used_leaves - $leave->calculated_days,
+                    'remaining_leaves' => $balance->remaining_leaves + $leave->calculated_days
+                ]);
             }
         }
 
@@ -346,10 +326,9 @@ class LeaveController extends Controller
         return back()->with('success','Leave Deleted');
     }
 
-
 /*
 |--------------------------------------------------------------------------
-| LEAVE ALLOCATION (OPENING BALANCE)
+| LEAVE ALLOCATION
 |--------------------------------------------------------------------------
 */
 
@@ -360,102 +339,78 @@ class LeaveController extends Controller
     }
 
     public function updateAllocation(Request $request, $id)
-{
-    $request->validate([
-        'annual_leave_balance' => 'required|numeric|min:0'
-    ]);
-
-    $balance = \App\Models\LeaveBalance::firstOrCreate(
-        ['user_id' => $id],
-        [
-            'opening_balance'   => 0,
-            'used_leaves'       => 0,
-            'remaining_leaves'  => 0
-        ]
-    );
-
-    $newOpening = $request->annual_leave_balance;
-
-    $balance->update([
-        'opening_balance'  => $newOpening,
-        'remaining_leaves' => $newOpening - $balance->used_leaves
-    ]);
-
-    return back()->with('success', 'Leave allocation updated successfully.');
-}
-
-/*
-|--------------------------------------------------------------------------
-| CALENDAR
-|--------------------------------------------------------------------------
-*/
-
-    public function calendar()
     {
-        $leaves = Leave::with('user')
-            ->where('status','approved')
-            ->get();
+        $request->validate([
+            'annual_leave_balance' => 'required|numeric|min:0'
+        ]);
 
-        $events = [];
-
-        foreach ($leaves as $leave) {
-            $events[] = [
-                'title' => $leave->user->name.' ('.$leave->calculated_days.' day)',
-                'start' => $leave->start_date,
-                'end'   => Carbon::parse($leave->end_date)->addDay()->format('Y-m-d'),
-                'color' => '#16a34a'
-            ];
-        }
-
-        return view('leave.calendar', compact('events'));
-    }
-
-
-    public function recalculateBalances()
-{
-    $employees = \App\Models\User::where('role','employee')->get();
-
-    foreach ($employees as $employee) {
-
-        $approvedLeaves = \App\Models\Leave::where('user_id',$employee->id)
-            ->where('type','annual')
-            ->where('status','approved')
-            ->sum('calculated_days');
-
-        $balance = \App\Models\LeaveBalance::firstOrCreate(
-            ['user_id' => $employee->id],
+        $balance = LeaveBalance::firstOrCreate(
+            ['user_id' => $id],
             [
-                'opening_balance'  => 0,
-                'used_leaves'      => 0,
+                'opening_balance' => 0,
+                'used_leaves' => 0,
                 'remaining_leaves' => 0
             ]
         );
 
+        $newOpening = $request->annual_leave_balance;
+
         $balance->update([
-            'used_leaves'      => $approvedLeaves,
-            'remaining_leaves' => $balance->opening_balance - $approvedLeaves
+            'opening_balance' => $newOpening,
+            'remaining_leaves' => $newOpening - $balance->used_leaves
         ]);
+
+        return back()->with('success','Leave allocation updated successfully.');
     }
 
-    return back()->with('success','All Leave Balances Recalculated Successfully');
-}
-
-    public function resetYearlyBalance()
-{
-    $balances = \App\Models\LeaveBalance::all();
-
-    foreach ($balances as $balance) {
-        $balance->update([
-            'used_leaves'      => 0,
-            'remaining_leaves' => $balance->opening_balance
-        ]);
-    }
-
-    return back()->with('success','Yearly Leave Reset Successfully');
-}
 /*
 |--------------------------------------------------------------------------
-| EXPORT + PAYROLL
+| RECALCULATE + RESET
+|--------------------------------------------------------------------------
+*/
+
+    public function recalculateBalances()
+    {
+        $employees = User::where('role','employee')->get();
+
+        foreach ($employees as $employee) {
+
+            $approved = Leave::where('user_id',$employee->id)
+                ->where('type','annual')
+                ->where('status','approved')
+                ->sum('calculated_days');
+
+            $balance = LeaveBalance::firstOrCreate(
+                ['user_id'=>$employee->id],
+                ['opening_balance'=>0,'used_leaves'=>0,'remaining_leaves'=>0]
+            );
+
+            $balance->update([
+                'used_leaves'=>$approved,
+                'remaining_leaves'=>$balance->opening_balance - $approved
+            ]);
+        }
+
+        return back()->with('success','All Leave Balances Recalculated Successfully');
+    }
+
+    public function resetYearlyBalance()
+    {
+        $balances = LeaveBalance::all();
+
+        foreach ($balances as $balance) {
+            $balance->update([
+                'used_leaves'=>0,
+                'remaining_leaves'=>$balance->opening_balance
+            ]);
+        }
+
+        return back()->with('success','Yearly Leave Reset Successfully');
+    }
+
+/*
+|--------------------------------------------------------------------------
+| TRANSACTIONS
 |--------------------------------------------------------------------------
 */
 
@@ -475,6 +430,12 @@ class LeaveController extends Controller
             'leave_transactions.xlsx'
         );
     }
+
+/*
+|--------------------------------------------------------------------------
+| PAYROLL
+|--------------------------------------------------------------------------
+*/
 
     public function payrollSummary(Request $request)
     {
