@@ -11,7 +11,7 @@
         <div class="flex flex-wrap gap-2">
 
             {{-- Recalculate All --}}
-            <form method="POST" action="{{ route('admin.leave.recalculate.all') }}">
+            <form method="POST" action="{{ route('admin.leave.recalculate') }}">
                 @csrf
                 <button class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm shadow">
                     🔄 Recalculate All Balances
@@ -19,7 +19,7 @@
             </form>
 
             {{-- Reset Year --}}
-            <form method="POST" action="{{ route('admin.leave.reset.year') }}"
+            <form method="POST" action="{{ route('admin.leave.reset') }}"
                   onsubmit="return confirm('Reset all balances for new year?')">
                 @csrf
                 <button class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded text-sm shadow">
