@@ -66,13 +66,15 @@ class LeaveController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'user_id'       => auth()->user()->role === 'admin' ? 'required|exists:users,id' : '',
-            'type'          => 'required|in:annual,without_pay',
-            'start_date'    => 'required|date',
-            'end_date'      => 'required|date|after_or_equal:start_date',
-            'duration_type' => 'required|in:full_day,half_day',
-            'reason'        => 'nullable|string'
-        ]);
+    'employee_id' => auth()->user()->role === 'admin'
+                        ? 'required|exists:users,id'
+                        : 'nullable',
+    'type'          => 'required|in:annual,without_pay',
+    'start_date'    => 'required|date',
+    'end_date'      => 'required|date|after_or_equal:start_date',
+    'duration_type' => 'required|in:full_day,half_day',
+    'reason'        => 'nullable|string'
+]);
 
         $userId = auth()->user()->role === 'admin'
             ? $request->user_id
@@ -86,7 +88,9 @@ class LeaveController extends Controller
             : $start->diffInDays($end) + 1;
 
         $leave = Leave::create([
-            'user_id'        => $userId,
+            'user_id' => auth()->user()->role === 'admin'
+                ? $request->employee_id
+                : auth()->id(),
             'type'           => $request->type,
             'start_date'     => $request->start_date,
             'end_date'       => $request->end_date,
