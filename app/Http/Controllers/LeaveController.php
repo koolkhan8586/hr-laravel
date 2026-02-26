@@ -415,6 +415,33 @@ class LeaveController extends Controller
         return back()->with('success','All Leave Balances Recalculated Successfully');
     }
 
+    public function bulkAllocate(Request $request)
+{
+    $request->validate([
+        'bulk_balance' => 'required|numeric|min:0'
+    ]);
+
+    $employees = User::where('role','employee')->get();
+
+    foreach ($employees as $employee) {
+
+        $balance = LeaveBalance::firstOrCreate(
+            ['user_id' => $employee->id],
+            [
+                'opening_balance'  => 0,
+                'used_leaves'      => 0,
+                'remaining_leaves' => 0
+            ]
+        );
+
+        $balance->update([
+            'opening_balance'  => $request->bulk_balance,
+            'remaining_leaves' => $request->bulk_balance - $balance->used_leaves
+        ]);
+    }
+
+    return back()->with('success','Bulk Leave Allocation Applied Successfully');
+}
     public function resetYearlyBalance()
     {
         $balances = LeaveBalance::all();
