@@ -11,6 +11,8 @@
         </button>
     </form>
 
+   
+
     <div class="mb-6">
         @if(!$active)
         <button onclick="clockIn()" class="bg-green-600 text-white px-4 py-2 rounded mr-2">
@@ -32,55 +34,31 @@
                 <th class="p-2 border">Clock In</th>
                 <th class="p-2 border">Clock Out</th>
                 <th class="p-2 border">Total Hours</th>
-                <th class="p-2 border">Clock In Location</th>
-                <th class="p-2 border">Clock Out Location</th>
+                <th class="p-2 border">Location</th>
             </tr>
         </thead>
         <tbody>
             @foreach($records as $record)
             <tr>
                 <td class="p-2 border">
-                    {{ \Carbon\Carbon::parse($record->clock_in)->format('Y-m-d') }}
+                    {{ \Carbon\Carbon::parse($record->created_at)->format('Y-m-d') }}
                 </td>
-
-                <td class="p-2 border">
-                    {{ $record->clock_in }}
-                </td>
-
-                <td class="p-2 border">
-                    {{ $record->clock_out ?? '-' }}
-                </td>
-
+                <td class="p-2 border">{{ $record->clock_in }}</td>
+                <td class="p-2 border">{{ $record->clock_out }}</td>
                 <td class="p-2 border">
                     {{ $record->total_hours ? round($record->total_hours, 2) : '-' }}
                 </td>
-
-                {{-- CLOCK IN MAP --}}
                 <td class="p-2 border">
-                    @if($record->clock_in_latitude)
+                    @if($record->latitude)
                         <a target="_blank"
                            class="text-blue-600 underline"
-                           href="https://www.google.com/maps?q={{ $record->clock_in_latitude }},{{ $record->clock_in_longitude }}">
+                           href="https://www.google.com/maps?q={{ $record->latitude }},{{ $record->longitude }}">
                             View Map
                         </a>
                     @else
                         -
                     @endif
                 </td>
-
-                {{-- CLOCK OUT MAP --}}
-                <td class="p-2 border">
-                    @if($record->clock_out_latitude)
-                        <a target="_blank"
-                           class="text-blue-600 underline"
-                           href="https://www.google.com/maps?q={{ $record->clock_out_latitude }},{{ $record->clock_out_longitude }}">
-                            View Map
-                        </a>
-                    @else
-                        -
-                    @endif
-                </td>
-
             </tr>
             @endforeach
         </tbody>
@@ -98,14 +76,7 @@
 
 <script>
 function clockIn() {
-
-    if (!navigator.geolocation) {
-        alert("Geolocation not supported");
-        return;
-    }
-
     navigator.geolocation.getCurrentPosition(function(position) {
-
         fetch('/attendance/clock-in', {
             method: 'POST',
             headers: {
@@ -116,53 +87,28 @@ function clockIn() {
                 latitude: position.coords.latitude,
                 longitude: position.coords.longitude
             })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if(data.success){
-                location.reload();
-            } else {
-                alert(data.message);
+        }).then(res => {
+            if (!res.ok) {
+                alert("Already clocked in today");
+                return;
             }
+            location.reload();
         });
-
-    }, function() {
-        alert("Please allow location access");
     });
 }
 
-
 function clockOut() {
-
-    if (!navigator.geolocation) {
-        alert("Geolocation not supported");
-        return;
-    }
-
-    navigator.geolocation.getCurrentPosition(function(position) {
-
-        fetch('/attendance/clock-out', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify({
-                latitude: position.coords.latitude,
-                longitude: position.coords.longitude
-            })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if(data.success){
-                location.reload();
-            } else {
-                alert(data.message);
-            }
-        });
-
-    }, function() {
-        alert("Please allow location access");
+    fetch('/attendance/clock-out', {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        }
+    }).then(res => {
+        if (!res.ok) {
+            alert("No active clock-in found");
+            return;
+        }
+        location.reload();
     });
 }
 </script>
