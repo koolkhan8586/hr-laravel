@@ -102,19 +102,23 @@ class AttendanceController extends Controller
         ->first();
 
     if (!$attendance) {
-        return response()->json(['message'=>'No active clock in'], 400);
+        return response()->json([
+            'message' => 'No active clock-in found. Please clock in first.'
+        ], 400);
     }
 
     $now = Carbon::now('Asia/Karachi');
 
     $attendance->clock_out = $now;
 
-    $hours = Carbon::parse($attendance->clock_in)
-        ->diffInMinutes($now) / 60;
+    $minutes = Carbon::parse($attendance->clock_in)
+        ->diffInMinutes($now);
 
-    $attendance->total_hours = round($hours,2);
+    $hours = $minutes / 60;
 
-    // Working Hours Rule Engine
+    $attendance->total_hours = round($hours, 2);
+
+    // Status Logic
     if ($hours < 4) {
         $attendance->status = 'half_day';
     } elseif ($attendance->status !== 'late') {
@@ -123,25 +127,29 @@ class AttendanceController extends Controller
 
     $attendance->save();
 
-    // ================= EMAIL =================
+    /*
+    |--------------------------------------------------------------------------
+    | EMAIL ON CLOCK OUT
+    |--------------------------------------------------------------------------
+    */
+
     try {
-        Mail::raw(
-            "Attendance Completed\n\n".
-            "Employee: ".auth()->user()->name."\n".
-            "Time In: ".Carbon::parse($attendance->clock_in)->format('d M Y h:i A')."\n".
-            "Time Out: ".$now->format('d M Y h:i A')."\n".
-            "Total Hours: ".$attendance->total_hours."\n".
-            "Final Status: ".$attendance->status,
+        \Mail::raw(
+            "Attendance Clock Out Confirmation\n\n".
+            "Date: ".$now->toDateString()."\n".
+            "Clock In: ".$attendance->clock_in."\n".
+            "Clock Out: ".$attendance->clock_out."\n".
+            "Total Hours: ".$attendance->total_hours,
             function ($message) {
                 $message->to(auth()->user()->email)
-                        ->subject('Attendance Clock Out Summary');
+                        ->subject('Clock Out Successful');
             }
         );
     } catch (\Exception $e) {
-        \Log::error('Attendance ClockOut Mail Error: '.$e->getMessage());
+        \Log::error('ClockOut Mail Error: '.$e->getMessage());
     }
 
-    return response()->json(['success'=>true]);
+    return response()->json(['success' => true]);
 }
 
     /*
