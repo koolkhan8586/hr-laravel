@@ -57,7 +57,6 @@ class AttendanceController extends Controller
         return response()->json(['message'=>'Already clocked in'], 400);
     }
 
-    // HR Rules
     $lateAfter = Carbon::createFromTime(9, 45, 0, 'Asia/Karachi');
     $status = $now->gt($lateAfter) ? 'late' : 'present';
 
@@ -69,26 +68,30 @@ class AttendanceController extends Controller
         'status'    => $status,
     ]);
 
-    // ================= EMAIL =================
+    /*
+    |--------------------------------------------------------------------------
+    | EMAIL ON CLOCK IN
+    |--------------------------------------------------------------------------
+    */
+
     try {
-        Mail::raw(
-            "Attendance Marked Successfully\n\n".
-            "Employee: ".auth()->user()->name."\n".
-            "Time In: ".$now->format('d M Y h:i A')."\n".
+        \Mail::raw(
+            "Attendance Clock In Confirmation\n\n".
+            "Date: ".$now->toDateString()."\n".
+            "Clock In: ".$attendance->clock_in."\n".
             "Location: ".$request->latitude.", ".$request->longitude."\n".
             "Status: ".$status,
             function ($message) {
                 $message->to(auth()->user()->email)
-                        ->subject('Attendance Clock In Confirmation');
+                        ->subject('Clock In Successful');
             }
         );
     } catch (\Exception $e) {
-        \Log::error('Attendance ClockIn Mail Error: '.$e->getMessage());
+        \Log::error('ClockIn Mail Error: '.$e->getMessage());
     }
 
     return response()->json(['success'=>true]);
 }
-
     /*
     |--------------------------------------------------------------------------
     | Clock Out (Half Day Detection)
