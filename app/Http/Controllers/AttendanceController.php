@@ -9,6 +9,7 @@ use Carbon\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\AttendanceExport;
 use Illuminate\Support\Facades\Mail;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class AttendanceController extends Controller
 {
@@ -261,6 +262,30 @@ class AttendanceController extends Controller
             'attendance.xlsx'
         );
     }
+
+    public function sendMonthlyAttendance($userId, $month)
+{
+    $monthCarbon = Carbon::parse($month);
+
+    $records = Attendance::where('user_id', $userId)
+        ->whereMonth('clock_in', $monthCarbon->month)
+        ->whereYear('clock_in', $monthCarbon->year)
+        ->get();
+
+    $user = User::findOrFail($userId);
+
+    $pdf = Pdf::loadView('attendance.monthly-pdf', [
+        'records' => $records,
+        'user' => $user,
+        'month' => $monthCarbon->format('F Y')
+    ]);
+
+    Mail::send([], [], function ($message) use ($user, $pdf, $monthCarbon) {
+        $message->to($user->email)
+            ->subject('Monthly Attendance Report - '.$monthCarbon->format('F Y'))
+            ->attachData($pdf->output(), 'attendance.pdf');
+    });
+}
 
     /*
     |--------------------------------------------------------------------------
