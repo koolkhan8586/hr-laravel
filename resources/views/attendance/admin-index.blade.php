@@ -112,75 +112,100 @@
 
             <tbody>
             @foreach($records as $r)
-            <tr class="border-t hover:bg-gray-50">
+<tr class="border-t hover:bg-gray-50">
 
-                <td class="p-3">{{ $r->user->name }}</td>
+    <td class="p-3">{{ $r->user->name }}</td>
 
-                <td class="p-3">
+    {{-- Date --}}
+    <td class="p-3">
+        {{ \Carbon\Carbon::parse($r->clock_in)
+            ->timezone('Asia/Karachi')
+            ->format('Y-m-d') }}
+    </td>
+
+    {{-- Clock In --}}
+    <td class="p-3">
+        @if($r->clock_in)
+            @if($r->clock_in_latitude && $r->clock_in_longitude)
+                <a target="_blank"
+                   class="text-blue-600 underline"
+                   href="https://www.google.com/maps?q={{ $r->clock_in_latitude }},{{ $r->clock_in_longitude }}">
                     {{ \Carbon\Carbon::parse($r->clock_in)
                         ->timezone('Asia/Karachi')
-                        ->format('Y-m-d') }}
-                </td>
+                        ->format('H:i:s') }}
+                </a>
+            @else
+                {{ \Carbon\Carbon::parse($r->clock_in)
+                    ->timezone('Asia/Karachi')
+                    ->format('H:i:s') }}
+            @endif
+        @else
+            -
+        @endif
+    </td>
 
-                <td class="p-3">
-                    @if($r->clock_in_latitude && $r->clock_in_longitude)
-    <a target="_blank"
-       class="text-blue-600 underline"
-       href="https://www.google.com/maps?q={{ $r->clock_in_latitude }},{{ $r->clock_in_longitude }}">
-        {{ \Carbon\Carbon::parse($r->clock_in)->format('H:i:s') }}
-    </a>
-@endif
-                </td>
+    {{-- Clock Out --}}
+    <td class="p-3">
+        @if($r->clock_out)
+            @if($r->clock_out_latitude && $r->clock_out_longitude)
+                <a target="_blank"
+                   class="text-blue-600 underline"
+                   href="https://www.google.com/maps?q={{ $r->clock_out_latitude }},{{ $r->clock_out_longitude }}">
+                    {{ \Carbon\Carbon::parse($r->clock_out)
+                        ->timezone('Asia/Karachi')
+                        ->format('H:i:s') }}
+                </a>
+            @else
+                {{ \Carbon\Carbon::parse($r->clock_out)
+                    ->timezone('Asia/Karachi')
+                    ->format('H:i:s') }}
+            @endif
+        @else
+            -
+        @endif
+    </td>
 
-                <td class="p-3">
-                    @if($r->clock_out_latitude && $r->clock_out_longitude)
-    <a target="_blank"
-       class="text-blue-600 underline"
-       href="https://www.google.com/maps?q={{ $r->clock_out_latitude }},{{ $r->clock_out_longitude }}">
-        {{ \Carbon\Carbon::parse($r->clock_out)->format('H:i:s') }}
-    </a>
-@endif
-                </td>
+    {{-- Hours --}}
+    <td class="p-3">
+        {{ $r->total_hours ?? '-' }}
+    </td>
 
-                <td class="p-3 font-semibold">
-                    {{ $r->total_hours ?? '-' }}
-                </td>
+    {{-- Status --}}
+    <td class="p-3">
+        @if($r->status == 'late')
+            <span class="text-yellow-600 font-bold">Late</span>
+        @elseif($r->status == 'absent')
+            <span class="text-red-600 font-bold">Absent</span>
+        @elseif($r->status == 'half_day')
+            <span class="text-purple-600 font-bold">Half Day</span>
+        @else
+            <span class="text-green-600 font-bold">Present</span>
+        @endif
+    </td>
 
-                <td class="p-3">
-                    @if($r->status=='late')
-                        <span class="text-yellow-600 font-bold">Late</span>
-                    @elseif($r->status=='absent')
-                        <span class="text-red-600 font-bold">Absent</span>
-                    @elseif($r->status=='half_day')
-                        <span class="text-purple-600 font-bold">Half Day</span>
-                    @else
-                        <span class="text-green-600 font-bold">Present</span>
-                    @endif
-                </td>
+    {{-- Action --}}
+    <td class="p-3 space-x-2">
+        <a href="{{ route('admin.attendance.edit',$r->id) }}"
+           class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-xs shadow">
+           Edit
+        </a>
 
-                <td class="p-3 space-x-2">
+        <form action="{{ route('admin.attendance.destroy',$r->id) }}"
+              method="POST"
+              class="inline"
+              onsubmit="return confirm('Delete this attendance?')">
+            @csrf
+            @method('DELETE')
 
-                    <a href="{{ route('admin.attendance.edit',$r->id) }}"
-                       class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-xs">
-                       Edit
-                    </a>
+            <button type="submit"
+                    class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs shadow">
+                Delete
+            </button>
+        </form>
+    </td>
 
-                    <form action="{{ route('admin.attendance.destroy',$r->id) }}"
-                          method="POST"
-                          class="inline"
-                          onsubmit="return confirm('Delete this attendance?')">
-                        @csrf
-                        @method('DELETE')
-
-                        <button type="submit"
-                                class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs">
-                            Delete
-                        </button>
-                    </form>
-
-                </td>
-            </tr>
-            @endforeach
+</tr>
+@endforeach
             </tbody>
         </table>
     </div>
