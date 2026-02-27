@@ -123,12 +123,20 @@
                 </td>
 
                 <td class="p-3">
+                    @if($r->latitude && $r->longitude)
+                    <a target="_blank"
+                       class="text-blue-600 underline"
+                       href="https://www.google.com/maps?q={{ $r->latitude }},{{ $r->longitude }}">
                     {{ \Carbon\Carbon::parse($r->clock_in)
                         ->timezone('Asia/Karachi')
                         ->format('H:i:s') }}
                 </td>
 
                 <td class="p-3">
+                    @if($r->clock_out)
+                            <a target="_blank"
+                               class="text-blue-600 underline"
+                               href="https://www.google.com/maps?q={{ $r->latitude }},{{ $r->longitude }}">
                     @if($r->clock_out)
                         {{ \Carbon\Carbon::parse($r->clock_out)
                             ->timezone('Asia/Karachi')
