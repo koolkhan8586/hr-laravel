@@ -125,45 +125,44 @@
 
     {{-- Clock In --}}
     <td class="p-3">
-        @if($r->clock_in)
-            @if($r->clock_in_latitude && $r->clock_in_longitude)
-                <a target="_blank"
-                   class="text-blue-600 underline"
-                   href="https://www.google.com/maps?q={{ $r->clock_in_latitude }},{{ $r->clock_in_longitude }}">
-                    {{ \Carbon\Carbon::parse($r->clock_in)
-                        ->timezone('Asia/Karachi')
-                        ->format('H:i:s') }}
-                </a>
-            @else
-                {{ \Carbon\Carbon::parse($r->clock_in)
-                    ->timezone('Asia/Karachi')
-                    ->format('H:i:s') }}
-            @endif
-        @else
-            -
-        @endif
-    </td>
-
+@if($r->clock_in)
+    @if($r->clock_in_latitude && $r->clock_in_longitude)
+        <a target="_blank"
+           class="text-blue-600 underline hover:text-blue-800 font-medium"
+           href="https://www.google.com/maps?q={{ $r->clock_in_latitude }},{{ $r->clock_in_longitude }}">
+            {{ \Carbon\Carbon::parse($r->clock_in)
+                ->timezone('Asia/Karachi')
+                ->format('H:i:s') }}
+        </a>
+    @else
+        {{ \Carbon\Carbon::parse($r->clock_in)
+            ->timezone('Asia/Karachi')
+            ->format('H:i:s') }}
+    @endif
+@else
+    -
+@endif
+</td>
     {{-- Clock Out --}}
     <td class="p-3">
-        @if($r->clock_out)
-            @if($r->clock_out_latitude && $r->clock_out_longitude)
-                <a target="_blank"
-                   class="text-blue-600 underline"
-                   href="https://www.google.com/maps?q={{ $r->clock_out_latitude }},{{ $r->clock_out_longitude }}">
-                    {{ \Carbon\Carbon::parse($r->clock_out)
-                        ->timezone('Asia/Karachi')
-                        ->format('H:i:s') }}
-                </a>
-            @else
-                {{ \Carbon\Carbon::parse($r->clock_out)
-                    ->timezone('Asia/Karachi')
-                    ->format('H:i:s') }}
-            @endif
-        @else
-            -
-        @endif
-    </td>
+@if($r->clock_out)
+    @if($r->clock_out_latitude && $r->clock_out_longitude)
+        <a target="_blank"
+           class="text-blue-600 underline hover:text-blue-800 font-medium"
+           href="https://www.google.com/maps?q={{ $r->clock_out_latitude }},{{ $r->clock_out_longitude }}">
+            {{ \Carbon\Carbon::parse($r->clock_out)
+                ->timezone('Asia/Karachi')
+                ->format('H:i:s') }}
+        </a>
+    @else
+        {{ \Carbon\Carbon::parse($r->clock_out)
+            ->timezone('Asia/Karachi')
+            ->format('H:i:s') }}
+    @endif
+@else
+    -
+@endif
+</td>
 
     {{-- Hours --}}
     <td class="p-3">
