@@ -20,6 +20,23 @@
         </a>
     </form>
 
+    <form method="GET" class="flex gap-2 mb-4">
+    <select name="employee" required class="border px-2 py-1 rounded">
+        @foreach($records->unique('user_id') as $record)
+            <option value="{{ $record->user_id }}">
+                {{ $record->user->name }}
+            </option>
+        @endforeach
+    </select>
+
+    <input type="month" name="month" required class="border px-2 py-1 rounded">
+
+    <button formaction="{{ url('/admin/attendance/monthly') }}"
+            class="bg-green-600 text-white px-3 py-1 rounded">
+        Download
+    </button>
+</form>
+
     @php
         $present = $records->where('status','present')->count();
         $late = $records->where('status','late')->count();
