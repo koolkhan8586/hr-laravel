@@ -9,4 +9,8 @@ protected function schedule(Schedule $schedule)
     $schedule->command('attendance:auto-clockout')
              ->dailyAt('21:00')
              ->timezone('Asia/Karachi');
+
+$schedule->command('send:daily-attendance-summary')
+         ->dailyAt('21:00')
+         ->timezone('Asia/Karachi');
 }
