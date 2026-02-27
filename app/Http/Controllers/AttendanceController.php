@@ -287,6 +287,29 @@ class AttendanceController extends Controller
     });
 }
 
+    public function downloadMonthlyAttendance($userId, $month)
+{
+    $monthCarbon = Carbon::parse($month);
+
+    $user = User::findOrFail($userId);
+
+    $records = Attendance::where('user_id', $userId)
+        ->whereMonth('clock_in', $monthCarbon->month)
+        ->whereYear('clock_in', $monthCarbon->year)
+        ->orderBy('clock_in')
+        ->get();
+
+    $pdf = Pdf::loadView('attendance.monthly-admin-pdf', [
+        'user' => $user,
+        'records' => $records,
+        'month' => $monthCarbon->format('F Y')
+    ]);
+
+    return $pdf->download(
+        $user->name.'_attendance_'.$monthCarbon->format('F_Y').'.pdf'
+    );
+}
+
     /*
     |--------------------------------------------------------------------------
     | Monthly Analytics API
