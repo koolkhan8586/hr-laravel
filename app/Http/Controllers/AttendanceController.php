@@ -42,121 +42,111 @@ class AttendanceController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Clock In (Pakistan Time + Late Detection)
+    | Clock In
     |--------------------------------------------------------------------------
     */
     public function clockIn(Request $request)
-{
-    $now = Carbon::now('Asia/Karachi');
-    $today = $now->toDateString();
+    {
+        $now = Carbon::now('Asia/Karachi');
+        $today = $now->toDateString();
 
-    $exists = Attendance::where('user_id', auth()->id())
-        ->whereDate('clock_in', $today)
-        ->exists();
+        $exists = Attendance::where('user_id', auth()->id())
+            ->whereDate('clock_in', $today)
+            ->exists();
 
-    if ($exists) {
-        return response()->json(['message'=>'Already clocked in'], 400);
+        if ($exists) {
+            return response()->json(['message'=>'Already clocked in'], 400);
+        }
+
+        $lateAfter = Carbon::createFromTime(9, 45, 0, 'Asia/Karachi');
+        $status = $now->gt($lateAfter) ? 'late' : 'present';
+
+        $attendance = Attendance::create([
+            'user_id'   => auth()->id(),
+            'clock_in'  => $now,
+            'clock_in_latitude'  => $request->latitude,
+            'clock_in_longitude' => $request->longitude,
+            'status'    => $status,
+        ]);
+
+        // Email
+        try {
+            Mail::raw(
+                "Clock In Confirmation\n\n".
+                "Date: ".$now->toDateString()."\n".
+                "Clock In: ".$attendance->clock_in."\n".
+                "Location: ".$request->latitude.", ".$request->longitude."\n".
+                "Status: ".$status,
+                function ($message) {
+                    $message->to(auth()->user()->email)
+                            ->subject('Clock In Successful');
+                }
+            );
+        } catch (\Exception $e) {
+            Log::error('ClockIn Mail Error: '.$e->getMessage());
+        }
+
+        return response()->json(['success'=>true]);
     }
-
-    $lateAfter = Carbon::createFromTime(9, 45, 0, 'Asia/Karachi');
-    $status = $now->gt($lateAfter) ? 'late' : 'present';
-
-    $attendance = Attendance::create([
-        'user_id'   => auth()->id(),
-        'clock_in'  => $now,
-        'latitude'  => $request->latitude,
-        'longitude' => $request->longitude,
-        'status'    => $status,
-    ]);
 
     /*
     |--------------------------------------------------------------------------
-    | EMAIL ON CLOCK IN
+    | Clock Out
     |--------------------------------------------------------------------------
     */
+    public function clockOut(Request $request)
+    {
+        $attendance = Attendance::where('user_id', auth()->id())
+            ->whereNull('clock_out')
+            ->latest()
+            ->first();
 
-    try {
-        \Mail::raw(
-            "Attendance Clock In Confirmation\n\n".
-            "Date: ".$now->toDateString()."\n".
-            "Clock In: ".$attendance->clock_in."\n".
-            "Location: ".$request->latitude.", ".$request->longitude."\n".
-            "Status: ".$status,
-            function ($message) {
-                $message->to(auth()->user()->email)
-                        ->subject('Clock In Successful');
-            }
-        );
-    } catch (\Exception $e) {
-        \Log::error('ClockIn Mail Error: '.$e->getMessage());
-    }
+        if (!$attendance) {
+            return response()->json([
+                'message' => 'No active clock-in found.'
+            ], 400);
+        }
 
-    return response()->json(['success'=>true]);
-}
-    /*
-    |--------------------------------------------------------------------------
-    | Clock Out (Half Day Detection)
-    |--------------------------------------------------------------------------
-    */
-   public function clockOut()
-{
-    $attendance = Attendance::where('user_id', auth()->id())
-        ->whereNull('clock_out')
-        ->latest()
-        ->first();
+        $now = Carbon::now('Asia/Karachi');
 
-    if (!$attendance) {
-        return response()->json([
-            'message' => 'No active clock-in found. Please clock in first.'
-        ], 400);
-    }
+        $attendance->clock_out = $now;
+        $attendance->clock_out_latitude  = $request->latitude;
+        $attendance->clock_out_longitude = $request->longitude;
 
-    $now = Carbon::now('Asia/Karachi');
+        $minutes = Carbon::parse($attendance->clock_in)
+            ->diffInMinutes($now);
 
-    $attendance->clock_out = $now;
+        $hours = $minutes / 60;
+        $attendance->total_hours = round($hours, 2);
 
-    $minutes = Carbon::parse($attendance->clock_in)
-        ->diffInMinutes($now);
+        if ($hours < 4) {
+            $attendance->status = 'half_day';
+        } elseif ($attendance->status !== 'late') {
+            $attendance->status = 'present';
+        }
 
-    $hours = $minutes / 60;
+        $attendance->save();
 
-    $attendance->total_hours = round($hours, 2);
+        // Email
+        try {
+            Mail::raw(
+                "Clock Out Confirmation\n\n".
+                "Date: ".$now->toDateString()."\n".
+                "Clock In: ".$attendance->clock_in."\n".
+                "Clock Out: ".$attendance->clock_out."\n".
+                "Total Hours: ".$attendance->total_hours."\n".
+                "Out Location: ".$request->latitude.", ".$request->longitude,
+                function ($message) {
+                    $message->to(auth()->user()->email)
+                            ->subject('Clock Out Successful');
+                }
+            );
+        } catch (\Exception $e) {
+            Log::error('ClockOut Mail Error: '.$e->getMessage());
+        }
 
-    // Status Logic
-    if ($hours < 4) {
-        $attendance->status = 'half_day';
-    } elseif ($attendance->status !== 'late') {
-        $attendance->status = 'present';
-    }
-
-    $attendance->save();
-
-    /*
-    |--------------------------------------------------------------------------
-    | EMAIL ON CLOCK OUT
-    |--------------------------------------------------------------------------
-    */
-
-    try {
-        \Mail::raw(
-            "Attendance Clock Out Confirmation\n\n".
-            "Date: ".$now->toDateString()."\n".
-            "Clock In: ".$attendance->clock_in."\n".
-            "Clock Out: ".$attendance->clock_out."\n".
-            "Total Hours: ".$attendance->total_hours,
-            function ($message) {
-                $message->to(auth()->user()->email)
-                        ->subject('Clock Out Successful');
-            }
-        );
-    } catch (\Exception $e) {
-        \Log::error('ClockOut Mail Error: '.$e->getMessage());
-    }
-
-    return response()->json(['success' => true]);
-}
-
-    /*
+        return response()->json(['success' => true]);
+    }    /*
     |--------------------------------------------------------------------------
     | Admin Edit Attendance
     |--------------------------------------------------------------------------
