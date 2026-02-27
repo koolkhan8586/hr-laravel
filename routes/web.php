@@ -133,6 +133,10 @@ Route::delete('/attendance/{id}',
     [AttendanceController::class,'destroy']
 )->name('attendance.destroy');
 
+Route::get('/attendance/monthly/{user}/{month}',
+    [AttendanceController::class,'downloadMonthlyAttendance'])
+    ->name('admin.attendance.monthly.download');
+
     
 
 
