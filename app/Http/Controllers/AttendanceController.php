@@ -55,42 +55,47 @@ class AttendanceController extends Controller
         ->exists();
 
     if ($exists) {
-        return response()->json(['message'=>'Already clocked in'], 400);
+        return response()->json([
+            'message' => 'Already clocked in today'
+        ], 400);
     }
 
     $lateAfter = Carbon::createFromTime(9, 45, 0, 'Asia/Karachi');
     $status = $now->gt($lateAfter) ? 'late' : 'present';
 
     $attendance = Attendance::create([
-        'user_id'              => auth()->id(),
-        'clock_in'             => $now,
-        'clock_in_latitude'    => $request->latitude,
-        'clock_in_longitude'   => $request->longitude,
-        'status'               => $status,
+        'user_id' => auth()->id(),
+        'clock_in' => $now,
+
+        // ✅ NEW PROFESSIONAL LOCATION STORAGE
+        'clock_in_latitude'  => $request->latitude,
+        'clock_in_longitude' => $request->longitude,
+
+        // keep old fields for backward compatibility
+        'latitude'  => $request->latitude,
+        'longitude' => $request->longitude,
+
+        'status' => $status,
     ]);
 
-
-        // Email
-        try {
-            Mail::raw(
-                "Clock In Confirmation\n\n".
-                "Date: ".$now->toDateString()."\n".
-                "Clock In: ".$attendance->clock_in."\n".
-                "Location: ".$request->latitude.", ".$request->longitude."\n".
-                "Status: ".$status,
-                function ($message) {
-                    $message->to(auth()->user()->email)
-                            ->subject('Clock In Successful');
-                }
-            );
-        } catch (\Exception $e) {
-            Log::error('ClockIn Mail Error: '.$e->getMessage());
-        }
-
-        return response()->json(['success'=>true]);
+    try {
+        Mail::raw(
+            "Attendance Clock In Confirmation\n\n".
+            "Date: ".$now->toDateString()."\n".
+            "Clock In: ".$attendance->clock_in."\n".
+            "Location: ".$request->latitude.", ".$request->longitude."\n".
+            "Status: ".$status,
+            function ($message) {
+                $message->to(auth()->user()->email)
+                        ->subject('Clock In Successful');
+            }
+        );
+    } catch (\Exception $e) {
+        Log::error('ClockIn Mail Error: '.$e->getMessage());
     }
 
-    /*
+    return response()->json(['success'=>true]);
+}    /*
     |--------------------------------------------------------------------------
     | Clock Out
     |--------------------------------------------------------------------------
@@ -112,6 +117,7 @@ class AttendanceController extends Controller
 
     $attendance->clock_out = $now;
 
+    // ✅ SAVE CHECKOUT LOCATION
     $attendance->clock_out_latitude  = $request->latitude;
     $attendance->clock_out_longitude = $request->longitude;
 
@@ -128,28 +134,27 @@ class AttendanceController extends Controller
         $attendance->status = 'present';
     }
 
-        $attendance->save();
+    $attendance->save();
 
-        // Email
-        try {
-            Mail::raw(
-                "Clock Out Confirmation\n\n".
-                "Date: ".$now->toDateString()."\n".
-                "Clock In: ".$attendance->clock_in."\n".
-                "Clock Out: ".$attendance->clock_out."\n".
-                "Total Hours: ".$attendance->total_hours."\n".
-                "Out Location: ".$request->latitude.", ".$request->longitude,
-                function ($message) {
-                    $message->to(auth()->user()->email)
-                            ->subject('Clock Out Successful');
-                }
-            );
-        } catch (\Exception $e) {
-            Log::error('ClockOut Mail Error: '.$e->getMessage());
-        }
+    try {
+        Mail::raw(
+            "Attendance Clock Out Confirmation\n\n".
+            "Date: ".$now->toDateString()."\n".
+            "Clock In: ".$attendance->clock_in."\n".
+            "Clock Out: ".$attendance->clock_out."\n".
+            "Total Hours: ".$attendance->total_hours."\n".
+            "Checkout Location: ".$request->latitude.", ".$request->longitude,
+            function ($message) {
+                $message->to(auth()->user()->email)
+                        ->subject('Clock Out Successful');
+            }
+        );
+    } catch (\Exception $e) {
+        Log::error('ClockOut Mail Error: '.$e->getMessage());
+    }
 
-        return response()->json(['success' => true]);
-    }    /*
+    return response()->json(['success'=>true]);
+}    /*
     |--------------------------------------------------------------------------
     | Admin Edit Attendance
     |--------------------------------------------------------------------------
