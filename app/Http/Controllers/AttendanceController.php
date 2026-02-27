@@ -62,11 +62,13 @@ class AttendanceController extends Controller
         $status = $now->gt($lateAfter) ? 'late' : 'present';
 
         $attendance = Attendance::create([
-            'user_id'   => auth()->id(),
-            'clock_in'  => $now,
-            'clock_in_latitude'  => $request->latitude,
-            'clock_in_longitude' => $request->longitude,
-            'status'    => $status,
+            'user_id'              => auth()->id(),
+            'clock_in'             => $now,
+            'latitude'             => $request->latitude,   // keep old (do not remove)
+            'longitude'            => $request->longitude,  // keep old
+            'clock_in_latitude'    => $request->latitude,   // NEW
+            'clock_in_longitude'   => $request->longitude,  // NEW
+            'status'               => $status,
         ]);
 
         // Email
