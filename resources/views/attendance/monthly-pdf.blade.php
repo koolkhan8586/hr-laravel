@@ -1,4 +1,4 @@
-<?php>
+<?php
 <h2>Monthly Attendance Report</h2>
 <p>Employee: {{ $user->name }}</p>
 <p>Month: {{ $month }}</p>
