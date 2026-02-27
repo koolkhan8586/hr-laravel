@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\AttendanceExport;
+use Illuminate\Support\Facades\Mail;
 
 class AttendanceController extends Controller
 {
@@ -43,69 +44,104 @@ class AttendanceController extends Controller
     |--------------------------------------------------------------------------
     */
     public function clockIn(Request $request)
-    {
-        $now = Carbon::now('Asia/Karachi');
-        $today = $now->toDateString();
+{
+    $now = Carbon::now('Asia/Karachi');
+    $today = $now->toDateString();
 
-        $exists = Attendance::where('user_id', auth()->id())
-            ->whereDate('clock_in', $today)
-            ->exists();
+    $exists = Attendance::where('user_id', auth()->id())
+        ->whereDate('clock_in', $today)
+        ->exists();
 
-        if ($exists) {
-            return response()->json(['message'=>'Already clocked in'], 400);
-        }
-
-        // HR Rules
-        $lateAfter = Carbon::createFromTime(9, 45, 0, 'Asia/Karachi');
-        $status = $now->gt($lateAfter) ? 'late' : 'present';
-
-        Attendance::create([
-            'user_id'   => auth()->id(),
-            'clock_in'  => $now,
-            'latitude'  => $request->latitude,
-            'longitude' => $request->longitude,
-            'status'    => $status,
-        ]);
-
-        return response()->json(['success'=>true]);
+    if ($exists) {
+        return response()->json(['message'=>'Already clocked in'], 400);
     }
+
+    // HR Rules
+    $lateAfter = Carbon::createFromTime(9, 45, 0, 'Asia/Karachi');
+    $status = $now->gt($lateAfter) ? 'late' : 'present';
+
+    $attendance = Attendance::create([
+        'user_id'   => auth()->id(),
+        'clock_in'  => $now,
+        'latitude'  => $request->latitude,
+        'longitude' => $request->longitude,
+        'status'    => $status,
+    ]);
+
+    // ================= EMAIL =================
+    try {
+        Mail::raw(
+            "Attendance Marked Successfully\n\n".
+            "Employee: ".auth()->user()->name."\n".
+            "Time In: ".$now->format('d M Y h:i A')."\n".
+            "Location: ".$request->latitude.", ".$request->longitude."\n".
+            "Status: ".$status,
+            function ($message) {
+                $message->to(auth()->user()->email)
+                        ->subject('Attendance Clock In Confirmation');
+            }
+        );
+    } catch (\Exception $e) {
+        \Log::error('Attendance ClockIn Mail Error: '.$e->getMessage());
+    }
+
+    return response()->json(['success'=>true]);
+}
 
     /*
     |--------------------------------------------------------------------------
     | Clock Out (Half Day Detection)
     |--------------------------------------------------------------------------
     */
-    public function clockOut()
-    {
-        $attendance = Attendance::where('user_id', auth()->id())
-            ->whereNull('clock_out')
-            ->latest()
-            ->first();
+   public function clockOut()
+{
+    $attendance = Attendance::where('user_id', auth()->id())
+        ->whereNull('clock_out')
+        ->latest()
+        ->first();
 
-        if (!$attendance) {
-            return response()->json(['message'=>'No active clock in'], 400);
-        }
-
-        $now = Carbon::now('Asia/Karachi');
-
-        $attendance->clock_out = $now;
-
-        $hours = Carbon::parse($attendance->clock_in)
-            ->diffInMinutes($now) / 60;
-
-        $attendance->total_hours = round($hours,2);
-
-        // Working Hours Rule Engine
-        if ($hours < 4) {
-            $attendance->status = 'half_day';
-        } elseif ($attendance->status !== 'late') {
-            $attendance->status = 'present';
-        }
-
-        $attendance->save();
-
-        return response()->json(['success'=>true]);
+    if (!$attendance) {
+        return response()->json(['message'=>'No active clock in'], 400);
     }
+
+    $now = Carbon::now('Asia/Karachi');
+
+    $attendance->clock_out = $now;
+
+    $hours = Carbon::parse($attendance->clock_in)
+        ->diffInMinutes($now) / 60;
+
+    $attendance->total_hours = round($hours,2);
+
+    // Working Hours Rule Engine
+    if ($hours < 4) {
+        $attendance->status = 'half_day';
+    } elseif ($attendance->status !== 'late') {
+        $attendance->status = 'present';
+    }
+
+    $attendance->save();
+
+    // ================= EMAIL =================
+    try {
+        Mail::raw(
+            "Attendance Completed\n\n".
+            "Employee: ".auth()->user()->name."\n".
+            "Time In: ".Carbon::parse($attendance->clock_in)->format('d M Y h:i A')."\n".
+            "Time Out: ".$now->format('d M Y h:i A')."\n".
+            "Total Hours: ".$attendance->total_hours."\n".
+            "Final Status: ".$attendance->status,
+            function ($message) {
+                $message->to(auth()->user()->email)
+                        ->subject('Attendance Clock Out Summary');
+            }
+        );
+    } catch (\Exception $e) {
+        \Log::error('Attendance ClockOut Mail Error: '.$e->getMessage());
+    }
+
+    return response()->json(['success'=>true]);
+}
 
     /*
     |--------------------------------------------------------------------------
