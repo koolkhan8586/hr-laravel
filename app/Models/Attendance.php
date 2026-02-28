@@ -8,10 +8,20 @@ class Attendance extends Model
 {
     protected $fillable = [
         'user_id',
+
+        // Time fields
         'clock_in',
         'clock_out',
-        'latitude',
-        'longitude',
+
+        // Clock In Location
+        'clock_in_latitude',
+        'clock_in_longitude',
+
+        // Clock Out Location
+        'clock_out_latitude',
+        'clock_out_longitude',
+
+        // Other fields
         'total_hours',
         'status'
     ];
@@ -26,5 +36,3 @@ class Attendance extends Model
         return $this->belongsTo(User::class);
     }
 }
-
-
