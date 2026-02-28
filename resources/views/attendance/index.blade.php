@@ -34,7 +34,8 @@
                 <th class="p-2 border">Clock In</th>
                 <th class="p-2 border">Clock Out</th>
                 <th class="p-2 border">Total Hours</th>
-                <th class="p-2 border">Location</th>
+                <th class="p-2 border">Clock In Map</th>
+                <th class="p-2 border">Clock Out Map</th>
             </tr>
         </thead>
         <tbody>
