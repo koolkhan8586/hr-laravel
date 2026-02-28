@@ -53,7 +53,7 @@
     @if($record->clock_in_latitude && $record->clock_in_longitude)
         <a target="_blank"
            class="text-green-600 font-semibold underline"
-           href="https://www.google.com/maps?q={{ $record->clock_in_latitude }},{{ $record->clock_in_longitude }}">
+           href="https://www.google.com/maps/search/?api=1&query={{ $record->clock_in_latitude }},{{ $record->clock_in_longitude }}">
             View In
         </a>
     @else
@@ -65,7 +65,7 @@
     @if($record->clock_out_latitude && $record->clock_out_longitude)
         <a target="_blank"
            class="text-red-600 font-semibold underline"
-           href="https://www.google.com/maps?q={{ $record->clock_out_latitude }},{{ $record->clock_out_longitude }}">
+           href="https://www.google.com/maps/search/?api=1&query={{ $record->clock_out_latitude }},{{ $record->clock_out_longitude }}">
             View Out
         </a>
     @else
