@@ -109,16 +109,17 @@ function clockIn() {
                     longitude: position.coords.longitude
                 })
             })
-            .then(res => res.json())
-            .then(data => {
-                if (data.message) {
+            .then(res => res.text())  // ← temporarily change this
+            .then(text => {
+                console.log("RAW RESPONSE:", text);
+                try {
+                    const data = JSON.parse(text);
                     alert(data.message);
-                }
-
-                if (data.success) {
-                    setTimeout(() => {
+                    if (data.success) {
                         location.reload();
-                    }, 800); // small delay so alert is visible
+                    }
+                } catch (e) {
+                    alert("Server did not return valid JSON");
                 }
             })
             .catch(error => {
@@ -137,7 +138,6 @@ function clockIn() {
         }
     );
 }
-
 function clockOut() {
 
     if (!navigator.geolocation) {
