@@ -84,7 +84,7 @@ function clockIn() {
 
     navigator.geolocation.getCurrentPosition(function(position) {
 
-        fetch('/attendance/clock-in', {
+        fetch("{{ route('attendance.clockin') }}", {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -95,15 +95,16 @@ function clockIn() {
                 longitude: position.coords.longitude
             })
         })
-        .then(res => {
-            if (!res.ok) {
-                alert("Already clocked in today");
-                return;
+        .then(res => res.json())
+        .then(data => {
+            alert(data.message);
+            if (data.success) {
+                location.reload();
             }
-            location.reload();
-        });
+        })
+        .catch(() => alert("Something went wrong"));
 
-    }, function(error){
+    }, function(){
         alert("Please allow location access.");
     });
 }
@@ -117,7 +118,7 @@ function clockOut() {
 
     navigator.geolocation.getCurrentPosition(function(position) {
 
-        fetch('/attendance/clock-out', {
+        fetch("{{ route('attendance.clockout') }}", {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -128,15 +129,16 @@ function clockOut() {
                 longitude: position.coords.longitude
             })
         })
-        .then(res => {
-            if (!res.ok) {
-                alert("No active clock-in found");
-                return;
+        .then(res => res.json())
+        .then(data => {
+            alert(data.message);
+            if (data.success) {
+                location.reload();
             }
-            location.reload();
-        });
+        })
+        .catch(() => alert("Something went wrong"));
 
-    }, function(error){
+    }, function(){
         alert("Please allow location access.");
     });
 }
