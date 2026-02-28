@@ -114,9 +114,9 @@ class AttendanceController extends Controller
     }
 
     $attendance = Attendance::where('user_id', auth()->id())
-        ->whereNull('clock_out')
-        ->latest()
-        ->first();
+    ->whereNull('clock_out')
+    ->orderByDesc('id')
+    ->first();
 
     if (!$attendance) {
         return response()->json([
