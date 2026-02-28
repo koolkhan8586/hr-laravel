@@ -107,6 +107,14 @@ class AttendanceController extends Controller
     */
     public function clockOut(Request $request)
 {
+    dd([
+        'auth_id' => auth()->id(),
+        'auth_user' => auth()->user(),
+        'latest_record' => Attendance::latest()->first()
+    ]);
+}
+    /*public function clockOut(Request $request)
+{
     if (!$request->latitude || !$request->longitude) {
         return response()->json([
             'message' => 'Location not detected. Please enable GPS.'
