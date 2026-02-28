@@ -76,7 +76,14 @@
 
 <script>
 function clockIn() {
+
+    if (!navigator.geolocation) {
+        alert("Geolocation not supported.");
+        return;
+    }
+
     navigator.geolocation.getCurrentPosition(function(position) {
+
         fetch('/attendance/clock-in', {
             method: 'POST',
             headers: {
@@ -87,28 +94,50 @@ function clockIn() {
                 latitude: position.coords.latitude,
                 longitude: position.coords.longitude
             })
-        }).then(res => {
+        })
+        .then(res => {
             if (!res.ok) {
                 alert("Already clocked in today");
                 return;
             }
             location.reload();
         });
+
+    }, function(error){
+        alert("Please allow location access.");
     });
 }
 
 function clockOut() {
-    fetch('/attendance/clock-out', {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-        }
-    }).then(res => {
-        if (!res.ok) {
-            alert("No active clock-in found");
-            return;
-        }
-        location.reload();
+
+    if (!navigator.geolocation) {
+        alert("Geolocation not supported.");
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(function(position) {
+
+        fetch('/attendance/clock-out', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude
+            })
+        })
+        .then(res => {
+            if (!res.ok) {
+                alert("No active clock-in found");
+                return;
+            }
+            location.reload();
+        });
+
+    }, function(error){
+        alert("Please allow location access.");
     });
 }
 </script>
