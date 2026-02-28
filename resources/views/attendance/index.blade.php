@@ -95,31 +95,47 @@ function clockIn() {
         return;
     }
 
-    navigator.geolocation.getCurrentPosition(function(position) {
+    navigator.geolocation.getCurrentPosition(
+        function(position) {
 
-        fetch("{{ route('attendance.clockin') }}", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify({
-                latitude: position.coords.latitude,
-                longitude: position.coords.longitude
+            fetch("{{ route('attendance.clockin') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude
+                })
             })
-        })
-        .then(res => res.json())
-        .then(data => {
-            alert(data.message);
-            if (data.success) {
-                location.reload();
-            }
-        })
-        .catch(() => alert("Something went wrong"));
+            .then(res => res.json())
+            .then(data => {
+                if (data.message) {
+                    alert(data.message);
+                }
 
-    }, function(){
-        alert("Please allow location access.");
-    });
+                if (data.success) {
+                    setTimeout(() => {
+                        location.reload();
+                    }, 800); // small delay so alert is visible
+                }
+            })
+            .catch(error => {
+                console.error(error);
+                alert("Something went wrong");
+            });
+
+        },
+        function(){
+            alert("Please allow location access.");
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        }
+    );
 }
 
 function clockOut() {
