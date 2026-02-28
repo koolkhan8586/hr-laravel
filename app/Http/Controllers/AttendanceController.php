@@ -50,13 +50,21 @@ class AttendanceController extends Controller
     $now = Carbon::now('Asia/Karachi');
     $today = $now->toDateString();
 
+    // Check location exists
+    if (!$request->latitude || !$request->longitude) {
+        return response()->json([
+            'message' => 'Location not detected. Please enable GPS.'
+        ], 400);
+    }
+
+    // Prevent double clock-in
     $exists = Attendance::where('user_id', auth()->id())
         ->whereDate('clock_in', $today)
         ->exists();
 
     if ($exists) {
         return response()->json([
-            'message' => 'Already clocked in today'
+            'message' => 'You have already clocked in today.'
         ], 400);
     }
 
@@ -66,42 +74,45 @@ class AttendanceController extends Controller
     $attendance = Attendance::create([
         'user_id' => auth()->id(),
         'clock_in' => $now,
-
-        // ✅ NEW PROFESSIONAL LOCATION STORAGE
         'clock_in_latitude'  => $request->latitude,
         'clock_in_longitude' => $request->longitude,
-
-        // keep old fields for backward compatibility
-        'latitude'  => $request->latitude,
-        'longitude' => $request->longitude,
-
         'status' => $status,
     ]);
 
+    // Send Email
     try {
         Mail::raw(
-            "Attendance Clock In Confirmation\n\n".
+            "Clock In Successful\n\n".
             "Date: ".$now->toDateString()."\n".
-            "Clock In: ".$attendance->clock_in."\n".
+            "Time: ".$attendance->clock_in."\n".
             "Location: ".$request->latitude.", ".$request->longitude."\n".
             "Status: ".$status,
             function ($message) {
                 $message->to(auth()->user()->email)
-                        ->subject('Clock In Successful');
+                        ->subject('Clock In Confirmation');
             }
         );
     } catch (\Exception $e) {
         Log::error('ClockIn Mail Error: '.$e->getMessage());
     }
 
-    return response()->json(['success'=>true]);
-}    /*
+    return response()->json([
+        'success' => true,
+        'message' => 'Clock-in successful! Attendance marked.'
+    ]);
+}  /*
     |--------------------------------------------------------------------------
     | Clock Out
     |--------------------------------------------------------------------------
     */
     public function clockOut(Request $request)
 {
+    if (!$request->latitude || !$request->longitude) {
+        return response()->json([
+            'message' => 'Location not detected. Please enable GPS.'
+        ], 400);
+    }
+
     $attendance = Attendance::where('user_id', auth()->id())
         ->whereNull('clock_out')
         ->latest()
@@ -116,14 +127,10 @@ class AttendanceController extends Controller
     $now = Carbon::now('Asia/Karachi');
 
     $attendance->clock_out = $now;
-
-    // ✅ SAVE CHECKOUT LOCATION
     $attendance->clock_out_latitude  = $request->latitude;
     $attendance->clock_out_longitude = $request->longitude;
 
-    $minutes = Carbon::parse($attendance->clock_in)
-        ->diffInMinutes($now);
-
+    $minutes = $attendance->clock_in->diffInMinutes($now);
     $hours = $minutes / 60;
 
     $attendance->total_hours = round($hours, 2);
@@ -136,9 +143,10 @@ class AttendanceController extends Controller
 
     $attendance->save();
 
+    // Send Email
     try {
         Mail::raw(
-            "Attendance Clock Out Confirmation\n\n".
+            "Clock Out Successful\n\n".
             "Date: ".$now->toDateString()."\n".
             "Clock In: ".$attendance->clock_in."\n".
             "Clock Out: ".$attendance->clock_out."\n".
@@ -146,15 +154,18 @@ class AttendanceController extends Controller
             "Checkout Location: ".$request->latitude.", ".$request->longitude,
             function ($message) {
                 $message->to(auth()->user()->email)
-                        ->subject('Clock Out Successful');
+                        ->subject('Clock Out Confirmation');
             }
         );
     } catch (\Exception $e) {
         Log::error('ClockOut Mail Error: '.$e->getMessage());
     }
 
-    return response()->json(['success'=>true]);
-}    /*
+    return response()->json([
+        'success' => true,
+        'message' => 'Clock-out successful! Attendance marked.'
+    ]);
+}   /*
     |--------------------------------------------------------------------------
     | Admin Edit Attendance
     |--------------------------------------------------------------------------
