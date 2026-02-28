@@ -49,17 +49,29 @@
                 <td class="p-2 border">
                     {{ $record->total_hours ? round($record->total_hours, 2) : '-' }}
                 </td>
-                <td class="p-2 border">
-                    @if($record->latitude)
-                        <a target="_blank"
-                           class="text-blue-600 underline"
-                           href="https://www.google.com/maps?q={{ $record->latitude }},{{ $record->longitude }}">
-                            View Map
-                        </a>
-                    @else
-                        -
-                    @endif
-                </td>
+                <td class="p-2 border text-center">
+    @if($record->clock_in_latitude && $record->clock_in_longitude)
+        <a target="_blank"
+           class="text-green-600 font-semibold underline"
+           href="https://www.google.com/maps?q={{ $record->clock_in_latitude }},{{ $record->clock_in_longitude }}">
+            View In
+        </a>
+    @else
+        -
+    @endif
+</td>
+
+<td class="p-2 border text-center">
+    @if($record->clock_out_latitude && $record->clock_out_longitude)
+        <a target="_blank"
+           class="text-red-600 font-semibold underline"
+           href="https://www.google.com/maps?q={{ $record->clock_out_latitude }},{{ $record->clock_out_longitude }}">
+            View Out
+        </a>
+    @else
+        -
+    @endif
+</td>
             </tr>
             @endforeach
         </tbody>
