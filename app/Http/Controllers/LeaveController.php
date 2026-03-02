@@ -309,25 +309,39 @@ class LeaveController extends Controller
 */
 
     public function destroy($id)
-    {
-        $leave = Leave::findOrFail($id);
+{
+    $leave = Leave::findOrFail($id);
 
-        if($leave->status === 'approved' && $leave->type === 'annual'){
-            $balance = LeaveBalance::where('user_id',$leave->user_id)->first();
+    if ($leave->status === 'approved' && $leave->type === 'annual') {
 
-            if($balance){
-                $balance->update([
-                    'used_leaves' => $balance->used_leaves - $leave->calculated_days,
-                    'remaining_leaves' => $balance->remaining_leaves + $leave->calculated_days
-                ]);
-            }
+        $balance = LeaveBalance::where('user_id', $leave->user_id)->first();
+
+        if ($balance) {
+
+            // Restore used leaves
+            $balance->used_leaves -= $leave->calculated_days;
+
+            // Restore remaining leaves
+            $balance->remaining_leaves += $leave->calculated_days;
+
+            $balance->save();
         }
 
-        $leave->delete();
-
-        return back()->with('success','Leave Deleted');
+        // Optional: Create reverse transaction log
+        LeaveTransaction::create([
+            'user_id'      => $leave->user_id,
+            'days'         => $leave->calculated_days,
+            'before'       => $balance->remaining_leaves - $leave->calculated_days,
+            'after'        => $balance->remaining_leaves,
+            'action'       => 'Deleted',
+            'processed_by' => auth()->id(),
+        ]);
     }
 
+    $leave->delete();
+
+    return back()->with('success', 'Leave deleted and balance restored successfully.');
+}
 /*
 |--------------------------------------------------------------------------
 | LEAVE ALLOCATION
