@@ -5,8 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use App\Models\Leave;
-use App\Models\Loan;
 
 class User extends Authenticatable
 {
@@ -14,13 +12,31 @@ class User extends Authenticatable
 
     /*
     |--------------------------------------------------------------------------
-    | Fillable
+    | Fillable (EMPLOYEE SAFE FIELDS ONLY)
     |--------------------------------------------------------------------------
+    |
+    | Only fields that employee is allowed to update
+    | Admin updates should be handled manually in controllers
+    |
     */
+
     protected $fillable = [
         'name',
         'email',
+        'mobile',
         'password',
+    ];
+
+    /*
+    |--------------------------------------------------------------------------
+    | Guarded (PROTECTED FIELDS)
+    |--------------------------------------------------------------------------
+    |
+    | These cannot be mass-assigned by employee
+    |
+    */
+
+    protected $guarded = [
         'role',
         'annual_leave_balance',
     ];
@@ -30,6 +46,7 @@ class User extends Authenticatable
     | Hidden
     |--------------------------------------------------------------------------
     */
+
     protected $hidden = [
         'password',
         'remember_token',
@@ -40,12 +57,12 @@ class User extends Authenticatable
     | Casts
     |--------------------------------------------------------------------------
     */
+
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'annual_leave_balance' => 'float',
         ];
     }
 
@@ -56,34 +73,48 @@ class User extends Authenticatable
     */
 
     public function staff()
-{
-    return $this->hasOne(Staff::class);
-}
+    {
+        return $this->hasOne(Staff::class);
+    }
 
-public function salaries()
-{
-    return $this->hasMany(Salary::class);
-}
+    public function salaries()
+    {
+        return $this->hasMany(Salary::class);
+    }
 
-public function leaves()
-{
-    return $this->hasMany(Leave::class);
-}
+    public function leaves()
+    {
+        return $this->hasMany(Leave::class);
+    }
 
     public function leaveBalance()
-{
-    return $this->hasOne(LeaveBalance::class);
-}
+    {
+        return $this->hasOne(LeaveBalance::class);
+    }
 
+    public function loans()
+    {
+        return $this->hasMany(Loan::class);
+    }
 
-public function loans()
-{
-    return $this->hasMany(Loan::class);
-}
+    public function attendances()
+    {
+        return $this->hasMany(Attendance::class);
+    }
 
-public function attendances()
-{
-    return $this->hasMany(Attendance::class);
-}
+    /*
+    |--------------------------------------------------------------------------
+    | Helper Methods
+    |--------------------------------------------------------------------------
+    */
 
+    public function isAdmin()
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isEmployee()
+    {
+        return $this->role === 'employee';
+    }
 }
