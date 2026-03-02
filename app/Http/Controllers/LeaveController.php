@@ -336,7 +336,9 @@ class LeaveController extends Controller
 
     public function allocationIndex()
     {
-        $employees = User::where('role','employee')->get();
+        $employees = User::where('role','employee')
+                ->orderBy('name', 'asc')
+                ->get();
         return view('leave.balance-index', compact('employees'));
     }
 
