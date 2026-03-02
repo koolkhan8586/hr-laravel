@@ -318,24 +318,13 @@ class LeaveController extends Controller
 
         if ($balance) {
 
-            // Restore used leaves
             $balance->used_leaves -= $leave->calculated_days;
-
-            // Restore remaining leaves
             $balance->remaining_leaves += $leave->calculated_days;
-
             $balance->save();
         }
 
-        // Optional: Create reverse transaction log
-        LeaveTransaction::create([
-            'user_id'      => $leave->user_id,
-            'days'         => $leave->calculated_days,
-            'before'       => $balance->remaining_leaves - $leave->calculated_days,
-            'after'        => $balance->remaining_leaves,
-            'action'       => 'Deleted',
-            'processed_by' => auth()->id(),
-        ]);
+        // Remove original approved transaction
+        LeaveTransaction::where('leave_id', $leave->id)->delete();
     }
 
     $leave->delete();
