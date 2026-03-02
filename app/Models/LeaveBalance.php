@@ -8,9 +8,15 @@ class LeaveBalance extends Model
 {
     protected $fillable = [
         'user_id',
-        'opening_balance' => 'float',
-    'used_leaves' => 'float',
-    'remaining_leaves' => 'float',
+        'opening_balance',
+        'used_leaves',
+        'remaining_leaves',
+    ];
+
+    protected $casts = [
+        'opening_balance'  => 'float',
+        'used_leaves'      => 'float',
+        'remaining_leaves' => 'float',
     ];
 
     public function user()
