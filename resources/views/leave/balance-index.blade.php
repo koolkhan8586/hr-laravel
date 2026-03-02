@@ -55,6 +55,7 @@
                    name="bulk_balance"
                    placeholder="Enter leave days"
                    min="0"
+                   step="0.5"
                    required
                    class="border rounded px-3 py-2 w-full md:w-60">
 
@@ -114,7 +115,7 @@
 
                                 <input type="number"
                                        name="annual_leave_balance"
-                                       value="{{ $balance->opening_balance }}"
+                                       value="{{ number_format($balance->opening_balance,2,'.','') }}"
                                        min="0"
                                        step="0.5"
                                        class="border px-3 py-1 rounded w-24">
@@ -128,18 +129,18 @@
 
                         {{-- Used --}}
                         <td class="p-3 text-center text-red-600 font-semibold">
-                            {{ $balance->used_leaves }}
+                            {{ number_format($balance->used_leaves,2) }}
                         </td>
 
                         {{-- Remaining --}}
                         <td class="p-3 text-center text-green-600 font-semibold">
-                            {{ $balance->remaining_leaves }}
+                            {{ number_format($balance->remaining_leaves,2) }}
                         </td>
 
                         {{-- Current --}}
                         <td class="p-3 text-center text-gray-500">
                             Current Balance:
-                            <strong>{{ $balance->remaining_leaves }}</strong>
+                            <strong>{{ number_format($balance->remaining_leaves,2) }}</strong>
                         </td>
 
                     </tr>
