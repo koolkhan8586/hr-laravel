@@ -42,7 +42,9 @@ class LeaveController extends Controller
     public function create()
     {
         if(auth()->user()->role === 'admin'){
-            $employees = User::where('role','employee')->get();
+            $employees = User::where('role', 'employee')
+                ->orderBy('name', 'asc')
+                ->get();
         } else {
             $employees = collect([auth()->user()]);
         }
