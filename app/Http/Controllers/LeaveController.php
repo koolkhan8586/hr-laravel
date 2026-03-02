@@ -311,30 +311,16 @@ public function destroy($id)
 {
     $leave = Leave::findOrFail($id);
 
-    $deleted = $leave->delete();
-
-    dd([
-        'destroy_called' => true,
-        'leave_id' => $id,
-        'delete_result' => $deleted,
-    ]);
-}
-   /* public function destroy($id)
-{
-    $leave = Leave::findOrFail($id);
-
     if ($leave->status === 'approved' && $leave->type === 'annual') {
 
         $balance = LeaveBalance::where('user_id', $leave->user_id)->first();
 
         if ($balance) {
-
             $balance->used_leaves -= $leave->calculated_days;
             $balance->remaining_leaves += $leave->calculated_days;
             $balance->save();
         }
 
-        // Remove original approved transaction
         LeaveTransaction::where('leave_id', $leave->id)->delete();
     }
 
