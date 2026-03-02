@@ -34,7 +34,7 @@
                         Leave
                     </a>
 
-                    <!-- Salary (Both Admin & Employee) -->
+                    <!-- Salary -->
                     <a href="{{ route('salary.index') }}"
                        class="hover:text-green-700 transition">
                         Salary
@@ -43,7 +43,6 @@
                     <!-- Loans Section -->
                     @if(auth()->user()->role === 'admin')
 
-                        <!-- Admin Loan Management -->
                         <a href="{{ route('admin.loan.index') }}"
                            class="hover:text-green-700 transition">
                             Loans
@@ -51,7 +50,6 @@
 
                     @else
 
-                        <!-- Employee Loan Links -->
                         <a href="{{ route('loan.my') }}"
                            class="hover:text-green-700 transition">
                             My Loans
@@ -66,69 +64,63 @@
 
 
                     <!-- Admin Dropdown -->
-                    <!-- Admin Dropdown -->
-@if(auth()->user()->role === 'admin')
-<div x-data="{ open: false }" class="relative">
+                    @if(auth()->user()->role === 'admin')
+                    <div x-data="{ open: false }" class="relative">
 
-    <button @click="open = !open"
-            class="hover:text-green-700 transition flex items-center space-x-1 focus:outline-none">
-        <span>Admin</span>
-        <span class="text-xs">▼</span>
-    </button>
+                        <button @click="open = !open"
+                                class="hover:text-green-700 transition flex items-center space-x-1 focus:outline-none">
+                            <span>Admin</span>
+                            <span class="text-xs">▼</span>
+                        </button>
 
-    <div x-show="open"
-         @click.away="open = false"
-         x-transition
-         class="absolute left-0 mt-2 w-56 bg-white border rounded-md shadow-lg z-50">
+                        <div x-show="open"
+                             @click.away="open = false"
+                             x-transition
+                             class="absolute left-0 mt-2 w-56 bg-white border rounded-md shadow-lg z-50">
 
-        <a href="{{ route('admin.staff.index') }}"
-           class="block px-4 py-2 hover:bg-gray-100">
-            Staff Management
-        </a>
+                            <a href="{{ route('admin.staff.index') }}"
+                               class="block px-4 py-2 hover:bg-gray-100">
+                                Staff Management
+                            </a>
 
-        <a href="{{ route('admin.attendance.index') }}"
-   class="block px-4 py-2 hover:bg-gray-100">
-   Attendance Management
-</a>
+                            <a href="{{ route('admin.attendance.index') }}"
+                               class="block px-4 py-2 hover:bg-gray-100">
+                                Attendance Management
+                            </a>
 
-        <a href="{{ route('admin.leave.index') }}"
-           class="block px-4 py-2 hover:bg-gray-100">
-            Manage Leaves
-        </a>
+                            <a href="{{ route('admin.leave.index') }}"
+                               class="block px-4 py-2 hover:bg-gray-100">
+                                Manage Leaves
+                            </a>
 
-        <a href="{{ route('admin.leave.calendar') }}"
-   class="block px-4 py-2 hover:bg-gray-100">
-   Leave Calendar
-</a>
+                            <a href="{{ route('admin.leave.calendar') }}"
+                               class="block px-4 py-2 hover:bg-gray-100">
+                                Leave Calendar
+                            </a>
 
+                            <a href="{{ route('admin.leave.allocation.index') }}"
+                               class="block px-4 py-2 hover:bg-gray-100">
+                                Leave Allocation
+                            </a>
 
-        <a href="{{ route('admin.leave.allocation.index') }}"
-   class="block px-4 py-2 hover:bg-gray-100">
-    Leave Allocation
-</a>
+                            <a href="{{ route('admin.leave.transactions') }}"
+                               class="block px-4 py-2 hover:bg-gray-100">
+                                Leave Transactions
+                            </a>
 
+                            <a href="{{ route('admin.salary.index') }}"
+                               class="block px-4 py-2 hover:bg-gray-100">
+                                Salary Management
+                            </a>
 
-        <a href="{{ route('admin.leave.transactions') }}"
-           class="block px-4 py-2 hover:bg-gray-100">
-            Leave Transactions
-        </a>
+                            <a href="{{ route('admin.loan.index') }}"
+                               class="block px-4 py-2 hover:bg-gray-100">
+                                Loan Management
+                            </a>
 
-        <a href="{{ route('admin.salary.index') }}"
-           class="block px-4 py-2 hover:bg-gray-100">
-            Salary Management
-        </a>
-
-        <a href="{{ route('admin.loan.index') }}"
-           class="block px-4 py-2 hover:bg-gray-100">
-            Loan Management
-        </a>
-
-    </div>
-</div>
-@endif
-
-
-
+                        </div>
+                    </div>
+                    @endif
 
                 </div>
             </div>
@@ -136,10 +128,13 @@
             <!-- RIGHT SIDE -->
             <div class="flex items-center space-x-6">
 
-                <span class="text-sm text-gray-700 font-medium">
+                <!-- Profile Link -->
+                <a href="{{ route('profile.edit') }}"
+                   class="text-sm text-gray-700 font-medium hover:text-green-700 transition">
                     {{ auth()->user()->name }}
-                </span>
+                </a>
 
+                <!-- Logout -->
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <button type="submit"
