@@ -316,8 +316,15 @@ public function destroy($id)
         $balance = LeaveBalance::where('user_id', $leave->user_id)->first();
 
         if ($balance) {
-            $balance->used_leaves -= $leave->calculated_days;
-            $balance->remaining_leaves += $leave->calculated_days;
+
+            // 🔥 Always recalculate from source of truth
+            $approved = Leave::where('user_id', $leave->user_id)
+                ->where('type', 'annual')
+                ->where('status', 'approved')
+                ->sum('calculated_days');
+
+            $balance->used_leaves = $approved;
+            $balance->remaining_leaves = $balance->opening_balance - $approved;
             $balance->save();
         }
 
