@@ -342,12 +342,8 @@ class LeaveController extends Controller
         return view('leave.balance-index', compact('employees'));
     }
 
-    public function updateAllocation(Request $request, $id)
-{
-    dd($request->annual_leave_balance);
-}
 
-    /*public function updateAllocation(Request $request, $id)
+    public function updateAllocation(Request $request, $id)
     {
         $request->validate([
             'annual_leave_balance' => 'required|numeric|min:0'
@@ -370,7 +366,7 @@ class LeaveController extends Controller
         ]);
 
         return back()->with('success','Leave allocation updated successfully.');
-    }*/
+    }
 
 
     public function calendar()
