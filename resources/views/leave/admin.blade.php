@@ -159,15 +159,15 @@
                             </a>
 
                             {{-- DELETE --}}
-                            <form method="POST"
-                                  action="{{ route('admin.leave.delete', $leave->id) }}"
-                                  onsubmit="return confirm('Are you sure?')">
-                                @csrf
-                                @method('DELETE')
-                                <button class="bg-gray-700 text-white px-3 py-1 rounded text-xs">
-                                    Delete
-                                </button>
-                            </form>
+<form method="POST"
+      action="{{ route('admin.leave.delete', $leave->id) }}"
+      onsubmit="return confirm('Are you sure?')">
+    @csrf
+    @method('DELETE')
+    <button class="bg-gray-700 text-white px-3 py-1 rounded text-xs">
+        Delete
+    </button>
+</form>
 
                         </div>
                     </td>
