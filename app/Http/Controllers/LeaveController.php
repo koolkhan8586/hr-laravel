@@ -307,8 +307,19 @@ class LeaveController extends Controller
 | DELETE
 |--------------------------------------------------------------------------
 */
+public function destroy($id)
+{
+    $leave = Leave::findOrFail($id);
 
-    public function destroy($id)
+    $deleted = $leave->delete();
+
+    dd([
+        'destroy_called' => true,
+        'leave_id' => $id,
+        'delete_result' => $deleted,
+    ]);
+}
+   /* public function destroy($id)
 {
     $leave = Leave::findOrFail($id);
 
