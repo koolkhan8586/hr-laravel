@@ -116,6 +116,7 @@
                                        name="annual_leave_balance"
                                        value="{{ $balance->opening_balance }}"
                                        min="0"
+                                       step="0.5"
                                        class="border px-3 py-1 rounded w-24">
 
                                 <button type="submit"
