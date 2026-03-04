@@ -11,6 +11,8 @@ use App\Exports\AttendanceExport;
 use Illuminate\Support\Facades\Mail;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
+use App\Models\WeeklySchedule;
+use App\Models\Shift;
 
 class AttendanceController extends Controller
 {
@@ -57,30 +59,55 @@ class AttendanceController extends Controller
         ], 400);
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Get Today's Schedule
+    |--------------------------------------------------------------------------
+    */
+
+    $day = $now->format('l'); // Monday, Tuesday etc
+
+    $schedule = \App\Models\WeeklySchedule::where('user_id', auth()->id())
+        ->where('day_of_week', $day)
+        ->first();
+
+    if (!$schedule || !$schedule->shift_id) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Today is your OFF day.'
+        ], 403);
+    }
+
+    $shift = \App\Models\Shift::find($schedule->shift_id);
+
+    $shiftStart = \Carbon\Carbon::parse($shift->start_time, 'Asia/Karachi');
+
+    $lateAfter = $shiftStart->copy()->addMinutes($shift->grace_minutes);
+
     $attendance = Attendance::where('user_id', auth()->id())
         ->whereDate('date', $today)
         ->first();
 
     /*
     |--------------------------------------------------------------------------
-    | CASE 1: Employee was auto marked absent at 11:45
+    | CASE 1: Employee was auto marked absent earlier
     | Convert it to LATE when they clock in
     |--------------------------------------------------------------------------
     */
 
-   if ($attendance && $attendance->status === 'absent') {
+    if ($attendance && $attendance->status === 'absent') {
 
-    $attendance->clock_in = $now;
-    $attendance->clock_in_latitude  = $request->latitude;
-    $attendance->clock_in_longitude = $request->longitude;
-    $attendance->status = 'late';
-    $attendance->save();
+        $attendance->clock_in = $now;
+        $attendance->clock_in_latitude  = $request->latitude;
+        $attendance->clock_in_longitude = $request->longitude;
+        $attendance->status = 'late';
+        $attendance->save();
 
-    return response()->json([
-        'success' => true,
-        'message' => 'Clock-in recorded. Status updated to Late.'
-    ]);
-}
+        return response()->json([
+            'success' => true,
+            'message' => 'Clock-in recorded. Status updated to Late.'
+        ]);
+    }
 
     /*
     |--------------------------------------------------------------------------
@@ -97,11 +124,10 @@ class AttendanceController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Normal Clock In
+    | Determine Attendance Status Based on Shift
     |--------------------------------------------------------------------------
     */
 
-    $lateAfter = \Carbon\Carbon::createFromTime(9, 45, 0, 'Asia/Karachi');
     $status = $now->gt($lateAfter) ? 'late' : 'present';
 
     $attendance = Attendance::create([
@@ -113,7 +139,12 @@ class AttendanceController extends Controller
         'status' => $status,
     ]);
 
-    // Send Email
+    /*
+    |--------------------------------------------------------------------------
+    | Send Email Notification
+    |--------------------------------------------------------------------------
+    */
+
     try {
         Mail::raw(
             "Clock In Successful\n\n".
