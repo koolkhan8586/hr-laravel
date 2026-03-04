@@ -119,6 +119,11 @@ class User extends Authenticatable
         return $this->role === 'admin';
     }
 
+    public function weeklySchedules()
+{
+    return $this->hasMany(\App\Models\WeeklySchedule::class);
+}
+
     public function isEmployee()
     {
         return $this->role === 'employee';
