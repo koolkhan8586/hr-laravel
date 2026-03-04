@@ -58,6 +58,9 @@
 </tr>
 </thead>
 
+<div id="attendance-table">
+
+<table class="min-w-full border">
 <tbody>
 
 @foreach($working as $attendance)
@@ -89,11 +92,20 @@ $mins = $minutes % 60;
 </tbody>
 </table>
 
+</div>
+
 <script>
+
 setInterval(function(){
-    location.reload();
+
+fetch('/admin/live-attendance')
+.then(response => response.text())
+.then(data => {
+document.getElementById('attendance-table').innerHTML = data;
+});
+
 },10000);
+
 </script>
     
-</div>
 </x-app-layout>
