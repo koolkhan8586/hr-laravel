@@ -100,72 +100,89 @@ public function liveAttendance()
 
 public function attendanceList($type)
 {
-    $today = Carbon::today('Asia/Karachi');
+    $today = Carbon::today('Asia/Karachi')->toDateString();
 
-    if ($type == 'present') {
+    /*
+    |--------------------------------------------------------------------------
+    | Leave Records
+    |--------------------------------------------------------------------------
+    */
 
-        $records = Attendance::whereDate('created_at',$today)
-            ->where('status','present')
-            ->with('user')
-            ->get();
-    }
-
-    elseif ($type == 'late') {
-
-        $records = Attendance::whereDate('created_at',$today)
-            ->where('status','late')
-            ->with('user')
-            ->get();
-    }
-
-    elseif ($type == 'halfday') {
-
-        $records = Attendance::whereDate('created_at',$today)
-            ->where('status','halfday')
-            ->with('user')
-            ->get();
-    }
-
-    elseif ($type == 'working') {
-
-        $records = Attendance::whereDate('created_at',$today)
-            ->whereNotNull('clock_in')
-            ->whereNull('clock_out')
-            ->with('user')
-            ->get();
-    }
-
-    elseif ($type == 'leave') {
+    if ($type === 'leave') {
 
         $records = Leave::where('status','approved')
             ->whereDate('start_date','<=',$today)
             ->whereDate('end_date','>=',$today)
             ->with('user')
             ->get();
+
+        return view('admin.attendance-list', compact('records','type'));
     }
 
-    elseif ($type == 'absent') {
+    /*
+    |--------------------------------------------------------------------------
+    | Absent Employees
+    |--------------------------------------------------------------------------
+    */
 
-    $today = Carbon::today('Asia/Karachi');
+    if ($type === 'absent') {
 
-    // Employees who marked attendance today
-    $presentUsers = Attendance::whereDate('created_at',$today)
-        ->pluck('user_id');
+        $presentUsers = Attendance::whereDate('date',$today)
+            ->pluck('user_id');
 
-    // Employees on leave today
-    $leaveUsers = Leave::where('status','approved')
-        ->whereDate('start_date','<=',$today)
-        ->whereDate('end_date','>=',$today)
-        ->pluck('user_id');
+        $leaveUsers = Leave::where('status','approved')
+            ->whereDate('start_date','<=',$today)
+            ->whereDate('end_date','>=',$today)
+            ->pluck('user_id');
 
-    // Absent employees
-    $records = User::where('role','employee')
-        ->whereNotIn('id',$presentUsers)
-        ->whereNotIn('id',$leaveUsers)
-        ->get();
-}
+        $records = User::where('role','employee')
+            ->whereNotIn('id',$presentUsers)
+            ->whereNotIn('id',$leaveUsers)
+            ->get();
 
-    return view('admin.attendance-list',compact('records','type'));
+        return view('admin.attendance-list', compact('records','type'));
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Working Employees
+    |--------------------------------------------------------------------------
+    */
+
+    if ($type === 'working') {
+
+        $records = Attendance::whereDate('date',$today)
+            ->whereNotNull('clock_in')
+            ->whereNull('clock_out')
+            ->with('user')
+            ->get();
+
+        return view('admin.attendance-list', compact('records','type'));
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Present / Late / Half Day
+    |--------------------------------------------------------------------------
+    */
+
+    $statusMap = [
+        'present' => 'present',
+        'late' => 'late',
+        'halfday' => 'half_day'
+    ];
+
+    if (isset($statusMap[$type])) {
+
+        $records = Attendance::whereDate('date',$today)
+            ->where('status',$statusMap[$type])
+            ->with('user')
+            ->get();
+
+        return view('admin.attendance-list', compact('records','type'));
+    }
+
+    abort(404);
 }
 
 }
