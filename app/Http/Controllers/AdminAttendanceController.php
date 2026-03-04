@@ -119,19 +119,24 @@ public function attendanceList($type)
 
     elseif ($type == 'absent') {
 
-        $presentUsers = Attendance::whereDate('created_at',$today)
-            ->pluck('user_id');
+    $today = Carbon::today('Asia/Karachi');
 
-        $leaveUsers = Leave::where('status','approved')
-            ->whereDate('start_date','<=',$today)
-            ->whereDate('end_date','>=',$today)
-            ->pluck('user_id');
+    // Employees who marked attendance today
+    $presentUsers = Attendance::whereDate('created_at',$today)
+        ->pluck('user_id');
 
-        $records = User::where('role','employee')
-            ->whereNotIn('id',$presentUsers)
-            ->whereNotIn('id',$leaveUsers)
-            ->get();
-    }
+    // Employees on leave today
+    $leaveUsers = Leave::where('status','approved')
+        ->whereDate('start_date','<=',$today)
+        ->whereDate('end_date','>=',$today)
+        ->pluck('user_id');
+
+    // Absent employees
+    $records = User::where('role','employee')
+        ->whereNotIn('id',$presentUsers)
+        ->whereNotIn('id',$leaveUsers)
+        ->get();
+}
 
     return view('admin.attendance-list',compact('records','type'));
 }
