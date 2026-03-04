@@ -57,7 +57,7 @@ Attendance Dashboard
 Attendance Management
 </a>
 
-<a href="/attendance-calendar">
+<a href="/admin.attendance-calendar">
 Attendance Calendar
 </a>
 
