@@ -10,6 +10,7 @@ use App\Http\Controllers\SalaryController;
 use App\Http\Controllers\AdminAttendanceController;
 use App\Http\Controllers\ShiftController;
 use App\Http\Controllers\EmployeeScheduleController;
+use App\Http\Controllers\WeeklyScheduleController;
 
 
 /*
@@ -70,6 +71,8 @@ Route::middleware(['auth'])->group(function () {
 
     Route::resource('shifts', \App\Http\Controllers\ShiftController::class);
     Route::resource('schedules', \App\Http\Controllers\EmployeeScheduleController::class);
+    Route::get('/weekly-schedule', [\App\Http\Controllers\WeeklyScheduleController::class,'create'])->name('weekly.schedule');
+    Route::post('/weekly-schedule', [\App\Http\Controllers\WeeklyScheduleController::class,'store']);
 });
 
 /*
