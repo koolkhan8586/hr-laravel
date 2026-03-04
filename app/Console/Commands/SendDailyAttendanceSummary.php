@@ -2,8 +2,6 @@
 
 namespace App\Console\Commands;
 
-namespace App\Console\Commands;
-
 use Illuminate\Console\Command;
 use App\Models\User;
 use App\Models\Attendance;
@@ -31,29 +29,33 @@ class SendDailyAttendanceSummary extends Command
      */
     public function handle()
 {
-    $today = Carbon::now('Asia/Karachi')->toDateString();
+    $today = \Carbon\Carbon::today('Asia/Karachi')->toDateString();
 
-    $employees = User::where('role','employee')->get();
+    $attendances = \App\Models\Attendance::whereDate('date', $today)->get();
 
-    foreach ($employees as $employee) {
+    $total = \App\Models\User::where('role','employee')->count();
 
-        $attendance = Attendance::where('user_id',$employee->id)
-            ->whereDate('clock_in',$today)
-            ->first();
+    $present = $attendances->where('status','present')->count();
+    $late = $attendances->where('status','late')->count();
+    $absent = $total - $attendances->count();
 
-        $message = "Daily Attendance Summary\n\nDate: ".$today."\n";
+    $body = "Daily Attendance Summary\n\n";
+    $body .= "Date: $today\n\n";
+    $body .= "Total Employees: $total\n";
+    $body .= "Present: $present\n";
+    $body .= "Late: $late\n";
+    $body .= "Absent: $absent\n\n";
+    $body .= "Employee Breakdown:\n\n";
 
-        if ($attendance) {
-            $message .= "Status: ".$attendance->status."\n";
-            $message .= "Total Hours: ".$attendance->total_hours;
-        } else {
-            $message .= "Status: Absent";
-        }
-
-        Mail::raw($message, function ($mail) use ($employee) {
-            $mail->to($employee->email)
-                 ->subject('Daily Attendance Summary');
-        });
+    foreach ($attendances as $record) {
+        $body .= $record->user->name . " - " . ucfirst($record->status) . "\n";
     }
+
+    \Mail::raw($body, function ($message) {
+        $message->to('hr@uolcc.edu.pk')
+                ->subject('Daily Attendance Summary');
+    });
+
+    $this->info('Daily summary email sent successfully.');
 }
 }
