@@ -41,21 +41,14 @@ class AttendanceController extends Controller
     }
 
     /*
-|--------------------------------------------------------------------------
-| Clock In
-|--------------------------------------------------------------------------
-*/
-public function clockIn(Request $request)
+    |--------------------------------------------------------------------------
+    | Clock In
+    |--------------------------------------------------------------------------
+    */
+    public function clockIn(Request $request)
 {
     $now = \Carbon\Carbon::now('Asia/Karachi');
     $today = $now->toDateString();
-    $userId = auth()->id();
-
-    /*
-    |--------------------------------------------------------------------------
-    | Validate GPS
-    |--------------------------------------------------------------------------
-    */
 
     if (!$request->latitude || !$request->longitude) {
         return response()->json([
@@ -64,39 +57,34 @@ public function clockIn(Request $request)
         ], 400);
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Check today's attendance
-    |--------------------------------------------------------------------------
-    */
-
-    $attendance = Attendance::where('user_id', $userId)
+    $attendance = Attendance::where('user_id', auth()->id())
         ->whereDate('date', $today)
         ->first();
 
     /*
     |--------------------------------------------------------------------------
-    | CASE 1: Auto Absent -> Convert to Late
+    | CASE 1: Employee was auto marked absent at 11:45
+    | Convert it to LATE when they clock in
     |--------------------------------------------------------------------------
     */
 
-    if ($attendance && $attendance->status === 'absent') {
+   if ($attendance && $attendance->status === 'absent') {
 
-        $attendance->clock_in = $now;
-        $attendance->clock_in_latitude = $request->latitude;
-        $attendance->clock_in_longitude = $request->longitude;
-        $attendance->status = 'late';
-        $attendance->save();
+    $attendance->clock_in = $now;
+    $attendance->clock_in_latitude  = $request->latitude;
+    $attendance->clock_in_longitude = $request->longitude;
+    $attendance->status = 'late';
+    $attendance->save();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Clock-in recorded. Status updated to Late.'
-        ]);
-    }
+    return response()->json([
+        'success' => true,
+        'message' => 'Clock-in recorded. Status updated to Late.'
+    ]);
+}
 
     /*
     |--------------------------------------------------------------------------
-    | Prevent Duplicate Clock-In
+    | Prevent double clock-in
     |--------------------------------------------------------------------------
     */
 
@@ -109,21 +97,15 @@ public function clockIn(Request $request)
 
     /*
     |--------------------------------------------------------------------------
-    | Determine Attendance Status
+    | Normal Clock In
     |--------------------------------------------------------------------------
     */
 
     $lateAfter = \Carbon\Carbon::createFromTime(9, 45, 0, 'Asia/Karachi');
     $status = $now->gt($lateAfter) ? 'late' : 'present';
 
-    /*
-    |--------------------------------------------------------------------------
-    | Create Attendance
-    |--------------------------------------------------------------------------
-    */
-
-    $attendance = Attendance::create([
-        'user_id' => $userId,
+    Attendance::create([
+        'user_id' => auth()->id(),
         'date' => $today,
         'clock_in' => $now,
         'clock_in_latitude' => $request->latitude,
@@ -131,38 +113,28 @@ public function clockIn(Request $request)
         'status' => $status,
     ]);
 
-    /*
-    |--------------------------------------------------------------------------
-    | Send Email Confirmation
-    |--------------------------------------------------------------------------
-    */
-
+    // Send Email
     try {
-
         Mail::raw(
             "Clock In Successful\n\n".
             "Date: ".$now->toDateString()."\n".
-            "Time: ".$now->toTimeString()."\n".
+            "Time: ".$attendance->clock_in."\n".
             "Location: ".$request->latitude.", ".$request->longitude."\n".
             "Status: ".$status,
             function ($message) {
                 $message->to(auth()->user()->email)
                         ->subject('Clock In Confirmation');
             }
-
         );
-
     } catch (\Exception $e) {
-
         Log::error('ClockIn Mail Error: '.$e->getMessage());
-
     }
 
     return response()->json([
         'success' => true,
         'message' => 'Clock-in successful! Attendance marked.'
     ]);
-}/*
+} /*
     |--------------------------------------------------------------------------
     | Clock Out
     |--------------------------------------------------------------------------
