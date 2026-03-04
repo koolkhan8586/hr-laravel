@@ -1,46 +1,47 @@
 <x-app-layout>
 
-<div class="grid grid-cols-5 gap-6 mb-8">
+<div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8">
 
 <a href="{{ route('admin.attendance.list','present') }}">
 <div class="bg-green-100 p-6 rounded-xl text-center shadow hover:shadow-lg">
-<h3 class="text-lg font-semibold text-green-700">Present</h3>
-<p class="text-3xl font-bold text-green-800">{{ $present }}</p>
+<div class="text-green-700 font-semibold">Present</div>
+<div class="text-3xl font-bold text-green-800">{{ $present }}</div>
 </div>
 </a>
 
 <a href="{{ route('admin.attendance.list','late') }}">
 <div class="bg-yellow-100 p-6 rounded-xl text-center shadow hover:shadow-lg">
-<h3 class="text-lg font-semibold text-yellow-700">Late</h3>
-<p class="text-3xl font-bold text-yellow-800">{{ $late }}</p>
+<div class="text-yellow-700 font-semibold">Late</div>
+<div class="text-3xl font-bold text-yellow-800">{{ $late }}</div>
 </div>
 </a>
 
 <a href="{{ route('admin.attendance.list','halfday') }}">
 <div class="bg-purple-100 p-6 rounded-xl text-center shadow hover:shadow-lg">
-<h3 class="text-lg font-semibold text-purple-700">Half Day</h3>
-<p class="text-3xl font-bold text-purple-800">{{ $halfday }}</p>
+<div class="text-purple-700 font-semibold">Half Day</div>
+<div class="text-3xl font-bold text-purple-800">{{ $halfday }}</div>
 </div>
 </a>
 
 <a href="{{ route('admin.attendance.list','leave') }}">
 <div class="bg-blue-100 p-6 rounded-xl text-center shadow hover:shadow-lg">
-<h3 class="text-lg font-semibold text-blue-700">Leave</h3>
-<p class="text-3xl font-bold text-blue-800">{{ $leave }}</p>
+<div class="text-blue-700 font-semibold">Leave</div>
+<div class="text-3xl font-bold text-blue-800">{{ $leave }}</div>
 </div>
 </a>
 
 <a href="{{ route('admin.attendance.list','absent') }}">
 <div class="bg-red-100 p-6 rounded-xl text-center shadow hover:shadow-lg">
-<h3 class="text-lg font-semibold text-red-700">Absent</h3>
-<p class="text-3xl font-bold text-red-800">{{ $absent }}</p>
+<div class="text-red-700 font-semibold">Absent</div>
+<div class="text-3xl font-bold text-red-800">{{ $absent }}</div>
 </div>
 </a>
 
+
 <a href="{{ route('admin.attendance.list','working') }}">
-<div class="bg-indigo-100 p-5 rounded-xl shadow text-center">
-<h3 class="text-lg font-semibold text-indigo-700">Working</h3>
-<p class="text-3xl font-bold">{{ $working->count() }}</p>
+<div class="bg-red-100 p-6 rounded-xl text-center shadow hover:shadow-lg">
+<div class="text-red-700 font-semibold">Working</div>
+<p class="text-3xl font-bold text-pink-800"">{{ $working->count() }}</p>
 </div>
 </a>
 
