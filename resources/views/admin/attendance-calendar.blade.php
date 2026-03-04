@@ -28,30 +28,14 @@ View
 <th class="border p-2">Employee</th>
 
 @for($d=1;$d<=$end->day;$d++)
-<th class="border p-2 text-center">{{ $d }}</th>
-@endfor
-
-</tr>
-
-</thead>
-
-<tbody>
-
-@foreach($users as $user)
-
-<tr>
-
-<td class="border p-2 font-medium">
-{{ $user->name }}
-</td>
-
-@for($d=1;$d<=$end->day;$d++)
 
 @php
 
 $date = $start->copy()->day($d)->toDateString();
 
-$record = $attendances[$user->id]->where('date',$date)->first() ?? null;
+$record = isset($attendances[$user->id])
+    ? $attendances[$user->id]->where('date',$date)->first()
+    : null;
 
 @endphp
 
