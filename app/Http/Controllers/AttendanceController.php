@@ -104,7 +104,7 @@ class AttendanceController extends Controller
     $lateAfter = \Carbon\Carbon::createFromTime(9, 45, 0, 'Asia/Karachi');
     $status = $now->gt($lateAfter) ? 'late' : 'present';
 
-    Attendance::create([
+    $attendance = Attendance::create([
         'user_id' => auth()->id(),
         'date' => $today,
         'clock_in' => $now,
@@ -148,10 +148,10 @@ class AttendanceController extends Controller
         ], 400);
     }
 
-    $today = Carbon::today('Asia/Karachi');
+    $today = Carbon::now('Asia/Karachi')->toDateString();
 
 $attendance = Attendance::where('user_id', auth()->id())
-    ->whereDate('created_at', $today)
+    ->whereDate('date', $today)
     ->whereNull('clock_out')
     ->latest()
     ->first();
