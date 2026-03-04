@@ -64,6 +64,8 @@ Route::middleware(['auth'])->group(function () {
     /* Salary (Employee) */
     Route::get('/salary', [SalaryController::class,'employeeIndex'])->name('salary.index');
     Route::get('/salary/download/{id}', [SalaryController::class,'download'])->name('salary.download');
+
+    Route::resource('shifts', \App\Http\Controllers\ShiftController::class);
 });
 
 /*
