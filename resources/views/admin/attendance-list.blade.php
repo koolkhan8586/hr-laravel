@@ -28,10 +28,10 @@ class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">
 
 @foreach($records as $user)
 <tr>
-<td class="p-2 border">{{ $user->name }}</td>
-<td class="p-2 border">-</td>
-<td class="p-2 border">-</td>
-<td class="p-2 border text-red-600 font-semibold">Absent</td>
+<td class="border p-2">{{ $user->name }}</td>
+<td class="border p-2">-</td>
+<td class="border p-2">-</td>
+<td class="border p-2 text-red-600 font-semibold">Absent</td>
 </tr>
 @endforeach
 
@@ -39,10 +39,10 @@ class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">
 
 @foreach($records as $record)
 <tr>
-<td class="p-2 border">{{ $record->user->name }}</td>
-<td class="p-2 border">{{ $record->clock_in }}</td>
-<td class="p-2 border">{{ $record->clock_out ?? '-' }}</td>
-<td class="p-2 border">{{ ucfirst($type) }}</td>
+<td class="border p-2">{{ $record->user->name }}</td>
+<td class="border p-2">{{ $record->clock_in }}</td>
+<td class="border p-2">{{ $record->clock_out ?? '-' }}</td>
+<td class="border p-2 capitalize">{{ $type }}</td>
 </tr>
 @endforeach
 
