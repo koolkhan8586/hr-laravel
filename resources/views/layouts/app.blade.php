@@ -21,19 +21,19 @@
 
 <body class="font-sans antialiased bg-gray-100">
 
-<div x-data="{ sidebar:false }" class="flex min-h-screen">
+<div x-data="{sidebar:false}" class="flex min-h-screen">
 
 <!-- MOBILE OVERLAY -->
 
-<div 
-x-show="sidebar" 
+<div
+x-show="sidebar"
 class="fixed inset-0 bg-black bg-opacity-40 z-30 md:hidden"
 @click="sidebar=false">
 </div>
 
 <!-- SIDEBAR -->
 
-<aside 
+<aside
 :class="sidebar ? 'translate-x-0' : '-translate-x-full'"
 class="fixed md:relative z-40 transform transition-transform duration-200 md:translate-x-0 w-64 bg-white shadow-lg min-h-screen">
 
@@ -41,105 +41,186 @@ class="fixed md:relative z-40 transform transition-transform duration-200 md:tra
 LSAF HR
 </div>
 
-<nav class="p-4 space-y-2 text-sm">
+<nav class="p-4 text-sm space-y-1">
 
 <a href="{{ route('dashboard') }}" class="block px-3 py-2 rounded hover:bg-gray-200">
 Dashboard
 </a>
 
-<div class="text-gray-500 font-semibold mt-4">Staff Management</div>
+{{-- ================= ADMIN MENUS ================= --}}
+@if(Auth::user()->role === 'admin')
 
-<a href="{{ route('admin.staff.index') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
+<!-- STAFF -->
+
+<div x-data="{open:false}">
+<button @click="open=!open"
+class="w-full text-left px-3 py-2 rounded hover:bg-gray-200 font-semibold">
 Staff Management
+</button>
+
+<div x-show="open" class="pl-4 space-y-1">
+<a href="{{ route('admin.staff.index') }}" class="block py-1 hover:text-blue-600">
+Staff List
 </a>
+</div>
+</div>
 
-<div class="text-gray-500 font-semibold mt-4">Attendance</div>
+<!-- ATTENDANCE -->
 
-<a href="{{ route('admin.attendance.dashboard') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
+<div x-data="{open:false}">
+<button @click="open=!open"
+class="w-full text-left px-3 py-2 rounded hover:bg-gray-200 font-semibold">
+Attendance Management
+</button>
+
+<div x-show="open" class="pl-4 space-y-1">
+
+<a href="{{ route('admin.attendance.dashboard') }}" class="block py-1 hover:text-blue-600">
 Attendance Dashboard
 </a>
 
-<a href="{{ route('admin.attendance.calendar') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
+<a href="{{ route('admin.attendance.calendar') }}" class="block py-1 hover:text-blue-600">
 Attendance Calendar
 </a>
 
-<a href="{{ route('admin.attendance.index') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
+<a href="{{ route('admin.attendance.index') }}" class="block py-1 hover:text-blue-600">
 Attendance Management
 </a>
 
-<div class="text-gray-500 font-semibold mt-4">Schedule</div>
+</div>
+</div>
 
-<a href="{{ route('shifts.index') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
+<!-- SCHEDULE -->
+
+<div x-data="{open:false}">
+<button @click="open=!open"
+class="w-full text-left px-3 py-2 rounded hover:bg-gray-200 font-semibold">
+Schedule Management
+</button>
+
+<div x-show="open" class="pl-4 space-y-1">
+
+<a href="{{ route('shifts.index') }}" class="block py-1 hover:text-blue-600">
 Shifts
 </a>
 
-<a href="{{ route('weekly.schedule') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
+<a href="{{ route('weekly.schedule') }}" class="block py-1 hover:text-blue-600">
 Weekly Schedule
 </a>
 
-<a href="{{ route('weekly.schedules') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
+<a href="{{ route('weekly.schedules') }}" class="block py-1 hover:text-blue-600">
 View Weekly Schedules
 </a>
 
-<a href="{{ route('schedule.calendar') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
+<a href="{{ route('schedule.calendar') }}" class="block py-1 hover:text-blue-600">
 Schedule Calendar
 </a>
 
-<a href="{{ route('schedule.editor') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
+<a href="{{ route('schedule.editor') }}" class="block py-1 hover:text-blue-600">
 Schedule Grid Editor
 </a>
 
-<div class="text-gray-500 font-semibold mt-4">Leave</div>
+</div>
+</div>
 
-<a href="{{ route('admin.leave.index') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
+<!-- LEAVE -->
+
+<div x-data="{open:false}">
+<button @click="open=!open"
+class="w-full text-left px-3 py-2 rounded hover:bg-gray-200 font-semibold">
+Leave Management
+</button>
+
+<div x-show="open" class="pl-4 space-y-1">
+
+<a href="{{ route('admin.leave.index') }}" class="block py-1 hover:text-blue-600">
 Manage Leaves
 </a>
 
-<a href="{{ route('admin.leave.calendar') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
+<a href="{{ route('admin.leave.calendar') }}" class="block py-1 hover:text-blue-600">
 Leave Calendar
 </a>
 
-<a href="{{ route('admin.leave.allocation.index') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
+<a href="{{ route('admin.leave.allocation.index') }}" class="block py-1 hover:text-blue-600">
 Leave Allocation
 </a>
 
-<a href="{{ route('admin.leave.transactions') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
+<a href="{{ route('admin.leave.transactions') }}" class="block py-1 hover:text-blue-600">
 Leave Transactions
 </a>
 
-<div class="text-gray-500 font-semibold mt-4">Salary</div>
+</div>
+</div>
 
-<a href="{{ route('admin.salary.index') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
+<!-- SALARY -->
+
+<div x-data="{open:false}">
+<button @click="open=!open"
+class="w-full text-left px-3 py-2 rounded hover:bg-gray-200 font-semibold">
+Salary Management
+</button>
+
+<div x-show="open" class="pl-4 space-y-1">
+
+<a href="{{ route('admin.salary.index') }}" class="block py-1 hover:text-blue-600">
 Salary Management
 </a>
 
-<div class="text-gray-500 font-semibold mt-4">Loans</div>
+</div>
+</div>
 
-<a href="{{ route('admin.loan.index') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
+<!-- LOANS -->
+
+<div x-data="{open:false}">
+<button @click="open=!open"
+class="w-full text-left px-3 py-2 rounded hover:bg-gray-200 font-semibold">
+Loan Management
+</button>
+
+<div x-show="open" class="pl-4 space-y-1">
+
+<a href="{{ route('admin.loan.index') }}" class="block py-1 hover:text-blue-600">
 Loan Management
 </a>
 
-<div class="text-gray-500 font-semibold mt-4">Employee</div>
+</div>
+</div>
 
-<a href="{{ route('attendance.index') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
+@endif
+{{-- ================= END ADMIN MENUS ================= --}}
+
+{{-- ================= EMPLOYEE MENUS ================= --}}
+
+<div x-data="{open:false}">
+<button @click="open=!open"
+class="w-full text-left px-3 py-2 rounded hover:bg-gray-200 font-semibold">
+Employee Panel
+</button>
+
+<div x-show="open" class="pl-4 space-y-1">
+
+<a href="{{ route('attendance.index') }}" class="block py-1 hover:text-blue-600">
 My Attendance
 </a>
 
-<a href="{{ route('leave.index') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
+<a href="{{ route('leave.index') }}" class="block py-1 hover:text-blue-600">
 My Leave
 </a>
 
-<a href="{{ route('salary.index') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
+<a href="{{ route('salary.index') }}" class="block py-1 hover:text-blue-600">
 My Salary
 </a>
 
-<a href="{{ route('loan.my') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
+<a href="{{ route('loan.my') }}" class="block py-1 hover:text-blue-600">
 My Loans
 </a>
 
-<a href="{{ route('profile.edit') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
+<a href="{{ route('profile.edit') }}" class="block py-1 hover:text-blue-600">
 Profile
 </a>
+
+</div>
+</div>
 
 </nav>
 
@@ -153,9 +234,9 @@ Profile
 
 <header class="bg-white shadow flex justify-between items-center px-6 py-4">
 
-<div class="flex items-center space-x-4">
+<div class="flex items-center space-x-3">
 
-<button @click="sidebar=true" class="md:hidden text-2xl">
+<button @click="sidebar=true" class="md:hidden text-xl">
 ☰ </button>
 
 <div class="font-semibold text-lg">
@@ -172,11 +253,9 @@ Profile
 
 <form method="POST" action="{{ route('logout') }}">
 @csrf
-
 <button class="bg-red-500 text-white px-3 py-1 rounded text-sm">
 Logout
 </button>
-
 </form>
 
 </div>
