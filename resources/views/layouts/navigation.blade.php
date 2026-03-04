@@ -83,6 +83,18 @@
                                 Staff Management
                             </a>
 
+                            <x-dropdown-link :href="route('shifts.index')">
+                            Shifts
+                            </x-dropdown-link>
+
+                            <x-dropdown-link :href="route('weekly.schedule')">
+                            Weekly Schedule
+                            </x-dropdown-link>
+
+                            <x-dropdown-link href="/weekly-schedules">
+                            View Weekly Schedules
+                            </x-dropdown-link>
+                            
                             <a href="{{ route('admin.attendance.index') }}"
                                class="block px-4 py-2 hover:bg-gray-100">
                                 Attendance Management
