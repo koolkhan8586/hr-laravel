@@ -138,7 +138,7 @@ Route::get('/attendance/monthly/{user}/{month}',[AttendanceController::class,'do
 
     Route::get('/attendance-dashboard', [AdminAttendanceController::class, 'dashboard'])->name('attendance.dashboard');
     Route::get('/attendance-list/{type}', [AdminAttendanceController::class,'attendanceList'])->name('attendance.list')->middleware(['auth','admin']);
-
+    Route::get('/live-attendance', [AdminAttendanceController::class, 'liveAttendance']);
 
     
 
