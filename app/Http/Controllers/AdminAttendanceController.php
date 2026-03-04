@@ -298,34 +298,24 @@ public function attendanceList($type)
     abort(404);
 }
 
+
 public function attendanceCalendar(Request $request)
 {
 
 $month = $request->month ?? now()->format('Y-m');
 
-$start = Carbon::parse($month.'-01')->startOfMonth();
-$end = Carbon::parse($month.'-01')->endOfMonth();
+$start = \Carbon\Carbon::parse($month.'-01')->startOfMonth();
+$end = \Carbon\Carbon::parse($month.'-01')->endOfMonth();
 
-$users = User::where('role','employee')
+$users = \App\Models\User::where('role','employee')
     ->orderBy('name')
     ->get();
 
-$attendances = Attendance::whereBetween('date',[$start,$end])
+$attendances = \App\Models\Attendance::whereBetween('date',[$start,$end])
     ->get()
     ->groupBy('user_id');
 
-return view('admin.attendance-calendar',compact(
-    'users',
-    'attendances',
-    'start',
-    'end',
-    'month'
-));
-
-}
-public function attendanceCalendar(Request $request)
-{   
-    $leaves = Leave::where('status','approved')
+$leaves = \App\Models\Leave::where('status','approved')
     ->whereDate('start_date','<=',$end)
     ->whereDate('end_date','>=',$start)
     ->get()
