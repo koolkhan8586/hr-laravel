@@ -92,6 +92,12 @@ class User extends Authenticatable
         return $this->hasOne(LeaveBalance::class);
     }
 
+
+    public function schedules()
+    {
+        return $this->hasMany(EmployeeSchedule::class);
+    }
+
     public function loans()
     {
         return $this->hasMany(Loan::class);
