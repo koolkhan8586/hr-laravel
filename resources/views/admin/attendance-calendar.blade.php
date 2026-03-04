@@ -98,12 +98,31 @@ $record = isset($attendances[$user->id])
     ? $attendances[$user->id]->where('date',$date)->first()
     : null;
 
-$leave = isset($leaves[$user->id])
-    ? $leaves[$user->id]
-        ->where('start_date','<=',$date)
-        ->where('end_date','>=',$date)
-        ->first()
-    : null;
+
+/*
+|--------------------------------------------------------------------------
+| FIXED LEAVE CHECK (handles datetime correctly)
+|--------------------------------------------------------------------------
+*/
+
+$leave = null;
+
+if(isset($leaves[$user->id])){
+
+    foreach($leaves[$user->id] as $l){
+
+        if(
+            \Carbon\Carbon::parse($l->start_date)->toDateString() <= $date &&
+            \Carbon\Carbon::parse($l->end_date)->toDateString() >= $date
+        ){
+            $leave = $l;
+            break;
+        }
+
+    }
+
+}
+
 
 $dayDate = $start->copy()->day($d);
 $isWeekend = $dayDate->isWeekend();
