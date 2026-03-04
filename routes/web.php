@@ -215,5 +215,3 @@ Route::post('/leave/bulk-allocation',[LeaveController::class, 'bulkAllocate'])->
     Route::get('/salary/{id}', [SalaryController::class,'show'])->name('salary.show');
     Route::post('/salary/import-confirm', [SalaryController::class,'confirmImport'])->name('salary.import.confirm');
 });
-
-}
