@@ -3,42 +3,42 @@
 <div class="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
 
 <a href="{{ route('admin.attendance.list','present') }}">
-<div class="bg-green-100 p-5 rounded-lg shadow text-center">
+<div class="bg-green-100 p-5 rounded-xl shadow text-center">
 <h3 class="text-lg font-semibold text-green-700">Present</h3>
 <p class="text-3xl font-bold">{{ $present }}</p>
 </div>
 </a>
 
 <a href="{{ route('admin.attendance.list','late') }}">
-<div class="bg-yellow-100 p-5 rounded-lg shadow text-center">
+<div class="bg-yellow-100 p-5 rounded-xl shadow text-center">
 <h3 class="text-lg font-semibold text-yellow-700">Late</h3>
 <p class="text-3xl font-bold">{{ $late }}</p>
 </div>
 </a>
 
 <a href="{{ route('admin.attendance.list','halfday') }}">
-<div class="bg-purple-100 p-5 rounded-lg shadow text-center">
+<div class="bg-purple-100 p-5 rounded-xl shadow p-5 text-center">
 <h3 class="text-lg font-semibold text-purple-700">Half Day</h3>
 <p class="text-3xl font-bold">{{ $halfday }}</p>
 </div>
 </a>
 
 <a href="{{ route('admin.attendance.list','leave') }}">
-<div class="bg-blue-100 p-5 rounded-lg shadow text-center">
+<div class="bg-blue-100 p-5 rounded-xl shadow text-center">
 <h3 class="text-lg font-semibold text-blue-700">Leave</h3>
 <p class="text-3xl font-bold">{{ $leave }}</p>
 </div>
 </a>
 
 <a href="{{ route('admin.attendance.list','absent') }}">
-<div class="bg-red-100 p-5 rounded-lg shadow text-center">
+<div class="bg-red-100 p-5 rounded-xl shadow text-center">
 <h3 class="text-lg font-semibold text-red-700">Absent</h3>
 <p class="text-3xl font-bold">{{ $absent }}</p>
 </div>
 </a>
 
 <a href="{{ route('admin.attendance.list','working') }}">
-<div class="bg-indigo-100 p-5 rounded-lg shadow text-center">
+<div class="bg-indigo-100 p-5 rounded-xl shadow text-center">
 <h3 class="text-lg font-semibold text-indigo-700">Working</h3>
 <p class="text-3xl font-bold">{{ $working->count() }}</p>
 </div>
