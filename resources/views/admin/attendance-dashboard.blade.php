@@ -1,35 +1,45 @@
 <x-app-layout>
-<div class="max-w-7xl mx-auto py-6 px-4">
-
-<h2 class="text-2xl font-bold mb-6">Live Attendance Dashboard</h2>
-
-<div class="grid grid-cols-4 gap-4 mb-6">
+<div class="grid grid-cols-6 gap-4 mb-6">
 
 <a href="{{ route('admin.attendance.list','present') }}">
-<div class="bg-green-100 p-6 rounded shadow text-center hover:shadow-lg cursor-pointer">
+<div class="bg-green-100 p-6 rounded shadow text-center hover:shadow-lg">
 <h3 class="text-lg font-semibold">Present</h3>
 <p class="text-3xl font-bold text-green-700">{{ $present }}</p>
 </div>
 </a>
 
 <a href="{{ route('admin.attendance.list','late') }}">
-<div class="bg-yellow-100 p-6 rounded shadow text-center hover:shadow-lg cursor-pointer">
+<div class="bg-yellow-100 p-6 rounded shadow text-center hover:shadow-lg">
 <h3 class="text-lg font-semibold">Late</h3>
 <p class="text-3xl font-bold text-yellow-700">{{ $late }}</p>
 </div>
 </a>
 
+<a href="{{ route('admin.attendance.list','halfday') }}">
+<div class="bg-purple-100 p-6 rounded shadow text-center hover:shadow-lg">
+<h3 class="text-lg font-semibold">Half Day</h3>
+<p class="text-3xl font-bold text-purple-700">{{ $halfday }}</p>
+</div>
+</a>
+
+<a href="{{ route('admin.attendance.list','leave') }}">
+<div class="bg-blue-100 p-6 rounded shadow text-center hover:shadow-lg">
+<h3 class="text-lg font-semibold">Leave</h3>
+<p class="text-3xl font-bold text-blue-700">{{ $leave }}</p>
+</div>
+</a>
+
 <a href="{{ route('admin.attendance.list','absent') }}">
-<div class="bg-red-100 p-6 rounded shadow text-center hover:shadow-lg cursor-pointer">
+<div class="bg-red-100 p-6 rounded shadow text-center hover:shadow-lg">
 <h3 class="text-lg font-semibold">Absent</h3>
 <p class="text-3xl font-bold text-red-700">{{ $absent }}</p>
 </div>
 </a>
 
 <a href="{{ route('admin.attendance.list','working') }}">
-<div class="bg-blue-100 p-6 rounded shadow text-center hover:shadow-lg cursor-pointer">
+<div class="bg-indigo-100 p-6 rounded shadow text-center hover:shadow-lg">
 <h3 class="text-lg font-semibold">Currently Working</h3>
-<p class="text-3xl font-bold text-blue-700">{{ $working->count() }}</p>
+<p class="text-3xl font-bold text-indigo-700">{{ $working->count() }}</p>
 </div>
 </a>
 
