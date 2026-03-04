@@ -13,41 +13,38 @@ class AdminAttendanceController extends Controller
 
 public function dashboard()
 {
-    $today = Carbon::today('Asia/Karachi')->toDateString();
+    $today = Carbon::today('Asia/Karachi');
 
     // Present
-    $present = Attendance::where('date',$today)
+    $present = Attendance::whereDate('created_at',$today)
         ->where('status','present')
         ->count();
 
     // Late
-    $late = Attendance::where('date',$today)
+    $late = Attendance::whereDate('created_at',$today)
         ->where('status','late')
         ->count();
 
     // Half Day
-    $halfday = Attendance::where('date',$today)
+    $halfday = Attendance::whereDate('created_at',$today)
         ->where('status','halfday')
         ->count();
 
-    // Employees on Leave
-    $leave = Leave::where('status','approved')
-        ->whereDate('start_date','<=',$today)
-        ->whereDate('end_date','>=',$today)
-        ->count();
-
-    // Currently Working
-    $working = Attendance::where('date',$today)
+    // Employees currently working
+    $working = Attendance::whereDate('created_at',$today)
         ->whereNotNull('clock_in')
         ->whereNull('clock_out')
         ->with('user')
         ->get();
 
-    // Total employees
-    $totalEmployees = User::where('role','employee')->count();
+    // Employees on leave
+    $leave = Leave::where('status','approved')
+        ->whereDate('start_date','<=',$today)
+        ->whereDate('end_date','>=',$today)
+        ->count();
 
-    // Employees who marked attendance
-    $presentUserIds = Attendance::where('date',$today)
+    // Employees who marked attendance today
+    $presentUserIds = Attendance::whereDate('created_at',$today)
         ->pluck('user_id');
 
     // Employees on leave today
@@ -56,7 +53,7 @@ public function dashboard()
         ->whereDate('end_date','>=',$today)
         ->pluck('user_id');
 
-    // Absent = employees not present and not on leave
+    // Absent employees
     $absent = User::where('role','employee')
         ->whereNotIn('id',$presentUserIds)
         ->whereNotIn('id',$leaveUserIds)
@@ -76,11 +73,11 @@ public function dashboard()
 
 public function attendanceList($type)
 {
-    $today = Carbon::today('Asia/Karachi')->toDateString();
+    $today = Carbon::today('Asia/Karachi');
 
     if ($type == 'present') {
 
-        $records = Attendance::where('date',$today)
+        $records = Attendance::whereDate('created_at',$today)
             ->where('status','present')
             ->with('user')
             ->get();
@@ -88,7 +85,7 @@ public function attendanceList($type)
 
     elseif ($type == 'late') {
 
-        $records = Attendance::where('date',$today)
+        $records = Attendance::whereDate('created_at',$today)
             ->where('status','late')
             ->with('user')
             ->get();
@@ -96,7 +93,7 @@ public function attendanceList($type)
 
     elseif ($type == 'halfday') {
 
-        $records = Attendance::where('date',$today)
+        $records = Attendance::whereDate('created_at',$today)
             ->where('status','halfday')
             ->with('user')
             ->get();
@@ -104,7 +101,7 @@ public function attendanceList($type)
 
     elseif ($type == 'working') {
 
-        $records = Attendance::where('date',$today)
+        $records = Attendance::whereDate('created_at',$today)
             ->whereNotNull('clock_in')
             ->whereNull('clock_out')
             ->with('user')
@@ -122,17 +119,14 @@ public function attendanceList($type)
 
     elseif ($type == 'absent') {
 
-        // Users who marked attendance today
-        $presentUsers = Attendance::where('date',$today)
+        $presentUsers = Attendance::whereDate('created_at',$today)
             ->pluck('user_id');
 
-        // Users on leave today
         $leaveUsers = Leave::where('status','approved')
             ->whereDate('start_date','<=',$today)
             ->whereDate('end_date','>=',$today)
             ->pluck('user_id');
 
-        // Absent employees
         $records = User::where('role','employee')
             ->whereNotIn('id',$presentUsers)
             ->whereNotIn('id',$leaveUsers)
