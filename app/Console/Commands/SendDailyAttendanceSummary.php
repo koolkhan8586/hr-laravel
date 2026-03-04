@@ -2,7 +2,13 @@
 
 namespace App\Console\Commands;
 
+namespace App\Console\Commands;
+
 use Illuminate\Console\Command;
+use App\Models\User;
+use App\Models\Attendance;
+use Illuminate\Support\Facades\Mail;
+use Carbon\Carbon;   // 👈 ADD THIS LINE
 
 class SendDailyAttendanceSummary extends Command
 {
