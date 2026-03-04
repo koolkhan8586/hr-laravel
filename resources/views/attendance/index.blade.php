@@ -13,19 +13,37 @@
 
    
 
-    <div class="mb-6">
-        @if(!$active)
-        <button onclick="clockIn()" class="bg-green-600 text-white px-4 py-2 rounded mr-2">
-            Clock In
-        </button>
-        @endif
+    @php
+$today = \Carbon\Carbon::today('Asia/Karachi')->toDateString();
 
-        @if($active)
-        <button onclick="clockOut()" class="bg-red-600 text-white px-4 py-2 rounded">
-            Clock Out
-        </button>
-        @endif
-    </div>
+$todayAttendance = \App\Models\Attendance::where('user_id', auth()->id())
+    ->where('date', $today)
+    ->first();
+@endphp
+
+<div class="mb-6">
+
+@if(!$todayAttendance || !$todayAttendance->clock_in)
+
+<button onclick="clockIn()" class="bg-green-600 text-white px-4 py-2 rounded mr-2">
+    Clock In
+</button>
+
+@elseif($todayAttendance && !$todayAttendance->clock_out)
+
+<button onclick="clockOut()" class="bg-red-600 text-white px-4 py-2 rounded">
+    Clock Out
+</button>
+
+@else
+
+<button disabled class="bg-gray-400 text-white px-4 py-2 rounded cursor-not-allowed">
+    Completed
+</button>
+
+@endif
+
+</div>
 
     <table class="w-full border">
         <thead class="bg-gray-200">
