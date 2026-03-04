@@ -64,44 +64,86 @@ Mark Attendance
 <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">
 
 <a href="{{ route('admin.attendance.list','present') }}">
-<div class="bg-green-100 p-6 rounded-xl text-center shadow hover:shadow-lg transition">
-<div class="text-green-700 font-semibold">Present</div>
-<div class="text-3xl font-bold text-green-800 mt-2">{{ $present }}</div>
+<div class="bg-gradient-to-r from-green-100 to-green-200 p-6 rounded-xl shadow hover:shadow-lg transition">
+<div class="flex items-center justify-between">
+<div>
+<p class="text-green-700 font-semibold">Present</p>
+<p class="text-3xl font-bold text-green-800">{{ $present }}</p>
+</div>
+<div class="text-green-600 text-3xl">
+✔
+</div>
+</div>
 </div>
 </a>
 
 <a href="{{ route('admin.attendance.list','late') }}">
-<div class="bg-yellow-100 p-6 rounded-xl text-center shadow hover:shadow-lg transition">
-<div class="text-yellow-700 font-semibold">Late</div>
-<div class="text-3xl font-bold text-yellow-800 mt-2">{{ $late }}</div>
+<div class="bg-gradient-to-r from-yellow-100 to-yellow-200 p-6 rounded-xl shadow hover:shadow-lg transition">
+<div class="flex items-center justify-between">
+<div>
+<p class="text-yellow-700 font-semibold">Late</p>
+<p class="text-3xl font-bold text-yellow-800">{{ $late }}</p>
+</div>
+<div class="text-yellow-600 text-3xl">
+⏰
+</div>
+</div>
 </div>
 </a>
 
 <a href="{{ route('admin.attendance.list','halfday') }}">
-<div class="bg-purple-100 p-6 rounded-xl text-center shadow hover:shadow-lg transition">
-<div class="text-purple-700 font-semibold">Half Day</div>
-<div class="text-3xl font-bold text-purple-800 mt-2">{{ $halfday }}</div>
+<div class="bg-gradient-to-r from-purple-100 to-purple-200 p-6 rounded-xl shadow hover:shadow-lg transition">
+<div class="flex items-center justify-between">
+<div>
+<p class="text-purple-700 font-semibold">Half Day</p>
+<p class="text-3xl font-bold text-purple-800">{{ $halfday }}</p>
+</div>
+<div class="text-purple-600 text-3xl">
+🕒
+</div>
+</div>
 </div>
 </a>
 
 <a href="{{ route('admin.attendance.list','leave') }}">
-<div class="bg-blue-100 p-6 rounded-xl text-center shadow hover:shadow-lg transition">
-<div class="text-blue-700 font-semibold">Leave</div>
-<div class="text-3xl font-bold text-blue-800 mt-2">{{ $leave }}</div>
+<div class="bg-gradient-to-r from-blue-100 to-blue-200 p-6 rounded-xl shadow hover:shadow-lg transition">
+<div class="flex items-center justify-between">
+<div>
+<p class="text-blue-700 font-semibold">Leave</p>
+<p class="text-3xl font-bold text-blue-800">{{ $leave }}</p>
+</div>
+<div class="text-blue-600 text-3xl">
+🌴
+</div>
+</div>
 </div>
 </a>
 
 <a href="{{ route('admin.attendance.list','absent') }}">
-<div class="bg-red-100 p-6 rounded-xl text-center shadow hover:shadow-lg transition">
-<div class="text-red-700 font-semibold">Absent</div>
-<div class="text-3xl font-bold text-red-800 mt-2">{{ $absent }}</div>
+<div class="bg-gradient-to-r from-red-100 to-red-200 p-6 rounded-xl shadow hover:shadow-lg transition">
+<div class="flex items-center justify-between">
+<div>
+<p class="text-red-700 font-semibold">Absent</p>
+<p class="text-3xl font-bold text-red-800">{{ $absent }}</p>
+</div>
+<div class="text-red-600 text-3xl">
+✖
+</div>
+</div>
 </div>
 </a>
 
 <a href="{{ route('admin.attendance.list','working') }}">
-<div class="bg-pink-100 p-6 rounded-xl text-center shadow hover:shadow-lg transition">
-<div class="text-pink-700 font-semibold">Working</div>
-<p class="text-3xl font-bold text-pink-800 mt-2">{{ $working->count() }}</p>
+<div class="bg-gradient-to-r from-pink-100 to-pink-200 p-6 rounded-xl shadow hover:shadow-lg transition">
+<div class="flex items-center justify-between">
+<div>
+<p class="text-pink-700 font-semibold">Working</p>
+<p class="text-3xl font-bold text-pink-800">{{ $working->count() }}</p>
+</div>
+<div class="text-pink-600 text-3xl">
+💼
+</div>
+</div>
 </div>
 </a>
 
