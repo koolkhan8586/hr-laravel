@@ -14,21 +14,21 @@ class Kernel extends ConsoleKernel
     {
         // Auto Absent Detection (11:45 AM)
         $schedule->command('attendance:mark-absent')
-                 ->dailyAt('11:45')
-                 ->timezone('Asia/Karachi')
-                 ->withoutOverlapping();
+            ->dailyAt('11:45')
+            ->timezone('Asia/Karachi')
+            ->withoutOverlapping();
 
-        // Auto Clock-out (9 PM)
+        // Auto Clock-out (8:30 PM)
         $schedule->command('attendance:auto-clockout')
-                 ->dailyAt('20:30')
-                 ->timezone('Asia/Karachi')
-                 ->withoutOverlapping();
+            ->dailyAt('20:30')
+            ->timezone('Asia/Karachi')
+            ->withoutOverlapping();
 
         // Daily Summary Email (9 PM)
         $schedule->command('send:daily-attendance-summary')
-                 ->everyMinute()
-                 ->timezone('Asia/Karachi')
-                 ->withoutOverlapping();
+            ->dailyAt('21:00')
+            ->timezone('Asia/Karachi')
+            ->withoutOverlapping();
     }
 
     /**
