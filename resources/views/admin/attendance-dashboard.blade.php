@@ -59,6 +59,19 @@ Mark Attendance
 </div>
 
 
+    <form method="GET" class="mb-6 flex items-center gap-3">
+
+<input type="date"
+       name="date"
+       value="{{ request('date', now()->toDateString()) }}"
+       class="border rounded-lg p-2">
+
+<button class="bg-blue-600 text-white px-4 py-2 rounded-lg">
+View
+</button>
+
+</form>
+
 <!-- Dashboard Cards -->
 
 <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">
