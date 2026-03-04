@@ -25,7 +25,7 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping();
 
         // Daily Summary Email (9 PM)
-        $schedule->command('send:daily-attendance-summary')
+        $schedule->command('app:send-daily-attendance-summary')
             ->everyMinute()
             ->timezone('Asia/Karachi')
             ->withoutOverlapping();
