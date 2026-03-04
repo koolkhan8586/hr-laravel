@@ -21,30 +21,34 @@
 
 <body class="font-sans antialiased bg-gray-100">
 
-<div x-data="{ sidebarOpen:false }" class="flex min-h-screen">
+<div x-data="{ sidebarOpen:false }" class="min-h-screen flex">
 
 
 
 
 <!-- SIDEBAR -->
+<!-- MOBILE OVERLAY -->
+<div 
+x-show="sidebarOpen" 
+class="fixed inset-0 bg-black bg-opacity-40 z-30 md:hidden"
+@click="sidebarOpen=false">
+</div>
+
+
+<!-- SIDEBAR -->
 <aside
 :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
-class="fixed md:relative z-40 md:translate-x-0 transform transition-transform duration-200 w-64 bg-white shadow-lg min-h-screen">
+class="fixed md:relative z-40 transform md:translate-x-0 transition-transform duration-200 w-72 bg-white shadow-lg min-h-screen">
 
 <div class="p-6 text-lg font-bold border-b">
 LSAF HR
 </div>
 
-
-<nav class="p-4 space-y-2 text-sm">
+<nav class="p-4 space-y-2 text-sm overflow-y-auto max-h-screen">
 
 <a href="{{ route('dashboard') }}" class="block px-3 py-2 rounded hover:bg-gray-200">
 Dashboard
 </a>
-
-
-
-<!-- STAFF MANAGEMENT -->
 
 <div class="font-semibold text-gray-500 mt-4">Staff Management</div>
 
@@ -52,10 +56,6 @@ Dashboard
 Staff Management
 </a>
 
-
-
-
-<!-- ATTENDANCE -->
 
 <div class="font-semibold text-gray-500 mt-4">Attendance Management</div>
 
@@ -71,10 +71,6 @@ Attendance Calendar
 Attendance Management
 </a>
 
-
-
-
-<!-- SCHEDULE -->
 
 <div class="font-semibold text-gray-500 mt-4">Schedule Management</div>
 
@@ -99,10 +95,6 @@ Schedule Grid Editor
 </a>
 
 
-
-
-<!-- LEAVE -->
-
 <div class="font-semibold text-gray-500 mt-4">Leave Management</div>
 
 <a href="{{ route('admin.leave.index') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
@@ -122,10 +114,6 @@ Leave Transactions
 </a>
 
 
-
-
-<!-- SALARY -->
-
 <div class="font-semibold text-gray-500 mt-4">Salary Management</div>
 
 <a href="{{ route('admin.salary.index') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
@@ -133,20 +121,12 @@ Salary Management
 </a>
 
 
-
-
-<!-- LOAN -->
-
 <div class="font-semibold text-gray-500 mt-4">Loan Management</div>
 
 <a href="{{ route('admin.loan.index') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
 Loan Management
 </a>
 
-
-
-
-<!-- EMPLOYEE -->
 
 <div class="font-semibold text-gray-500 mt-4">Employee</div>
 
@@ -173,7 +153,6 @@ Profile
 </nav>
 
 </aside>
-
 
 
 
