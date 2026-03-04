@@ -8,6 +8,8 @@ use App\Http\Controllers\LoanController;
 use App\Http\Controllers\LeaveController;
 use App\Http\Controllers\SalaryController;
 use App\Http\Controllers\AdminAttendanceController;
+use \App\Http\Controllers\ShiftController;
+
 
 /*
 |--------------------------------------------------------------------------
