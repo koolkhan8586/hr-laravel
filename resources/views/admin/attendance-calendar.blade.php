@@ -33,6 +33,9 @@ Print / Export
 <span class="text-purple-600 font-bold">🕒 Half Day</span>
 
 <span class="text-blue-600 font-bold">🌴 Leave</span>
+<span class="text-blue-600 font-bold">🌅 Morning Leave</span>
+
+<span class="text-blue-600 font-bold">🌇 Afternoon Leave</span>
 
 <span class="text-red-600 font-bold">✖ Absent</span>
 
@@ -141,8 +144,26 @@ $today = now()->toDateString();
 {{-- Leave priority --}}
 @elseif($leave)
 
-<span class="text-blue-600 font-bold"
-title="Leave">🌴</span>
+@if($leave->duration_type == 'half_day')
+
+    @if($leave->half_day_type == 'morning')
+
+        <span class="text-blue-600 font-bold"
+        title="Half Day Leave (Morning)">🌅</span>
+
+    @elseif($leave->half_day_type == 'afternoon')
+
+        <span class="text-blue-600 font-bold"
+        title="Half Day Leave (Afternoon)">🌇</span>
+
+    @endif
+
+@else
+
+    <span class="text-blue-600 font-bold"
+    title="Full Day Leave">🌴</span>
+
+@endif
 
 {{-- Attendance --}}
 @elseif($record)
