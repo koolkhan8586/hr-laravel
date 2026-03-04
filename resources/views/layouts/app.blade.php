@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 
 <head>
@@ -18,46 +19,41 @@
 
 </head>
 
-
 <body class="font-sans antialiased bg-gray-100">
 
-<div x-data="{ sidebarOpen:false }" class="min-h-screen flex">
+<div x-data="{ sidebar:false }" class="flex min-h-screen">
 
-
-
-
-<!-- SIDEBAR -->
 <!-- MOBILE OVERLAY -->
+
 <div 
-x-show="sidebarOpen" 
+x-show="sidebar" 
 class="fixed inset-0 bg-black bg-opacity-40 z-30 md:hidden"
-@click="sidebarOpen=false">
+@click="sidebar=false">
 </div>
 
-
 <!-- SIDEBAR -->
-<aside
-:class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
-class="fixed md:relative z-40 transform md:translate-x-0 transition-transform duration-200 w-72 bg-white shadow-lg min-h-screen">
 
-<div class="p-6 text-lg font-bold border-b">
+<aside 
+:class="sidebar ? 'translate-x-0' : '-translate-x-full'"
+class="fixed md:relative z-40 transform transition-transform duration-200 md:translate-x-0 w-64 bg-white shadow-lg min-h-screen">
+
+<div class="p-6 font-bold text-lg border-b">
 LSAF HR
 </div>
 
-<nav class="p-4 space-y-2 text-sm overflow-y-auto max-h-screen">
+<nav class="p-4 space-y-2 text-sm">
 
 <a href="{{ route('dashboard') }}" class="block px-3 py-2 rounded hover:bg-gray-200">
 Dashboard
 </a>
 
-<div class="font-semibold text-gray-500 mt-4">Staff Management</div>
+<div class="text-gray-500 font-semibold mt-4">Staff Management</div>
 
 <a href="{{ route('admin.staff.index') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
 Staff Management
 </a>
 
-
-<div class="font-semibold text-gray-500 mt-4">Attendance Management</div>
+<div class="text-gray-500 font-semibold mt-4">Attendance</div>
 
 <a href="{{ route('admin.attendance.dashboard') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
 Attendance Dashboard
@@ -71,8 +67,7 @@ Attendance Calendar
 Attendance Management
 </a>
 
-
-<div class="font-semibold text-gray-500 mt-4">Schedule Management</div>
+<div class="text-gray-500 font-semibold mt-4">Schedule</div>
 
 <a href="{{ route('shifts.index') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
 Shifts
@@ -94,8 +89,7 @@ Schedule Calendar
 Schedule Grid Editor
 </a>
 
-
-<div class="font-semibold text-gray-500 mt-4">Leave Management</div>
+<div class="text-gray-500 font-semibold mt-4">Leave</div>
 
 <a href="{{ route('admin.leave.index') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
 Manage Leaves
@@ -113,22 +107,19 @@ Leave Allocation
 Leave Transactions
 </a>
 
-
-<div class="font-semibold text-gray-500 mt-4">Salary Management</div>
+<div class="text-gray-500 font-semibold mt-4">Salary</div>
 
 <a href="{{ route('admin.salary.index') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
 Salary Management
 </a>
 
-
-<div class="font-semibold text-gray-500 mt-4">Loan Management</div>
+<div class="text-gray-500 font-semibold mt-4">Loans</div>
 
 <a href="{{ route('admin.loan.index') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
 Loan Management
 </a>
 
-
-<div class="font-semibold text-gray-500 mt-4">Employee</div>
+<div class="text-gray-500 font-semibold mt-4">Employee</div>
 
 <a href="{{ route('attendance.index') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
 My Attendance
@@ -154,30 +145,24 @@ Profile
 
 </aside>
 
-
-
 <!-- MAIN CONTENT -->
+
 <div class="flex-1 flex flex-col w-full">
 
-
-
 <!-- HEADER -->
+
 <header class="bg-white shadow flex justify-between items-center px-6 py-4">
 
 <div class="flex items-center space-x-4">
 
-<!-- MOBILE MENU BUTTON -->
-
-<button @click="sidebarOpen=true" class="md:hidden text-xl mr-3">
-☰
-</button>
+<button @click="sidebar=true" class="md:hidden text-2xl">
+☰ </button>
 
 <div class="font-semibold text-lg">
 {{ $header ?? '' }}
 </div>
 
 </div>
-
 
 <div class="flex items-center space-x-4">
 
@@ -198,18 +183,11 @@ Logout
 
 </header>
 
-
-
-
-<!-- PAGE CONTENT -->
 <main class="flex-1 p-6">
-
 {{ $slot }}
-
 </main>
 
 </div>
-
 
 </div>
 
