@@ -43,4 +43,43 @@ class AdminAttendanceController extends Controller
         'working'
     ));
 }
+
+    public function attendanceList($type)
+{
+    $today = \Carbon\Carbon::today('Asia/Karachi');
+
+    if ($type == 'present') {
+        $records = \App\Models\Attendance::whereDate('created_at',$today)
+            ->where('status','present')
+            ->with('user')
+            ->get();
+    }
+
+    elseif ($type == 'late') {
+        $records = \App\Models\Attendance::whereDate('created_at',$today)
+            ->where('status','late')
+            ->with('user')
+            ->get();
+    }
+
+    elseif ($type == 'working') {
+        $records = \App\Models\Attendance::whereDate('created_at',$today)
+            ->whereNotNull('clock_in')
+            ->whereNull('clock_out')
+            ->with('user')
+            ->get();
+    }
+
+    elseif ($type == 'absent') {
+
+        $presentUsers = \App\Models\Attendance::whereDate('created_at',$today)
+            ->pluck('user_id');
+
+        $records = \App\Models\User::whereNotIn('id',$presentUsers)
+            ->where('role','employee')
+            ->get();
+    }
+
+    return view('admin.attendance-list',compact('records','type'));
+}
 }
