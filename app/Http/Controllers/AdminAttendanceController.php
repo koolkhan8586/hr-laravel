@@ -85,7 +85,18 @@ return view('admin.attendance-dashboard', compact(
 ));
 }
 
+public function liveAttendance()
+{
+    $today = \Carbon\Carbon::today('Asia/Karachi');
 
+    $working = \App\Models\Attendance::whereDate('date',$today)
+        ->whereNotNull('clock_in')
+        ->whereNull('clock_out')
+        ->with('user')
+        ->get();
+
+    return view('admin.partials.live-attendance-table', compact('working'));
+}
 
 public function attendanceList($type)
 {
