@@ -57,12 +57,12 @@ class AttendanceController extends Controller
         ], 400);
     }
 
-    // Check if attendance already exists today
+    // Check if attendance already exists today (PROPER CHECK)
     $attendance = Attendance::where('user_id', auth()->id())
-        ->whereDate('created_at', $today)
+        ->whereDate('date', $today)
         ->first();
 
-    // 🔥 CASE 1: If marked absent earlier → convert to late
+    // 🔥 If marked absent earlier → convert to late
     if ($attendance && $attendance->status === 'absent') {
 
         $attendance->clock_in = $now;
@@ -78,19 +78,20 @@ class AttendanceController extends Controller
     }
 
     // ❌ Prevent double clock-in
-    if ($attendance && $attendance->clock_in) {
+    if ($attendance) {
         return response()->json([
             'success' => false,
             'message' => 'You have already clocked in today.'
         ], 400);
     }
 
-    // Normal clock-in logic
+    // Determine status
     $lateAfter = Carbon::createFromTime(9, 45, 0, 'Asia/Karachi');
     $status = $now->gt($lateAfter) ? 'late' : 'present';
 
-    $attendance = Attendance::create([
+    Attendance::create([
         'user_id' => auth()->id(),
+        'date' => $today, // IMPORTANT
         'clock_in' => $now,
         'clock_in_latitude'  => $request->latitude,
         'clock_in_longitude' => $request->longitude,
