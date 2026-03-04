@@ -213,7 +213,7 @@ public function liveAttendance()
 
 public function attendanceList($type)
 {
-    $today = Carbon::today('Asia/Karachi')->toDateString();
+    $today = request('date', Carbon::today('Asia/Karachi')->toDateString());
 
 /*
 |--------------------------------------------------------------------------
