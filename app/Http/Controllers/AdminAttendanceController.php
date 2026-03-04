@@ -85,6 +85,62 @@ return view('admin.attendance-dashboard', compact(
 ));
 }
 
+public function manualMarkAttendance(Request $request)
+{
+    $request->validate([
+        'user_id' => 'required|exists:users,id',
+        'date' => 'required|date',
+        'clock_in' => 'required',
+        'clock_out' => 'nullable'
+    ]);
+
+    $date = $request->date;
+
+    $clockIn = Carbon::parse($date.' '.$request->clock_in);
+    $clockOut = $request->clock_out
+        ? Carbon::parse($date.' '.$request->clock_out)
+        : null;
+
+    $status = 'present';
+
+    // Late after 9:45
+    if ($clockIn->gt(Carbon::parse($date.' 09:45:00'))) {
+        $status = 'late';
+    }
+
+    $totalHours = null;
+
+    if ($clockOut) {
+
+        $minutes = $clockIn->diffInMinutes($clockOut);
+        $hours = $minutes / 60;
+
+        $totalHours = round($hours,2);
+
+        if ($hours < 4) {
+            $status = 'half_day';
+        }
+    }
+
+    Attendance::updateOrCreate(
+
+        [
+            'user_id' => $request->user_id,
+            'date' => $date
+        ],
+
+        [
+            'clock_in' => $clockIn,
+            'clock_out' => $clockOut,
+            'status' => $status,
+            'total_hours' => $totalHours
+        ]
+
+    );
+
+    return back()->with('success','Attendance marked successfully.');
+}
+    
 public function liveAttendance()
 {
     $today = \Carbon\Carbon::today('Asia/Karachi');
