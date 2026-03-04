@@ -68,20 +68,19 @@ class AttendanceController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    if ($attendance && $attendance->status === 'absent') {
+   if ($attendance && $attendance->status === 'absent') {
 
-        $attendance->update([
-            'clock_in' => $now,
-            'clock_in_latitude' => $request->latitude,
-            'clock_in_longitude' => $request->longitude,
-            'status' => 'late'
-        ]);
+    $attendance->clock_in = $now;
+    $attendance->clock_in_latitude  = $request->latitude;
+    $attendance->clock_in_longitude = $request->longitude;
+    $attendance->status = 'late';
+    $attendance->save();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'You were marked absent earlier. Now updated to Late.'
-        ]);
-    }
+    return response()->json([
+        'success' => true,
+        'message' => 'Clock-in recorded. Status updated to Late.'
+    ]);
+}
 
     /*
     |--------------------------------------------------------------------------
