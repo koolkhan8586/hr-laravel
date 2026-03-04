@@ -47,7 +47,7 @@ class AttendanceController extends Controller
     */
     public function clockIn(Request $request)
 {
-    $now = Carbon::now('Asia/Karachi');
+    $now = \Carbon\Carbon::now('Asia/Karachi');
     $today = $now->toDateString();
 
     if (!$request->latitude || !$request->longitude) {
@@ -57,43 +57,59 @@ class AttendanceController extends Controller
         ], 400);
     }
 
-    // Check if attendance already exists today (PROPER CHECK)
     $attendance = Attendance::where('user_id', auth()->id())
         ->whereDate('date', $today)
         ->first();
 
-    // 🔥 If marked absent earlier → convert to late
+    /*
+    |--------------------------------------------------------------------------
+    | CASE 1: Employee was auto marked absent at 11:45
+    | Convert it to LATE when they clock in
+    |--------------------------------------------------------------------------
+    */
+
     if ($attendance && $attendance->status === 'absent') {
 
-        $attendance->clock_in = $now;
-        $attendance->clock_in_latitude  = $request->latitude;
-        $attendance->clock_in_longitude = $request->longitude;
-        $attendance->status = 'late';
-        $attendance->save();
+        $attendance->update([
+            'clock_in' => $now,
+            'clock_in_latitude' => $request->latitude,
+            'clock_in_longitude' => $request->longitude,
+            'status' => 'late'
+        ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'You were marked absent. Now updated to Late.'
+            'message' => 'You were marked absent earlier. Now updated to Late.'
         ]);
     }
 
-    // ❌ Prevent double clock-in
-    if ($attendance) {
+    /*
+    |--------------------------------------------------------------------------
+    | Prevent double clock-in
+    |--------------------------------------------------------------------------
+    */
+
+    if ($attendance && $attendance->clock_in) {
         return response()->json([
             'success' => false,
             'message' => 'You have already clocked in today.'
         ], 400);
     }
 
-    // Determine status
-    $lateAfter = Carbon::createFromTime(9, 45, 0, 'Asia/Karachi');
+    /*
+    |--------------------------------------------------------------------------
+    | Normal Clock In
+    |--------------------------------------------------------------------------
+    */
+
+    $lateAfter = \Carbon\Carbon::createFromTime(9, 45, 0, 'Asia/Karachi');
     $status = $now->gt($lateAfter) ? 'late' : 'present';
 
     Attendance::create([
         'user_id' => auth()->id(),
-        'date' => $today, // IMPORTANT
+        'date' => $today,
         'clock_in' => $now,
-        'clock_in_latitude'  => $request->latitude,
+        'clock_in_latitude' => $request->latitude,
         'clock_in_longitude' => $request->longitude,
         'status' => $status,
     ]);
