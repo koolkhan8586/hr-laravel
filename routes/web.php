@@ -140,6 +140,7 @@ Route::get('/attendance/monthly/{user}/{month}',[AttendanceController::class,'do
     Route::get('/attendance-list/{type}', [AdminAttendanceController::class,'attendanceList'])->name('attendance.list')->middleware(['auth','admin']);
     Route::get('/live-attendance', [AdminAttendanceController::class, 'liveAttendance']);
     Route::post('/attendance/manual-mark', [AdminAttendanceController::class,'manualMarkAttendance'])->name('attendance.manual');
+    Route::get('/attendance-calendar', [AdminAttendanceController::class,'attendanceCalendar'])->name('attendance.calendar');
 
     
 
