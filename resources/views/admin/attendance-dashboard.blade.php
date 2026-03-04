@@ -1,5 +1,40 @@
 <x-app-layout>
 
+<div class="bg-white p-6 rounded shadow mb-6">
+
+<h3 class="font-bold mb-4">Manual Attendance Entry (Admin)</h3>
+
+<form method="POST" action="{{ route('admin.attendance.manual') }}">
+@csrf
+
+<div class="grid grid-cols-5 gap-4">
+
+<select name="user_id" class="border p-2 rounded" required>
+<option value="">Select Employee</option>
+
+@foreach(\App\Models\User::where('role','employee')->get() as $emp)
+<option value="{{ $emp->id }}">
+{{ $emp->name }}
+</option>
+@endforeach
+
+</select>
+
+<input type="date" name="date" class="border p-2 rounded" required>
+
+<input type="time" name="clock_in" class="border p-2 rounded" required>
+
+<input type="time" name="clock_out" class="border p-2 rounded">
+
+<button class="bg-blue-600 text-white px-4 py-2 rounded">
+Mark Attendance
+</button>
+
+</div>
+
+</form>
+
+</div>
 <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8">
 
 <a href="{{ route('admin.attendance.list','present') }}">
