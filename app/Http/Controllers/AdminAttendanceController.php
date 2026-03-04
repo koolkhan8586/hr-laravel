@@ -57,6 +57,17 @@ $leaveUsers = \App\Models\Leave::where('status','approved')
     ->pluck('user_id');
 
 // Absent employees
+// employees who marked attendance today
+$attendanceUsers = Attendance::whereDate('created_at',$today)
+    ->pluck('user_id');
+
+// employees on leave today
+$leaveUsers = Leave::where('status','approved')
+    ->whereDate('start_date','<=',$today)
+    ->whereDate('end_date','>=',$today)
+    ->pluck('user_id');
+
+// absent employees
 $absentEmployees = User::where('role','employee')
     ->whereNotIn('id',$attendanceUsers)
     ->whereNotIn('id',$leaveUsers)
