@@ -149,28 +149,41 @@ class AttendanceController extends Controller
         ], 400);
     }
 
+    $today = Carbon::today('Asia/Karachi')->toDateString();
+
     $attendance = Attendance::where('user_id', auth()->id())
-    ->whereNull('clock_out')
-    ->orderByDesc('id')
-    ->first();
+        ->where('date', $today)
+        ->whereNull('clock_out')
+        ->latest()
+        ->first();
 
     if (!$attendance) {
         return response()->json([
-            'message' => 'No active clock-in found. Please clock in first.'
+            'message' => 'No active clock-in found for today.'
+        ], 400);
+    }
+
+    // 🚨 Prevent clock-out if user never clocked in
+    if (!$attendance->clock_in) {
+        return response()->json([
+            'message' => 'You must clock in before clocking out.'
         ], 400);
     }
 
     $now = Carbon::now('Asia/Karachi');
 
     $attendance->clock_out = $now;
-    $attendance->clock_out_latitude  = $request->latitude;
+    $attendance->clock_out_latitude = $request->latitude;
     $attendance->clock_out_longitude = $request->longitude;
 
-    $minutes = $attendance->clock_in->diffInMinutes($now);
+    // Safe Carbon calculation
+    $clockIn = Carbon::parse($attendance->clock_in);
+    $minutes = $clockIn->diffInMinutes($now);
     $hours = $minutes / 60;
 
     $attendance->total_hours = round($hours, 2);
 
+    // Status logic
     if ($hours < 4) {
         $attendance->status = 'half_day';
     } elseif ($attendance->status !== 'late') {
