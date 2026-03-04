@@ -315,12 +315,19 @@ $attendances = \App\Models\Attendance::whereBetween('date',[$start,$end])
     ->get()
     ->groupBy('user_id');
 
-$leaves = \App\Models\Leave::where('status','approved')
-    ->whereDate('start_date','<=',$end)
-    ->whereDate('end_date','>=',$start)
+$leaves = Leave::where('status','approved')
+    ->where(function($q) use ($start,$end){
+
+        $q->whereBetween('start_date',[$start,$end])
+          ->orWhereBetween('end_date',[$start,$end])
+          ->orWhere(function($q2) use ($start,$end){
+                $q2->where('start_date','<=',$start)
+                   ->where('end_date','>=',$end);
+          });
+
+    })
     ->get()
     ->groupBy('user_id');
-
 return view('admin.attendance-calendar',compact(
     'users',
     'attendances',
