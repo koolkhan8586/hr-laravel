@@ -23,6 +23,24 @@ class WeeklyScheduleController extends Controller
 
     return view('admin.weekly.index', compact('schedules'));
 }
+
+    public function edit($userId)
+{
+    $user = \App\Models\User::findOrFail($userId);
+
+    $schedules = \App\Models\WeeklySchedule::where('user_id',$userId)->get();
+
+    $shifts = \App\Models\Shift::all();
+
+    return view('admin.weekly.edit', compact('user','schedules','shifts'));
+}
+
+    public function delete($userId)
+{
+    \App\Models\WeeklySchedule::where('user_id',$userId)->delete();
+
+    return back()->with('success','Schedule deleted successfully');
+}
     
     public function store(Request $request)
     {
