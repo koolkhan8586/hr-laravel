@@ -17,6 +17,13 @@ class WeeklyScheduleController extends Controller
         return view('admin.weekly.create', compact('users','shifts'));
     }
 
+    public function index()
+{
+    $schedules = \App\Models\WeeklySchedule::with(['user','shift'])->get();
+
+    return view('admin.weekly.index', compact('schedules'));
+}
+    
     public function store(Request $request)
     {
         $days = [
