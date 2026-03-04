@@ -57,7 +57,7 @@ Attendance Dashboard
 Attendance Management
 </a>
 
-<a href="{{ route('attendance.calendar') }}">
+<a href="/attendance-calendar">
 Attendance Calendar
 </a>
 
