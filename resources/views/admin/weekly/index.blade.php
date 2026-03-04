@@ -11,6 +11,7 @@
 <th class="border p-2">Employee</th>
 <th class="border p-2">Day</th>
 <th class="border p-2">Shift</th>
+<th class="border p-2">Action</th>
 </tr>
 </thead>
 
@@ -19,11 +20,31 @@
 @foreach($schedules as $schedule)
 
 <tr>
+
 <td class="border p-2">{{ $schedule->user->name }}</td>
 <td class="border p-2">{{ $schedule->day_of_week }}</td>
+
 <td class="border p-2">
 {{ $schedule->shift->name ?? 'OFF' }}
 </td>
+
+<td class="border p-2">
+
+<a href="{{ route('weekly.edit',$schedule->user_id) }}" 
+class="text-blue-600">Edit</a>
+
+<form action="{{ route('weekly.delete',$schedule->user_id) }}" 
+method="POST" style="display:inline">
+
+@csrf
+@method('DELETE')
+
+<button class="text-red-600">Delete</button>
+
+</form>
+
+</td>
+
 </tr>
 
 @endforeach
