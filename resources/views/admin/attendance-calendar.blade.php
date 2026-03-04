@@ -61,8 +61,6 @@ $record = isset($attendances[$user->id])
 
 </tr>
 
-@endforeach
-
 </tbody>
 
 </table>
