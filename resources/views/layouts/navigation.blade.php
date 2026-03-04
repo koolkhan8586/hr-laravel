@@ -98,6 +98,10 @@
                             <x-dropdown-link :href="route('schedule.calendar')">
                             Schedule Calendar
                             </x-dropdown-link>
+
+                            <x-dropdown-link :href="route('schedule.editor')">
+                            Schedule Grid Editor
+                            </x-dropdown-link>
                             
                             <a href="{{ route('admin.attendance.index') }}"
                                class="block px-4 py-2 hover:bg-gray-100">
