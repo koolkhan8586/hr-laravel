@@ -9,29 +9,32 @@
 
 <title>{{ config('app.name', 'LSAF-HR') }}</title>
 
-<!-- Fonts -->
 <link rel="preconnect" href="https://fonts.bunny.net">
 <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
-<!-- Vite Assets -->
 @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
 </head>
 
 
-<body class="font-sans antialiased bg-gray-100" x-data="{ sidebar:false }">
+<body class="font-sans antialiased bg-gray-100">
 
-<div class="flex min-h-screen">
+<div x-data="{ sidebarOpen:false }" class="flex min-h-screen">
 
 
-<!-- Sidebar -->
-<aside 
-:class="sidebar ? 'translate-x-0' : '-translate-x-full'"
-class="fixed md:static z-40 md:translate-x-0 transform transition-transform duration-200 w-64 bg-white shadow-lg">
+
+
+<!-- SIDEBAR -->
+<aside
+:class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
+class="fixed md:relative z-40 md:translate-x-0 transform transition-transform duration-200 w-64 bg-white shadow-lg min-h-screen">
 
 <div class="p-6 text-lg font-bold border-b">
 LSAF HR
 </div>
+
 
 <nav class="p-4 space-y-2 text-sm">
 
@@ -40,137 +43,130 @@ Dashboard
 </a>
 
 
-<!-- Attendance -->
-<div x-data="{open:false}">
-<button @click="open=!open"
-class="w-full text-left px-3 py-2 rounded hover:bg-gray-200">
-Attendance
-</button>
 
-<div x-show="open" class="pl-4 space-y-1">
+<!-- STAFF MANAGEMENT -->
 
-<a href="/attendance" class="block px-3 py-1 hover:text-blue-600">
+<div class="font-semibold text-gray-500 mt-4">Staff Management</div>
+
+<a href="{{ route('admin.staff.index') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
+Staff Management
+</a>
+
+
+
+
+<!-- ATTENDANCE -->
+
+<div class="font-semibold text-gray-500 mt-4">Attendance Management</div>
+
+<a href="{{ route('admin.attendance.dashboard') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
 Attendance Dashboard
 </a>
 
-<a href="/attendance-management" class="block px-3 py-1 hover:text-blue-600">
-Attendance Management
-</a>
-
-<a href="/admin.attendance-calendar">
+<a href="{{ route('admin.attendance.calendar') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
 Attendance Calendar
 </a>
 
-</div>
-</div>
+<a href="{{ route('admin.attendance.index') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
+Attendance Management
+</a>
 
 
-<!-- Schedule -->
-<div x-data="{open:false}">
-<button @click="open=!open"
-class="w-full text-left px-3 py-2 rounded hover:bg-gray-200">
-Schedules
-</button>
 
-<div x-show="open" class="pl-4 space-y-1">
 
-<a href="/shifts" class="block px-3 py-1 hover:text-blue-600">
+<!-- SCHEDULE -->
+
+<div class="font-semibold text-gray-500 mt-4">Schedule Management</div>
+
+<a href="{{ route('shifts.index') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
 Shifts
 </a>
 
-<a href="/weekly-schedule" class="block px-3 py-1 hover:text-blue-600">
+<a href="{{ route('weekly.schedule') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
 Weekly Schedule
 </a>
 
-<a href="/weekly-schedules" class="block px-3 py-1 hover:text-blue-600">
+<a href="{{ route('weekly.schedules') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
 View Weekly Schedules
 </a>
 
-<a href="/schedule-calendar" class="block px-3 py-1 hover:text-blue-600">
+<a href="{{ route('schedule.calendar') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
 Schedule Calendar
 </a>
 
-<a href="/schedule-editor" class="block px-3 py-1 hover:text-blue-600">
+<a href="{{ route('schedule.editor') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
 Schedule Grid Editor
 </a>
 
-</div>
-</div>
 
 
-<!-- Leave -->
-<div x-data="{open:false}">
-<button @click="open=!open"
-class="w-full text-left px-3 py-2 rounded hover:bg-gray-200">
-Leave
-</button>
 
-<div x-show="open" class="pl-4 space-y-1">
+<!-- LEAVE -->
 
-<a href="/leave-management" class="block px-3 py-1 hover:text-blue-600">
+<div class="font-semibold text-gray-500 mt-4">Leave Management</div>
+
+<a href="{{ route('admin.leave.index') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
 Manage Leaves
 </a>
 
-<a href="/leave-allocation" class="block px-3 py-1 hover:text-blue-600">
-Leave Allocation
-</a>
-
-<a href="/leave-transactions" class="block px-3 py-1 hover:text-blue-600">
-Leave Transactions
-</a>
-
-<a href="/leave-calendar" class="block px-3 py-1 hover:text-blue-600">
+<a href="{{ route('admin.leave.calendar') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
 Leave Calendar
 </a>
 
-</div>
-</div>
+<a href="{{ route('admin.leave.allocation.index') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
+Leave Allocation
+</a>
+
+<a href="{{ route('admin.leave.transactions') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
+Leave Transactions
+</a>
 
 
-<!-- Salary -->
-<div x-data="{open:false}">
-<button @click="open=!open"
-class="w-full text-left px-3 py-2 rounded hover:bg-gray-200">
-Salary
-</button>
 
-<div x-show="open" class="pl-4 space-y-1">
 
-<a href="/salary-management" class="block px-3 py-1 hover:text-blue-600">
+<!-- SALARY -->
+
+<div class="font-semibold text-gray-500 mt-4">Salary Management</div>
+
+<a href="{{ route('admin.salary.index') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
 Salary Management
 </a>
 
-<a href="/salary" class="block px-3 py-1 hover:text-blue-600">
-Salary Slips
-</a>
-
-</div>
-</div>
 
 
-<!-- Loans -->
-<div x-data="{open:false}">
-<button @click="open=!open"
-class="w-full text-left px-3 py-2 rounded hover:bg-gray-200">
-Loans
-</button>
 
-<div x-show="open" class="pl-4 space-y-1">
+<!-- LOAN -->
 
-<a href="/loan-management" class="block px-3 py-1 hover:text-blue-600">
+<div class="font-semibold text-gray-500 mt-4">Loan Management</div>
+
+<a href="{{ route('admin.loan.index') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
 Loan Management
 </a>
 
-<a href="/loans" class="block px-3 py-1 hover:text-blue-600">
-Loan Requests
+
+
+
+<!-- EMPLOYEE -->
+
+<div class="font-semibold text-gray-500 mt-4">Employee</div>
+
+<a href="{{ route('attendance.index') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
+My Attendance
 </a>
 
-</div>
-</div>
+<a href="{{ route('leave.index') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
+My Leave
+</a>
 
+<a href="{{ route('salary.index') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
+My Salary
+</a>
 
-<!-- Profile -->
-<a href="/profile" class="block px-3 py-2 rounded hover:bg-gray-200">
+<a href="{{ route('loan.my') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
+My Loans
+</a>
+
+<a href="{{ route('profile.edit') }}" class="block px-3 py-2 hover:bg-gray-200 rounded">
 Profile
 </a>
 
@@ -180,17 +176,21 @@ Profile
 
 
 
-<!-- Main Content -->
-<div class="flex-1 flex flex-col md:ml-64">
+
+<!-- MAIN CONTENT -->
+<div class="flex-1 flex flex-col w-full">
 
 
-<!-- Header -->
+
+<!-- HEADER -->
 <header class="bg-white shadow flex justify-between items-center px-6 py-4">
 
-<div class="flex items-center gap-4">
+<div class="flex items-center space-x-4">
 
-<!-- Mobile Menu Button -->
-<button @click="sidebar=!sidebar" class="md:hidden text-xl">
+<!-- MOBILE MENU BUTTON -->
+
+<button @click="sidebarOpen = !sidebarOpen"
+class="md:hidden text-xl">
 ☰
 </button>
 
@@ -209,9 +209,11 @@ Profile
 
 <form method="POST" action="{{ route('logout') }}">
 @csrf
+
 <button class="bg-red-500 text-white px-3 py-1 rounded text-sm">
 Logout
 </button>
+
 </form>
 
 </div>
@@ -220,7 +222,8 @@ Logout
 
 
 
-<!-- Page Content -->
+
+<!-- PAGE CONTENT -->
 <main class="flex-1 p-6">
 
 {{ $slot }}
@@ -229,8 +232,8 @@ Logout
 
 </div>
 
-</div>
 
+</div>
 
 </body>
 </html>
