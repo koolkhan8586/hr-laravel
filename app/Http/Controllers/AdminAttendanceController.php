@@ -323,5 +323,23 @@ return view('admin.attendance-calendar',compact(
 ));
 
 }
+public function attendanceCalendar(Request $request)
+{   
+    $leaves = Leave::where('status','approved')
+    ->whereDate('start_date','<=',$end)
+    ->whereDate('end_date','>=',$start)
+    ->get()
+    ->groupBy('user_id');
 
+return view('admin.attendance-calendar',compact(
+    'users',
+    'attendances',
+    'leaves',
+    'start',
+    'end',
+    'month'
+));
+
+}
+    
 }
