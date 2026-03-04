@@ -8,7 +8,8 @@ use App\Http\Controllers\LoanController;
 use App\Http\Controllers\LeaveController;
 use App\Http\Controllers\SalaryController;
 use App\Http\Controllers\AdminAttendanceController;
-use \App\Http\Controllers\ShiftController;
+use App\Http\Controllers\ShiftController;
+use App\Http\Controllers\EmployeeScheduleController;
 
 
 /*
@@ -68,6 +69,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/salary/download/{id}', [SalaryController::class,'download'])->name('salary.download');
 
     Route::resource('shifts', \App\Http\Controllers\ShiftController::class);
+    Route::resource('schedules', \App\Http\Controllers\EmployeeScheduleController::class);
 });
 
 /*
