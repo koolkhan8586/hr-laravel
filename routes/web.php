@@ -76,6 +76,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/weekly-schedules', [App\Http\Controllers\WeeklyScheduleController::class, 'index'])->name('weekly.schedules');
     Route::get('/weekly-schedule/{user}/edit', [App\Http\Controllers\WeeklyScheduleController::class,'edit'])->name('weekly.edit');
     Route::delete('/weekly-schedule/{user}', [App\Http\Controllers\WeeklyScheduleController::class,'delete'])->name('weekly.delete');
+    Route::get('/schedule-calendar', [App\Http\Controllers\WeeklyScheduleController::class, 'calendar'])->name('schedule.calendar');
     
 });
 
