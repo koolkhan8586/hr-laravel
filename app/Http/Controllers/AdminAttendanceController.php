@@ -72,13 +72,16 @@ class AdminAttendanceController extends Controller
 
     elseif ($type == 'absent') {
 
-    $today = \Carbon\Carbon::today('Asia/Karachi');
+    $today = \Carbon\Carbon::today('Asia/Karachi')->toDateString();
 
-    $presentUsers = \App\Models\Attendance::whereDate('created_at',$today)
-        ->pluck('user_id');
+    // Users who marked attendance today
+    $presentUsers = \App\Models\Attendance::where('date', $today)
+        ->pluck('user_id')
+        ->toArray();
 
+    // Employees who did NOT mark attendance
     $records = \App\Models\User::where('role','employee')
-        ->whereNotIn('id',$presentUsers)
+        ->whereNotIn('id', $presentUsers)
         ->get();
 }
 
