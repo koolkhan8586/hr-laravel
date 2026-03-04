@@ -30,9 +30,9 @@ class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">
 
 <td class="p-2 border">
 @if($type == 'absent')
-    {{ $r->name }}
+{{ $r->name }}
 @else
-    {{ $r->user->name }}
+{{ $r->user->name }}
 @endif
 </td>
 
