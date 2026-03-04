@@ -16,16 +16,19 @@ class Kernel extends ConsoleKernel
         $schedule->command('attendance:mark-absent')
                  ->dailyAt('11:45')
                  ->timezone('Asia/Karachi');
+                 ->withoutOverlapping();
 
         // Auto Clock-out (9 PM)
         $schedule->command('attendance:auto-clockout')
-                 ->dailyAt('21:00')
+                 ->dailyAt('20:30')
                  ->timezone('Asia/Karachi');
+                 ->withoutOverlapping();
 
         // Daily Summary Email (9 PM)
         $schedule->command('send:daily-attendance-summary')
                  ->dailyAt('21:00')
                  ->timezone('Asia/Karachi');
+                 ->withoutOverlapping();
     }
 
     /**
