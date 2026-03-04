@@ -168,8 +168,7 @@ Profile
 
 <!-- MOBILE MENU BUTTON -->
 
-<button @click="sidebarOpen = !sidebarOpen"
-class="md:hidden text-xl">
+<button @click="sidebarOpen=true" class="md:hidden text-xl mr-3">
 ☰
 </button>
 
