@@ -4,8 +4,8 @@
 
 <a href="{{ route('admin.attendance.list','present') }}">
 <div class="bg-green-100 p-5 rounded-xl shadow text-center">
-<h3 class="text-lg font-semibold text-green-700">Present</h3>
-<p class="text-3xl font-bold">{{ $present }}</p>
+<div class="text-gray-600 text-sm">Present</div>
+<div class="text-3xl font-bold text-green-700">{{ $present }}</div>
 </div>
 </a>
 
