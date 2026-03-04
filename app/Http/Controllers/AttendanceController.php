@@ -380,27 +380,6 @@ if (!$attendance) {
     );
 }
 
-public function dashboard()
-{
-    $today = Carbon::today('Asia/Karachi');
-
-    $attendances = Attendance::with('user')
-        ->whereDate('created_at', $today)
-        ->get();
-
-    $working = $attendances->whereNotNull('clock_in')->whereNull('clock_out');
-    $late = $attendances->where('status', 'late');
-    $absent = User::whereDoesntHave('attendances', function ($q) use ($today) {
-        $q->whereDate('created_at', $today);
-    })->get();
-
-    return view('admin.attendance.dashboard', [
-        'working' => $working,
-        'late' => $late,
-        'absent' => $absent
-    ]);
-}
-
     /*
     |--------------------------------------------------------------------------
     | Monthly Analytics API
