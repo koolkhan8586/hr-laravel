@@ -139,7 +139,7 @@ Route::get('/attendance/monthly/{user}/{month}',
 
     Route::get('/attendance-dashboard', [AdminAttendanceController::class, 'dashboard'])
         ->name('attendance.dashboard');
-});
+
 
     
 
