@@ -20,7 +20,28 @@ $todayAttendance = \App\Models\Attendance::where('user_id', auth()->id())
     ->first();
 @endphp
 
+@if($todayShift)
 
+<div class="bg-blue-100 border border-blue-300 text-blue-800 p-4 rounded mb-4">
+<strong>Today's Shift</strong><br>
+
+{{ $todayShift->name }}<br>
+
+{{ \Carbon\Carbon::parse($todayShift->start_time)->format('H:i') }}
+-
+{{ \Carbon\Carbon::parse($todayShift->end_time)->format('H:i') }}
+
+</div>
+
+@else
+
+<div class="bg-yellow-100 border border-yellow-300 text-yellow-800 p-4 rounded mb-4">
+<strong>Today is your OFF day</strong>
+</div>
+
+@endif
+
+    
 {{-- ===============================
     TODAY ATTENDANCE CARD
 ================================ --}}
