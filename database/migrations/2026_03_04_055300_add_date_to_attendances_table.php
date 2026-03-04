@@ -6,23 +6,17 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::table('attendances', function (Blueprint $table) {
-            //
+            $table->date('date')->after('user_id');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('attendances', function (Blueprint $table) {
-            //
+            $table->dropColumn('date');
         });
     }
 };
