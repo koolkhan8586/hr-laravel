@@ -3,36 +3,39 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
 
 class Attendance extends Model
 {
     protected $fillable = [
         'user_id',
-
-        // Time fields
+        'date',
         'clock_in',
         'clock_out',
-
-        // Clock In Location
         'clock_in_latitude',
         'clock_in_longitude',
-
-        // Clock Out Location
         'clock_out_latitude',
         'clock_out_longitude',
-
-        // Other fields
-        'total_hours',
-        'status'
+        'status',
+        'total_hours'
     ];
 
-    protected $casts = [
-        'clock_in'  => 'datetime',
-        'clock_out' => 'datetime',
-    ];
+    /*
+    |--------------------------------------------------------------------------
+    | Automatically set date when clock_in is saved
+    |--------------------------------------------------------------------------
+    */
 
-    public function user()
+    protected static function boot()
     {
-        return $this->belongsTo(User::class);
+        parent::boot();
+
+        static::creating(function ($attendance) {
+
+            if (!$attendance->date && $attendance->clock_in) {
+                $attendance->date = Carbon::parse($attendance->clock_in)->toDateString();
+            }
+
+        });
     }
 }
