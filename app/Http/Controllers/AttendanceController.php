@@ -148,18 +148,19 @@ class AttendanceController extends Controller
         ], 400);
     }
 
-    $today = Carbon::today('Asia/Karachi')->toDateString();
+    $today = Carbon::today('Asia/Karachi');
 
-    $attendance = Attendance::where('user_id', auth()->id())
-        ->where('date', $today)
-        ->whereNull('clock_out')
-        ->latest()
-        ->first();
+$attendance = Attendance::where('user_id', auth()->id())
+    ->whereDate('created_at', $today)
+    ->whereNull('clock_out')
+    ->latest()
+    ->first();
 
-    if (!$attendance) {
-        return response()->json([
-            'message' => 'No active clock-in found for today.'
-        ], 400);
+if (!$attendance) {
+    return response()->json([
+        'message' => 'No active clock-in found for today.'
+    ], 400);
+}
     }
 
     // 🚨 Prevent clock-out if user never clocked in
