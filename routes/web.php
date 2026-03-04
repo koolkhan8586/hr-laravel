@@ -137,7 +137,7 @@ Route::delete('/attendance/{id}',
 Route::get('/attendance/monthly/{user}/{month}',[AttendanceController::class,'downloadMonthlyAttendance'])->name('attendance.monthly.download');
 
     Route::get('/attendance-dashboard', [AdminAttendanceController::class, 'dashboard'])->name('attendance.dashboard');
-    Route::get('/admin/attendance-list/{type}', [AdminAttendanceController::class,'attendanceList'])->name('admin.attendance.list')->middleware(['auth','admin']);
+    Route::get('/attendance-list/{type}', [AdminAttendanceController::class,'attendanceList'])->name('attendance.list')->middleware(['auth','admin']);
 
 
     
