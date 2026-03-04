@@ -19,19 +19,21 @@
 </head>
 
 
-<body class="font-sans antialiased bg-gray-100">
+<body class="font-sans antialiased bg-gray-100" x-data="{ sidebar:false }">
 
 <div class="flex min-h-screen">
 
 
 <!-- Sidebar -->
-<aside class="w-64 bg-white shadow-lg">
+<aside 
+:class="sidebar ? 'translate-x-0' : '-translate-x-full'"
+class="fixed md:static z-40 md:translate-x-0 transform transition-transform duration-200 w-64 bg-white shadow-lg">
 
 <div class="p-6 text-lg font-bold border-b">
 LSAF HR
 </div>
 
-<nav class="p-4 space-y-2">
+<nav class="p-4 space-y-2 text-sm">
 
 <a href="{{ route('dashboard') }}" class="block px-3 py-2 rounded hover:bg-gray-200">
 Dashboard
@@ -45,15 +47,17 @@ class="w-full text-left px-3 py-2 rounded hover:bg-gray-200">
 Attendance
 </button>
 
-<div x-show="open" class="pl-4">
+<div x-show="open" class="pl-4 space-y-1">
 
-<a href="/attendance"
-class="block px-3 py-1 hover:text-blue-600">
+<a href="/attendance" class="block px-3 py-1 hover:text-blue-600">
 Attendance Dashboard
 </a>
 
-<a href="/attendance-calendar"
-class="block px-3 py-1 hover:text-blue-600">
+<a href="/attendance-management" class="block px-3 py-1 hover:text-blue-600">
+Attendance Management
+</a>
+
+<a href="/attendance-calendar" class="block px-3 py-1 hover:text-blue-600">
 Attendance Calendar
 </a>
 
@@ -68,14 +72,18 @@ class="w-full text-left px-3 py-2 rounded hover:bg-gray-200">
 Schedules
 </button>
 
-<div x-show="open" class="pl-4">
+<div x-show="open" class="pl-4 space-y-1">
 
 <a href="/shifts" class="block px-3 py-1 hover:text-blue-600">
 Shifts
 </a>
 
-<a href="/weekly-schedules" class="block px-3 py-1 hover:text-blue-600">
+<a href="/weekly-schedule" class="block px-3 py-1 hover:text-blue-600">
 Weekly Schedule
+</a>
+
+<a href="/weekly-schedules" class="block px-3 py-1 hover:text-blue-600">
+View Weekly Schedules
 </a>
 
 <a href="/schedule-calendar" class="block px-3 py-1 hover:text-blue-600">
@@ -97,10 +105,18 @@ class="w-full text-left px-3 py-2 rounded hover:bg-gray-200">
 Leave
 </button>
 
-<div x-show="open" class="pl-4">
+<div x-show="open" class="pl-4 space-y-1">
 
-<a href="/leave" class="block px-3 py-1 hover:text-blue-600">
-Leave Requests
+<a href="/leave-management" class="block px-3 py-1 hover:text-blue-600">
+Manage Leaves
+</a>
+
+<a href="/leave-allocation" class="block px-3 py-1 hover:text-blue-600">
+Leave Allocation
+</a>
+
+<a href="/leave-transactions" class="block px-3 py-1 hover:text-blue-600">
+Leave Transactions
 </a>
 
 <a href="/leave-calendar" class="block px-3 py-1 hover:text-blue-600">
@@ -118,7 +134,11 @@ class="w-full text-left px-3 py-2 rounded hover:bg-gray-200">
 Salary
 </button>
 
-<div x-show="open" class="pl-4">
+<div x-show="open" class="pl-4 space-y-1">
+
+<a href="/salary-management" class="block px-3 py-1 hover:text-blue-600">
+Salary Management
+</a>
 
 <a href="/salary" class="block px-3 py-1 hover:text-blue-600">
 Salary Slips
@@ -135,7 +155,11 @@ class="w-full text-left px-3 py-2 rounded hover:bg-gray-200">
 Loans
 </button>
 
-<div x-show="open" class="pl-4">
+<div x-show="open" class="pl-4 space-y-1">
+
+<a href="/loan-management" class="block px-3 py-1 hover:text-blue-600">
+Loan Management
+</a>
 
 <a href="/loans" class="block px-3 py-1 hover:text-blue-600">
 Loan Requests
@@ -145,19 +169,34 @@ Loan Requests
 </div>
 
 
+<!-- Profile -->
+<a href="/profile" class="block px-3 py-2 rounded hover:bg-gray-200">
+Profile
+</a>
+
 </nav>
 
 </aside>
+
+
+
 <!-- Main Content -->
-<div class="flex-1 flex flex-col">
+<div class="flex-1 flex flex-col md:ml-64">
 
 
-<!-- Top Header -->
+<!-- Header -->
 <header class="bg-white shadow flex justify-between items-center px-6 py-4">
 
-<div class="font-semibold text-lg">
+<div class="flex items-center gap-4">
 
+<!-- Mobile Menu Button -->
+<button @click="sidebar=!sidebar" class="md:hidden text-xl">
+☰
+</button>
+
+<div class="font-semibold text-lg">
 {{ $header ?? '' }}
+</div>
 
 </div>
 
@@ -170,11 +209,9 @@ Loan Requests
 
 <form method="POST" action="{{ route('logout') }}">
 @csrf
-
 <button class="bg-red-500 text-white px-3 py-1 rounded text-sm">
 Logout
 </button>
-
 </form>
 
 </div>
@@ -190,9 +227,7 @@ Logout
 
 </main>
 
-
 </div>
-
 
 </div>
 
