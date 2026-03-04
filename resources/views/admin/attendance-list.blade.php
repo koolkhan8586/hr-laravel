@@ -24,45 +24,29 @@ class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">
 
 <tbody>
 
-@foreach($records as $r)
+@if($type == 'absent')
 
+@foreach($records as $user)
 <tr>
-
-<td class="p-2 border">
-@if($type == 'absent')
-{{ $r->name }}
-@else
-{{ $r->user->name }}
-@endif
-</td>
-
-<td class="p-2 border">
-@if($type == 'absent')
--
-@else
-{{ $r->clock_in ?? '-' }}
-@endif
-</td>
-
-<td class="p-2 border">
-@if($type == 'absent')
--
-@else
-{{ $r->clock_out ?? '-' }}
-@endif
-</td>
-
-<td class="p-2 border">
-@if($type == 'absent')
-<span class="text-red-600 font-semibold">Absent</span>
-@else
-{{ ucfirst($type) }}
-@endif
-</td>
-
+<td class="p-2 border">{{ $user->name }}</td>
+<td class="p-2 border">-</td>
+<td class="p-2 border">-</td>
+<td class="p-2 border text-red-600 font-semibold">Absent</td>
 </tr>
-
 @endforeach
+
+@else
+
+@foreach($records as $record)
+<tr>
+<td class="p-2 border">{{ $record->user->name }}</td>
+<td class="p-2 border">{{ $record->clock_in }}</td>
+<td class="p-2 border">{{ $record->clock_out ?? '-' }}</td>
+<td class="p-2 border">{{ ucfirst($type) }}</td>
+</tr>
+@endforeach
+
+@endif
 
 </tbody>
 
