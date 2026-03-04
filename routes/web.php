@@ -73,6 +73,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('schedules', \App\Http\Controllers\EmployeeScheduleController::class);
     Route::get('/weekly-schedule', [\App\Http\Controllers\WeeklyScheduleController::class,'create'])->name('weekly.schedule');
     Route::post('/weekly-schedule', [\App\Http\Controllers\WeeklyScheduleController::class,'store']);
+    Route::get('/weekly-schedules', [App\Http\Controllers\WeeklyScheduleController::class, 'index'])->name('weekly.schedules');
 });
 
 /*
