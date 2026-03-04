@@ -1,39 +1,39 @@
 <x-app-layout>
 
-<div class="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
+<div class="grid grid-cols-5 gap-6 mb-8">
 
 <a href="{{ route('admin.attendance.list','present') }}">
-<div class="bg-green-100 p-5 rounded-xl shadow text-center">
-<div class="text-gray-600 text-sm">Present</div>
-<div class="text-3xl font-bold text-green-700">{{ $present }}</div>
+<div class="bg-green-100 p-6 rounded-xl text-center shadow hover:shadow-lg">
+<h3 class="text-lg font-semibold text-green-700">Present</h3>
+<p class="text-3xl font-bold text-green-800">{{ $present }}</p>
 </div>
 </a>
 
 <a href="{{ route('admin.attendance.list','late') }}">
-<div class="bg-yellow-100 p-5 rounded-xl shadow text-center">
+<div class="bg-yellow-100 p-6 rounded-xl text-center shadow hover:shadow-lg">
 <h3 class="text-lg font-semibold text-yellow-700">Late</h3>
-<p class="text-3xl font-bold">{{ $late }}</p>
+<p class="text-3xl font-bold text-yellow-800">{{ $late }}</p>
 </div>
 </a>
 
 <a href="{{ route('admin.attendance.list','halfday') }}">
-<div class="bg-purple-100 p-5 rounded-xl shadow p-5 text-center">
+<div class="bg-purple-100 p-6 rounded-xl text-center shadow hover:shadow-lg">
 <h3 class="text-lg font-semibold text-purple-700">Half Day</h3>
-<p class="text-3xl font-bold">{{ $halfday }}</p>
+<p class="text-3xl font-bold text-purple-800">{{ $halfday }}</p>
 </div>
 </a>
 
 <a href="{{ route('admin.attendance.list','leave') }}">
-<div class="bg-blue-100 p-5 rounded-xl shadow text-center">
+<div class="bg-blue-100 p-6 rounded-xl text-center shadow hover:shadow-lg">
 <h3 class="text-lg font-semibold text-blue-700">Leave</h3>
-<p class="text-3xl font-bold">{{ $leave }}</p>
+<p class="text-3xl font-bold text-blue-800">{{ $leave }}</p>
 </div>
 </a>
 
 <a href="{{ route('admin.attendance.list','absent') }}">
-<div class="bg-red-100 p-5 rounded-xl shadow text-center">
+<div class="bg-red-100 p-6 rounded-xl text-center shadow hover:shadow-lg">
 <h3 class="text-lg font-semibold text-red-700">Absent</h3>
-<p class="text-3xl font-bold">{{ $absent }}</p>
+<p class="text-3xl font-bold text-red-800">{{ $absent }}</p>
 </div>
 </a>
 
@@ -79,6 +79,11 @@ $mins = $minutes % 60;
 
 </tbody>
 </table>
-
+<script>
+setInterval(function(){
+    location.reload();
+},10000);
+</script>
+    
 </div>
 </x-app-layout>
