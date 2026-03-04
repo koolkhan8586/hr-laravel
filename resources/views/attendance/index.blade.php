@@ -15,7 +15,8 @@
 $today = \Carbon\Carbon::today('Asia/Karachi')->toDateString();
 
 $todayAttendance = \App\Models\Attendance::where('user_id', auth()->id())
-    ->where('date', $today)
+    ->whereDate('created_at', $today)
+    ->latest()
     ->first();
 @endphp
 
