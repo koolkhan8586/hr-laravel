@@ -27,8 +27,8 @@ class Kernel extends ConsoleKernel
         // Daily Summary Email (9 PM)
         $schedule->command('app:send-daily-attendance-summary')
             ->everyMinute()
-            ->timezone('Asia/Karachi')
-            ->withoutOverlapping();
+            ->timezone('Asia/Karachi');
+            
     }
 
     /**
