@@ -36,8 +36,7 @@ $dayDate = $start->copy()->day($d);
 $isWeekend = $dayDate->isWeekend();
 @endphp
 
-<th class="border p-2 text-center
-{{ $isWeekend ? 'bg-red-100' : '' }}">
+<th class="border p-2 text-center {{ $isWeekend ? 'bg-red-100' : '' }}">
 
 <div class="font-semibold">
 {{ $d }}
@@ -68,20 +67,39 @@ $isWeekend = $dayDate->isWeekend();
 @for($d=1;$d<=$end->day;$d++)
 
 @php
+
 $date = $start->copy()->day($d)->toDateString();
 
 $record = isset($attendances[$user->id])
     ? $attendances[$user->id]->where('date',$date)->first()
     : null;
 
+$leave = isset($leaves[$user->id])
+    ? $leaves[$user->id]
+        ->where('start_date','<=',$date)
+        ->where('end_date','>=',$date)
+        ->first()
+    : null;
+
 $dayDate = $start->copy()->day($d);
 $isWeekend = $dayDate->isWeekend();
+
+$today = now()->toDateString();
+
 @endphp
 
-<td class="border text-center
-{{ $isWeekend ? 'bg-red-50' : '' }}">
+<td class="border text-center {{ $isWeekend ? 'bg-red-50' : '' }}">
 
-@if($record)
+@if($date > $today)
+
+<span class="text-gray-300">-</span>
+
+@elseif($leave)
+
+<span class="text-blue-600 font-bold"
+title="Leave">🌴</span>
+
+@elseif($record)
 
 @if($record->status == 'present')
 <span class="text-green-600 font-bold"
@@ -94,7 +112,6 @@ title="Late">⏰</span>
 @elseif($record->status == 'half_day')
 <span class="text-purple-600 font-bold"
 title="Half Day">🕒</span>
-
 @endif
 
 @else
