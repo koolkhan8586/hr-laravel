@@ -76,7 +76,7 @@ View
 
 <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">
 
-<a href="{{ route('admin.attendance.list','present') }}">
+<a href="{{ route('admin.attendance.list',['type'=>'present','date'=>$date]) }}">
 <div class="bg-green-100 p-6 rounded-xl shadow hover:shadow-lg transition">
 <div class="flex items-center justify-between">
 <div>
@@ -88,7 +88,7 @@ View
 </div>
 </a>
 
-<a href="{{ route('admin.attendance.list','late') }}">
+<a href="{{ route('admin.attendance.list',['type'=>'late','date'=>$date]) }}">
 <div class="bg-yellow-100 p-6 rounded-xl shadow hover:shadow-lg transition">
 <div class="flex items-center justify-between">
 <div>
@@ -100,7 +100,7 @@ View
 </div>
 </a>
 
-<a href="{{ route('admin.attendance.list','halfday') }}">
+<a href="{{ route('admin.attendance.list',['type'=>'halfday','date'=>$date]) }}">
 <div class="bg-purple-100 p-6 rounded-xl shadow hover:shadow-lg transition">
 <div class="flex items-center justify-between">
 <div>
@@ -112,7 +112,7 @@ View
 </div>
 </a>
 
-<a href="{{ route('admin.attendance.list','leave') }}">
+<a href="{{ route('admin.attendance.list',['type'=>'leave','date'=>$date]) }}">
 <div class="bg-blue-100 p-6 rounded-xl shadow hover:shadow-lg transition">
 <div class="flex items-center justify-between">
 <div>
@@ -124,7 +124,7 @@ View
 </div>
 </a>
 
-<a href="{{ route('admin.attendance.list','absent') }}">
+<a href="{{ route('admin.attendance.list',['type'=>'absent','date'=>$date]) }}">
 <div class="bg-red-100 p-6 rounded-xl shadow hover:shadow-lg transition">
 <div class="flex items-center justify-between">
 <div>
@@ -136,7 +136,7 @@ View
 </div>
 </a>
 
-<a href="{{ route('admin.attendance.list','working') }}">
+<a href="{{ route('admin.attendance.list',['type'=>'working','date'=>$date]) }}">
 <div class="bg-pink-100 p-6 rounded-xl shadow hover:shadow-lg transition">
 <div class="flex items-center justify-between">
 <div>
