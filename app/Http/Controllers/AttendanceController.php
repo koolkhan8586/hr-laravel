@@ -23,24 +23,48 @@ class AttendanceController extends Controller
     |--------------------------------------------------------------------------
     */
     public function index(Request $request)
-    {
-        $month = $request->month ?? now('Asia/Karachi')->format('Y-m');
+{
+    $month = $request->month ?? now('Asia/Karachi')->format('Y-m');
 
-        $monthCarbon = Carbon::parse($month);
+    $monthCarbon = Carbon::parse($month);
 
-        $records = Attendance::where('user_id', auth()->id())
-            ->whereMonth('clock_in', $monthCarbon->month)
-            ->whereYear('clock_in', $monthCarbon->year)
-            ->orderByDesc('clock_in')
-            ->get();
+    $records = Attendance::where('user_id', auth()->id())
+        ->whereMonth('clock_in', $monthCarbon->month)
+        ->whereYear('clock_in', $monthCarbon->year)
+        ->orderByDesc('clock_in')
+        ->get();
 
-        $active = Attendance::where('user_id', auth()->id())
-            ->whereNull('clock_out')
-            ->latest()
-            ->first();
+    $active = Attendance::where('user_id', auth()->id())
+        ->whereNull('clock_out')
+        ->latest()
+        ->first();
 
-        return view('attendance.index', compact('records','month','active'));
+    /*
+    |--------------------------------------------------------------------------
+    | Get Today's Shift
+    |--------------------------------------------------------------------------
+    */
+
+    $today = \Carbon\Carbon::now('Asia/Karachi');
+    $day = $today->format('l');
+
+    $todaySchedule = \App\Models\WeeklySchedule::where('user_id', auth()->id())
+        ->where('day_of_week', $day)
+        ->first();
+
+    $todayShift = null;
+
+    if ($todaySchedule && $todaySchedule->shift_id) {
+        $todayShift = \App\Models\Shift::find($todaySchedule->shift_id);
     }
+
+    return view('attendance.index', compact(
+        'records',
+        'month',
+        'active',
+        'todayShift'
+    ));
+}
 
     /*
     |--------------------------------------------------------------------------
