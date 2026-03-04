@@ -29,19 +29,35 @@ class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">
 <tr>
 
 <td class="p-2 border">
-{{ $r->user->name ?? $r->name }}
+@if($type == 'absent')
+    {{ $r->name }}
+@else
+    {{ $r->user->name }}
+@endif
 </td>
 
 <td class="p-2 border">
+@if($type == 'absent')
+-
+@else
 {{ $r->clock_in ?? '-' }}
+@endif
 </td>
 
 <td class="p-2 border">
+@if($type == 'absent')
+-
+@else
 {{ $r->clock_out ?? '-' }}
+@endif
 </td>
 
-<td class="p-2 border capitalize">
-{{ $type }}
+<td class="p-2 border">
+@if($type == 'absent')
+<span class="text-red-600 font-semibold">Absent</span>
+@else
+{{ ucfirst($type) }}
+@endif
 </td>
 
 </tr>
