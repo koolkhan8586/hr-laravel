@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('attendances', function (Blueprint $table) {
-            $table->date('date')->after('user_id');
+            $table->date('date')->nullable()->after('user_id');
         });
     }
 
