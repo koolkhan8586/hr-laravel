@@ -137,6 +137,10 @@ Route::get('/attendance/monthly/{user}/{month}',
     [AttendanceController::class,'downloadMonthlyAttendance'])
     ->name('attendance.monthly.download');
 
+    Route::get('/attendance-dashboard', [AdminAttendanceController::class, 'dashboard'])
+        ->name('attendance.dashboard');
+});
+
     
 
 
