@@ -19,7 +19,7 @@ Manual Attendance Entry (Admin)
 <select name="user_id" class="w-full border rounded-lg p-2 mt-1" required>
 <option value="">Select Employee</option>
 
-@foreach(\App\Models\User::where('role','employee')->get() as $emp)
+@foreach(\App\Models\User::where('role','employee')->orderBy('name','asc')->get() as $emp)
 <option value="{{ $emp->id }}">
 {{ $emp->name }}
 </option>
