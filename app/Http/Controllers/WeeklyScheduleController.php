@@ -24,6 +24,13 @@ class WeeklyScheduleController extends Controller
     return view('admin.weekly.index', compact('schedules'));
 }
 
+    public function calendar()
+{
+    $users = \App\Models\User::with(['weeklySchedules.shift'])->get();
+
+    return view('admin.weekly.calendar', compact('users'));
+}
+
     public function edit($userId)
 {
     $user = \App\Models\User::findOrFail($userId);
