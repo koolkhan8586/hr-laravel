@@ -160,7 +160,7 @@ if (!$attendance) {
     return response()->json([
         'message' => 'No active clock-in found for today.'
     ], 400);
-}
+
     }
 
     // 🚨 Prevent clock-out if user never clocked in
