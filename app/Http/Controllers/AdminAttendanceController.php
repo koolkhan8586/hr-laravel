@@ -15,72 +15,63 @@ public function dashboard()
 {
     $today = Carbon::today('Asia/Karachi');
 
-    // Present
-   $present = Attendance::whereDate('created_at',$today)
+// Present
+$present = Attendance::whereDate('created_at',$today)
     ->where('status','present')
-    ->whereHas('user', function($q){
-        $q->where('role','employee');
-    })
-    ->count();
+    ->distinct('user_id')
+    ->count('user_id');
 
-    // Late
-   $late = Attendance::whereDate('created_at',$today)
+// Late
+$late = Attendance::whereDate('created_at',$today)
     ->where('status','late')
-    ->whereHas('user', function($q){
-        $q->where('role','employee');
-    })
+    ->distinct('user_id')
+    ->count('user_id');
+
+// Half Day
+$halfday = Attendance::whereDate('created_at',$today)
+    ->where('status','half_day')
+    ->distinct('user_id')
+    ->count('user_id');
+
+// Leave
+$leave = \App\Models\Leave::where('status','approved')
+    ->whereDate('start_date','<=',$today)
+    ->whereDate('end_date','>=',$today)
     ->count();
 
-    // Half Day
-    $halfday = Attendance::whereDate('created_at',$today)
-        ->where('status','halfday')
-        ->count();
-
-    // Employees currently working
-    $working = Attendance::whereDate('created_at',$today)
+// Working
+$working = Attendance::whereDate('created_at',$today)
     ->whereNotNull('clock_in')
     ->whereNull('clock_out')
-    ->whereHas('user', function($q){
-        $q->where('role','employee');
-    })
     ->with('user')
     ->get();
 
-    // Employees on leave
-   $leaveUsers = Leave::where('status','approved')
+// Attendance users
+$attendanceUsers = Attendance::whereDate('created_at',$today)
+    ->pluck('user_id');
+
+// Leave users
+$leaveUsers = \App\Models\Leave::where('status','approved')
     ->whereDate('start_date','<=',$today)
     ->whereDate('end_date','>=',$today)
     ->pluck('user_id');
 
-    // Employees who marked attendance today
-    $attendanceUsers = Attendance::whereDate('created_at',$today)
-    ->whereHas('user', function($q){
-        $q->where('role','employee');
-    })
-    ->pluck('user_id');
-
-    // Employees on leave today
-    $leaveUserIds = Leave::where('status','approved')
-        ->whereDate('start_date','<=',$today)
-        ->whereDate('end_date','>=',$today)
-        ->pluck('user_id');
-
-    // Absent employees
-    $absentEmployees = User::where('role','employee')
+// Absent employees
+$absentEmployees = User::where('role','employee')
     ->whereNotIn('id',$attendanceUsers)
     ->whereNotIn('id',$leaveUsers)
     ->get();
 
 $absent = $absentEmployees->count();
 
-    return view('admin.attendance-dashboard', compact(
-        'present',
-        'late',
-        'halfday',
-        'leave',
-        'absent',
-        'working'
-    ));
+return view('admin.attendance-dashboard', compact(
+    'present',
+    'late',
+    'halfday',
+    'leave',
+    'absent',
+    'working'
+));
 }
 
 
