@@ -16,14 +16,20 @@ public function dashboard()
     $today = Carbon::today('Asia/Karachi');
 
     // Present
-    $present = Attendance::whereDate('created_at',$today)
-        ->where('status','present')
-        ->count();
+   $present = Attendance::whereDate('created_at',$today)
+    ->where('status','present')
+    ->whereHas('user', function($q){
+        $q->where('role','employee');
+    })
+    ->count();
 
     // Late
-    $late = Attendance::whereDate('created_at',$today)
-        ->where('status','late')
-        ->count();
+   $late = Attendance::whereDate('created_at',$today)
+    ->where('status','late')
+    ->whereHas('user', function($q){
+        $q->where('role','employee');
+    })
+    ->count();
 
     // Half Day
     $halfday = Attendance::whereDate('created_at',$today)
@@ -32,20 +38,26 @@ public function dashboard()
 
     // Employees currently working
     $working = Attendance::whereDate('created_at',$today)
-        ->whereNotNull('clock_in')
-        ->whereNull('clock_out')
-        ->with('user')
-        ->get();
+    ->whereNotNull('clock_in')
+    ->whereNull('clock_out')
+    ->whereHas('user', function($q){
+        $q->where('role','employee');
+    })
+    ->with('user')
+    ->get();
 
     // Employees on leave
-    $leave = Leave::where('status','approved')
-        ->whereDate('start_date','<=',$today)
-        ->whereDate('end_date','>=',$today)
-        ->count();
+   $leaveUsers = Leave::where('status','approved')
+    ->whereDate('start_date','<=',$today)
+    ->whereDate('end_date','>=',$today)
+    ->pluck('user_id');
 
     // Employees who marked attendance today
-    $presentUserIds = Attendance::whereDate('created_at',$today)
-        ->pluck('user_id');
+    $attendanceUsers = Attendance::whereDate('created_at',$today)
+    ->whereHas('user', function($q){
+        $q->where('role','employee');
+    })
+    ->pluck('user_id');
 
     // Employees on leave today
     $leaveUserIds = Leave::where('status','approved')
@@ -54,10 +66,12 @@ public function dashboard()
         ->pluck('user_id');
 
     // Absent employees
-    $absent = User::where('role','employee')
-        ->whereNotIn('id',$presentUserIds)
-        ->whereNotIn('id',$leaveUserIds)
-        ->count();
+    $absentEmployees = User::where('role','employee')
+    ->whereNotIn('id',$attendanceUsers)
+    ->whereNotIn('id',$leaveUsers)
+    ->get();
+
+$absent = $absentEmployees->count();
 
     return view('admin.attendance-dashboard', compact(
         'present',
