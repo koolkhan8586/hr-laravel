@@ -13,61 +13,90 @@ class AdminAttendanceController extends Controller
 
 public function dashboard()
 {
-    $today = Carbon::today('Asia/Karachi');
+    $date = request('date', now()->toDateString());
 
-// Present
-$present = Attendance::whereDate('created_at',$today)
+/*
+|--------------------------------------------------------------------------
+| Present
+|--------------------------------------------------------------------------
+*/
+
+$present = Attendance::whereDate('date',$date)
     ->where('status','present')
     ->distinct('user_id')
     ->count('user_id');
 
-// Late
-$late = Attendance::whereDate('created_at',$today)
+/*
+|--------------------------------------------------------------------------
+| Late
+|--------------------------------------------------------------------------
+*/
+
+$late = Attendance::whereDate('date',$date)
     ->where('status','late')
     ->distinct('user_id')
     ->count('user_id');
 
-// Half Day
-$halfday = Attendance::whereDate('created_at',$today)
+/*
+|--------------------------------------------------------------------------
+| Half Day
+|--------------------------------------------------------------------------
+*/
+
+$halfday = Attendance::whereDate('date',$date)
     ->where('status','half_day')
     ->distinct('user_id')
     ->count('user_id');
 
-// Leave
-$leave = \App\Models\Leave::where('status','approved')
-    ->whereDate('start_date','<=',$today)
-    ->whereDate('end_date','>=',$today)
+/*
+|--------------------------------------------------------------------------
+| Leave
+|--------------------------------------------------------------------------
+*/
+
+$leave = Leave::where('status','approved')
+    ->whereDate('start_date','<=',$date)
+    ->whereDate('end_date','>=',$date)
     ->count();
 
-// Working
-$working = Attendance::whereDate('created_at',$today)
+/*
+|--------------------------------------------------------------------------
+| Working Employees
+|--------------------------------------------------------------------------
+*/
+
+$working = Attendance::whereDate('date',$date)
     ->whereNotNull('clock_in')
     ->whereNull('clock_out')
     ->with('user')
     ->get();
 
-// Attendance users
-$attendanceUsers = Attendance::whereDate('created_at',$today)
+/*
+|--------------------------------------------------------------------------
+| Attendance Users
+|--------------------------------------------------------------------------
+*/
+
+$attendanceUsers = Attendance::whereDate('date',$date)
     ->pluck('user_id');
 
-// Leave users
-$leaveUsers = \App\Models\Leave::where('status','approved')
-    ->whereDate('start_date','<=',$today)
-    ->whereDate('end_date','>=',$today)
-    ->pluck('user_id');
+/*
+|--------------------------------------------------------------------------
+| Leave Users
+|--------------------------------------------------------------------------
+*/
 
-// Absent employees
-// employees who marked attendance today
-$attendanceUsers = Attendance::whereDate('created_at',$today)
-    ->pluck('user_id');
-
-// employees on leave today
 $leaveUsers = Leave::where('status','approved')
-    ->whereDate('start_date','<=',$today)
-    ->whereDate('end_date','>=',$today)
+    ->whereDate('start_date','<=',$date)
+    ->whereDate('end_date','>=',$date)
     ->pluck('user_id');
 
-// absent employees
+/*
+|--------------------------------------------------------------------------
+| Absent Employees
+|--------------------------------------------------------------------------
+*/
+
 $absentEmployees = User::where('role','employee')
     ->whereNotIn('id',$attendanceUsers)
     ->whereNotIn('id',$leaveUsers)
@@ -75,15 +104,29 @@ $absentEmployees = User::where('role','employee')
 
 $absent = $absentEmployees->count();
 
+/*
+|--------------------------------------------------------------------------
+| Return View
+|--------------------------------------------------------------------------
+*/
+
 return view('admin.attendance-dashboard', compact(
     'present',
     'late',
     'halfday',
     'leave',
     'absent',
-    'working'
+    'working',
+    'date'
 ));
 }
+
+
+/*
+|--------------------------------------------------------------------------
+| Manual Attendance Entry
+|--------------------------------------------------------------------------
+*/
 
 public function manualMarkAttendance(Request $request)
 {
@@ -140,12 +183,19 @@ public function manualMarkAttendance(Request $request)
 
     return back()->with('success','Attendance marked successfully.');
 }
-    
+
+
+/*
+|--------------------------------------------------------------------------
+| Live Attendance Table
+|--------------------------------------------------------------------------
+*/
+
 public function liveAttendance()
 {
-    $today = \Carbon\Carbon::today('Asia/Karachi');
+    $today = Carbon::today('Asia/Karachi');
 
-    $working = \App\Models\Attendance::whereDate('date',$today)
+    $working = Attendance::whereDate('date',$today)
         ->whereNotNull('clock_in')
         ->whereNull('clock_out')
         ->with('user')
@@ -154,15 +204,22 @@ public function liveAttendance()
     return view('admin.partials.live-attendance-table', compact('working'));
 }
 
+
+/*
+|--------------------------------------------------------------------------
+| Attendance List
+|--------------------------------------------------------------------------
+*/
+
 public function attendanceList($type)
 {
     $today = Carbon::today('Asia/Karachi')->toDateString();
 
-    /*
-    |--------------------------------------------------------------------------
-    | Leave Records
-    |--------------------------------------------------------------------------
-    */
+/*
+|--------------------------------------------------------------------------
+| Leave Records
+|--------------------------------------------------------------------------
+*/
 
     if ($type === 'leave') {
 
@@ -175,11 +232,11 @@ public function attendanceList($type)
         return view('admin.attendance-list', compact('records','type'));
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Absent Employees
-    |--------------------------------------------------------------------------
-    */
+/*
+|--------------------------------------------------------------------------
+| Absent Employees
+|--------------------------------------------------------------------------
+*/
 
     if ($type === 'absent') {
 
@@ -199,11 +256,11 @@ public function attendanceList($type)
         return view('admin.attendance-list', compact('records','type'));
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Working Employees
-    |--------------------------------------------------------------------------
-    */
+/*
+|--------------------------------------------------------------------------
+| Working Employees
+|--------------------------------------------------------------------------
+*/
 
     if ($type === 'working') {
 
@@ -216,11 +273,11 @@ public function attendanceList($type)
         return view('admin.attendance-list', compact('records','type'));
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Present / Late / Half Day
-    |--------------------------------------------------------------------------
-    */
+/*
+|--------------------------------------------------------------------------
+| Present / Late / Half Day
+|--------------------------------------------------------------------------
+*/
 
     $statusMap = [
         'present' => 'present',
