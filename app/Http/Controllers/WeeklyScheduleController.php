@@ -48,7 +48,41 @@ class WeeklyScheduleController extends Controller
 
     return back()->with('success','Schedule deleted successfully');
 }
-    
+
+    public function editor()
+{
+    $users = \App\Models\User::with(['weeklySchedules.shift'])->get();
+    $shifts = \App\Models\Shift::all();
+
+    return view('admin.weekly.editor', compact('users','shifts'));
+}
+
+  public function updateGrid(Request $request)
+{
+    $days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+    foreach($request->schedule as $userId => $daysData){
+
+        foreach($days as $day){
+
+            $shiftId = $daysData[$day] ?? null;
+
+            \App\Models\WeeklySchedule::updateOrCreate(
+                [
+                    'user_id' => $userId,
+                    'day_of_week' => $day
+                ],
+                [
+                    'shift_id' => $shiftId
+                ]
+            );
+
+        }
+
+    }
+
+    return back()->with('success','Schedule updated successfully');
+}  
     public function store(Request $request)
     {
         $days = [
