@@ -10,13 +10,22 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up()
-{
-    Schema::create('shifts', function (Blueprint $table) {
-        $table->id();
-        $table->string('name');
-        $table->time('start_time');
-        $table->time('end_time');
-        $table->integer('grace_minutes')->default(30);
-        $table->timestamps();
-    });
-}
+    {
+        Schema::create('shifts', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->time('start_time');
+            $table->time('end_time');
+            $table->integer('grace_minutes')->default(30);
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down()
+    {
+        Schema::dropIfExists('shifts');
+    }
+};
