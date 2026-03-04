@@ -33,66 +33,121 @@ LSAF HR
 
 <nav class="p-4 space-y-2">
 
-<a href="{{ route('dashboard') }}"
-class="block px-3 py-2 rounded hover:bg-gray-200">
+<a href="{{ route('dashboard') }}" class="block px-3 py-2 rounded hover:bg-gray-200">
 Dashboard
 </a>
 
 
-<a href="/attendance"
-class="block px-3 py-2 rounded hover:bg-gray-200">
+<!-- Attendance -->
+<div x-data="{open:false}">
+<button @click="open=!open"
+class="w-full text-left px-3 py-2 rounded hover:bg-gray-200">
 Attendance
+</button>
+
+<div x-show="open" class="pl-4">
+
+<a href="/attendance"
+class="block px-3 py-1 hover:text-blue-600">
+Attendance Dashboard
 </a>
 
+<a href="/attendance-calendar"
+class="block px-3 py-1 hover:text-blue-600">
+Attendance Calendar
+</a>
 
-<a href="/shifts"
-class="block px-3 py-2 rounded hover:bg-gray-200">
+</div>
+</div>
+
+
+<!-- Schedule -->
+<div x-data="{open:false}">
+<button @click="open=!open"
+class="w-full text-left px-3 py-2 rounded hover:bg-gray-200">
+Schedules
+</button>
+
+<div x-show="open" class="pl-4">
+
+<a href="/shifts" class="block px-3 py-1 hover:text-blue-600">
 Shifts
 </a>
 
-
-<a href="/weekly-schedules"
-class="block px-3 py-2 rounded hover:bg-gray-200">
+<a href="/weekly-schedules" class="block px-3 py-1 hover:text-blue-600">
 Weekly Schedule
 </a>
 
-
-<a href="/schedule-calendar"
-class="block px-3 py-2 rounded hover:bg-gray-200">
+<a href="/schedule-calendar" class="block px-3 py-1 hover:text-blue-600">
 Schedule Calendar
 </a>
 
-
-<a href="/schedule-editor"
-class="block px-3 py-2 rounded hover:bg-gray-200">
+<a href="/schedule-editor" class="block px-3 py-1 hover:text-blue-600">
 Schedule Grid Editor
 </a>
 
+</div>
+</div>
 
-<a href="/leave"
-class="block px-3 py-2 rounded hover:bg-gray-200">
+
+<!-- Leave -->
+<div x-data="{open:false}">
+<button @click="open=!open"
+class="w-full text-left px-3 py-2 rounded hover:bg-gray-200">
 Leave
+</button>
+
+<div x-show="open" class="pl-4">
+
+<a href="/leave" class="block px-3 py-1 hover:text-blue-600">
+Leave Requests
 </a>
 
+<a href="/leave-calendar" class="block px-3 py-1 hover:text-blue-600">
+Leave Calendar
+</a>
 
-<a href="/salary"
-class="block px-3 py-2 rounded hover:bg-gray-200">
+</div>
+</div>
+
+
+<!-- Salary -->
+<div x-data="{open:false}">
+<button @click="open=!open"
+class="w-full text-left px-3 py-2 rounded hover:bg-gray-200">
 Salary
+</button>
+
+<div x-show="open" class="pl-4">
+
+<a href="/salary" class="block px-3 py-1 hover:text-blue-600">
+Salary Slips
 </a>
 
+</div>
+</div>
 
-<a href="/loans"
-class="block px-3 py-2 rounded hover:bg-gray-200">
+
+<!-- Loans -->
+<div x-data="{open:false}">
+<button @click="open=!open"
+class="w-full text-left px-3 py-2 rounded hover:bg-gray-200">
 Loans
+</button>
+
+<div x-show="open" class="pl-4">
+
+<a href="/loans" class="block px-3 py-1 hover:text-blue-600">
+Loan Requests
 </a>
+
+</div>
+</div>
 
 
 </nav>
 
 </aside>
-
-
-
 <!-- Main Content -->
 <div class="flex-1 flex flex-col">
 
