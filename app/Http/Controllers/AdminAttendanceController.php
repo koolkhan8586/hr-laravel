@@ -72,13 +72,15 @@ class AdminAttendanceController extends Controller
 
     elseif ($type == 'absent') {
 
-        $presentUsers = \App\Models\Attendance::whereDate('created_at',$today)
-            ->pluck('user_id');
+    $today = \Carbon\Carbon::today('Asia/Karachi');
 
-        $records = \App\Models\User::whereNotIn('id',$presentUsers)
-            ->where('role','employee')
-            ->get();
-    }
+    $presentUsers = \App\Models\Attendance::whereDate('created_at',$today)
+        ->pluck('user_id');
+
+    $records = \App\Models\User::where('role','employee')
+        ->whereNotIn('id',$presentUsers)
+        ->get();
+}
 
     return view('admin.attendance-list',compact('records','type'));
 }
