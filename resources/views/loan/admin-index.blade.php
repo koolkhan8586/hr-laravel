@@ -40,7 +40,7 @@
 
 
     {{-- Loan Table --}}
-    <div class="bg-white shadow rounded overflow-hidden">
+    <div class="bg-white shadow rounded overflow-x-auto">
 
         <table class="w-full text-sm">
             <thead class="bg-gray-100">
@@ -57,37 +57,52 @@
 
             <tbody>
                 @forelse($loans as $loan)
+
                     <tr class="border-t hover:bg-gray-50">
 
+                        {{-- Employee --}}
                         <td class="p-3">
-                            {{ $loan->user->name ?? 'N/A' }}
+                            {{ optional($loan->user)->name ?? 'Employee Deleted' }}
                         </td>
 
+                        {{-- Loan Amount --}}
                         <td class="p-3">
-                            {{ number_format($loan->amount,2) }}
+                            Rs {{ number_format($loan->amount,2) }}
                         </td>
 
+                        {{-- Installments --}}
                         <td class="p-3">
                             {{ $loan->installments }}
                         </td>
 
+                        {{-- Monthly Deduction --}}
                         <td class="p-3">
-                            {{ number_format($loan->monthly_deduction,2) }}
+                            Rs {{ number_format($loan->monthly_deduction,2) }}
                         </td>
 
-                        <td class="p-3">
-                            {{ number_format($loan->remaining_balance,2) }}
+                        {{-- Remaining Balance --}}
+                        <td class="p-3 font-semibold">
+                            Rs {{ number_format($loan->remaining_balance,2) }}
                         </td>
 
+                        {{-- Status --}}
                         <td class="p-3">
-                            <span class="px-2 py-1 rounded text-xs
-                                {{ $loan->status == 'approved'
-                                    ? 'bg-green-100 text-green-700'
-                                    : 'bg-yellow-100 text-yellow-700' }}">
-                                {{ ucfirst($loan->status) }}
-                            </span>
+                            @if($loan->status == 'approved')
+                                <span class="px-2 py-1 rounded text-xs bg-green-100 text-green-700">
+                                    Approved
+                                </span>
+                            @elseif($loan->status == 'rejected')
+                                <span class="px-2 py-1 rounded text-xs bg-red-100 text-red-700">
+                                    Rejected
+                                </span>
+                            @else
+                                <span class="px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-700">
+                                    Pending
+                                </span>
+                            @endif
                         </td>
 
+                        {{-- Actions --}}
                         <td class="p-3 space-x-2">
 
                             {{-- Edit --}}
@@ -96,11 +111,11 @@
                                 Edit
                             </a>
 
+                            {{-- Ledger --}}
                             <a href="{{ route('admin.loan.ledger',$loan->id) }}"
-       class="text-blue-600 font-semibold">
-       Ledger
-    </a>
-
+                               class="text-indigo-600 hover:underline font-semibold">
+                                Ledger
+                            </a>
 
                             {{-- Delete --}}
                             <form action="{{ route('admin.loan.delete', $loan->id) }}"
@@ -109,6 +124,7 @@
                                   onsubmit="return confirm('Delete this loan?')">
                                 @csrf
                                 @method('DELETE')
+
                                 <button class="text-red-600 hover:underline">
                                     Delete
                                 </button>
@@ -117,6 +133,7 @@
                         </td>
 
                     </tr>
+
                 @empty
                     <tr>
                         <td colspan="7" class="text-center p-6 text-gray-500">
