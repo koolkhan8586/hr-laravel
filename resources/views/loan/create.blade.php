@@ -3,7 +3,7 @@
 
 <h2 class="text-2xl font-bold mb-4">Add Loan Opening Balance</h2>
 
-<form method="POST" action="{{ route('admin.loans.store') }}">
+<form method="POST" action="{{ route('admin.loan.store') }}">
 @csrf
 
 <div class="mb-3">
