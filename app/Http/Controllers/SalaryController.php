@@ -118,53 +118,41 @@ public function employeeIndex()
         + ($request->increment ?? 0)
         + ($request->other_earnings ?? 0);
 
- // ==========================
-// LOAN AUTO DEDUCTION
-// ==========================
+    // ==========================
+    // FIND ACTIVE LOAN
+    // ==========================
+    $loanDeduction = 0;
 
-$loan = \App\Models\Loan::where('user_id', $salary->user_id)
-            ->where('status', 'approved')
-            ->where('remaining_balance', '>', 0)
-            ->first();
+    $loan = Loan::where('user_id', $request->user_id)
+        ->where('status', 'approved')
+        ->where('remaining_balance', '>', 0)
+        ->first();
 
-if ($loan) {
+    if ($loan) {
+        $loanDeduction = $loan->monthly_deduction;
 
-    $deduction = $loan->monthly_deduction;
-
-    // Prevent over deduction
-    if ($loan->remaining_balance < $deduction) {
-        $deduction = $loan->remaining_balance;
+        // prevent over deduction
+        if ($loan->remaining_balance < $loanDeduction) {
+            $loanDeduction = $loan->remaining_balance;
+        }
     }
 
-    // Update remaining balance
-    $loan->remaining_balance = $loan->remaining_balance - $deduction;
-    $loan->save();
+    // ==========================
+    // TOTAL DEDUCTIONS
+    // ==========================
+    $totalDeductions =
+        ($request->income_tax ?? 0)
+        + ($request->insurance ?? 0)
+        + ($request->extra_leaves ?? 0)
+        + ($request->other_deductions ?? 0)
+        + $loanDeduction;
 
-    // Insert ledger entry
-    \App\Models\LoanLedger::create([
-        'loan_id' => $loan->id,
-        'amount' => $deduction,
-        'type' => 'deduction',
-        'remarks' => 'Salary deduction for ' . $salary->month . '/' . $salary->year
-    ]);
-}
+    $netSalary = $totalEarnings - $totalDeductions;
 
-
-// ==========================
-// TOTAL DEDUCTIONS
-// ==========================
-$totalDeductions =
-    ($request->income_tax ?? 0)
-    + ($request->insurance ?? 0)
-    + ($request->extra_leaves ?? 0)
-    + ($request->other_deductions ?? 0)
-    + $loanDeduction;
-
-$netSalary = $totalEarnings - $totalDeductions;
     // ==========================
     // CREATE SALARY
     // ==========================
-    $salary = \App\Models\Salary::create([
+    $salary = Salary::create([
         'user_id' => $request->user_id,
         'month'   => $request->month,
         'year'    => $request->year,
@@ -189,24 +177,22 @@ $netSalary = $totalEarnings - $totalDeductions;
     // ==========================
     // UPDATE LOAN BALANCE
     // ==========================
-    if($loan && $loanDeduction > 0){
+    if ($loan && $loanDeduction > 0) {
 
         $loan->remaining_balance -= $loanDeduction;
         $loan->save();
 
-        \App\Models\LoanLedger::create([
+        LoanLedger::create([
             'loan_id' => $loan->id,
-            'user_id' => $request->user_id,
-            'salary_id' => $salary->id,
             'amount' => $loanDeduction,
-            'type'   => 'deduction'
+            'type'   => 'deduction',
+            'remarks' => 'Salary deduction for '.$request->month.'/'.$request->year
         ]);
     }
 
     return redirect()->route('admin.salary.index')
         ->with('success','Salary Created Successfully');
 }
-
 
     /*
     |--------------------------------------------------------------------------
