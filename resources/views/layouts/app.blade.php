@@ -180,7 +180,7 @@ Loan Management
 <div x-show="open" class="pl-4 space-y-1">
 
 <li>
-    <a href="{{ route('admin.loans.create') }}">
+    <a href="{{ route('admin.loan.create') }}">
         Loan Opening Balance
     </a>
 </li>
