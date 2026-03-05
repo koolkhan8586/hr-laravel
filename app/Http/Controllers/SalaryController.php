@@ -388,7 +388,35 @@ public function destroy($id)
     }
 
     foreach ($rows as $row) {
-        Salary::create($row);
+
+        $salary = Salary::create($row);
+
+        // ==========================
+        // UPDATE LOAN AFTER IMPORT
+        // ==========================
+
+        $loan = \App\Models\Loan::where('user_id',$salary->user_id)
+            ->where('remaining_balance','>',0)
+            ->first();
+
+        if($loan && $salary->loan_deduction > 0){
+
+            $deduction = $salary->loan_deduction;
+
+            if($loan->remaining_balance < $deduction){
+                $deduction = $loan->remaining_balance;
+            }
+
+            $loan->remaining_balance -= $deduction;
+            $loan->save();
+
+            \App\Models\LoanLedger::create([
+                'loan_id' => $loan->id,
+                'amount' => $deduction,
+                'type' => 'deduction',
+                'remarks' => 'Salary deduction '.$salary->month.'/'.$salary->year
+            ]);
+        }
     }
 
     session()->forget('salary_preview');
