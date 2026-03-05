@@ -86,52 +86,68 @@ class LoanController extends Controller
     }
 
     public function create()
-    {
-        $employees = User::where('role', 'employee')->get();
-return view('loan.create', compact('employees'));
-    }
+{
+    $employees = \App\Models\User::where('role','employee')->get();
+    return view('loans.create',compact('employees'));
+}
 
     public function store(Request $request)
 {
     $request->validate([
-        'user_id' => 'required',
-        'amount' => 'required|numeric|min:1',
+        'user_id' => 'required|exists:users,id',
+        'amount' => 'required|numeric|min:0',
         'installments' => 'required|integer|min:1',
         'opening_balance' => 'nullable|numeric|min:0',
     ]);
 
+    // Opening balance (old loan from previous system)
     $opening = $request->opening_balance ?? 0;
 
-$totalLoan = $request->amount + $opening;
+    // New loan issued now
+    $newLoan = $request->amount;
 
-$monthly = $request->amount / $request->installments;
+    // Total loan balance
+    $totalLoan = $opening + $newLoan;
 
-$loan = Loan::create([
-    'user_id' => $request->user_id,
-    'amount' => $request->amount,
-    'opening_balance' => $opening,
-    'installments' => $request->installments,
-    'monthly_deduction' => $monthly,
-    'remaining_balance' => $totalLoan,
-    'status' => 'approved'
-]);
-    // Opening balance entry
-if ($opening > 0) {
-    LoanLedger::create([
-        'loan_id' => $loan->id,
-        'amount' => $opening,
-        'type' => 'opening',
-        'remarks' => 'Opening balance'
+    // Monthly deduction based on total loan
+    $monthly = $totalLoan / $request->installments;
+
+    // Create loan record
+    $loan = Loan::create([
+        'user_id' => $request->user_id,
+        'amount' => $newLoan,
+        'opening_balance' => $opening,
+        'installments' => $request->installments,
+        'monthly_deduction' => $monthly,
+        'remaining_balance' => $totalLoan,
+        'status' => 'approved'
     ]);
-}
 
-// New loan entry
-LoanLedger::create([
-    'loan_id' => $loan->id,
-    'amount' => $request->amount,
-    'type' => 'loan',
-    'remarks' => 'New loan issued'
-]);
+    /*
+    |--------------------------------------------------------------------------
+    | Ledger Entries
+    |--------------------------------------------------------------------------
+    */
+
+    // Opening loan balance (previous system)
+    if ($opening > 0) {
+        LoanLedger::create([
+            'loan_id' => $loan->id,
+            'amount' => $opening,
+            'type' => 'opening',
+            'remarks' => 'Opening balance from previous records'
+        ]);
+    }
+
+    // New loan issued
+    if ($newLoan > 0) {
+        LoanLedger::create([
+            'loan_id' => $loan->id,
+            'amount' => $newLoan,
+            'type' => 'loan',
+            'remarks' => 'New loan issued'
+        ]);
+    }
 
     return redirect()->route('admin.loan.index')
         ->with('success','Loan created successfully');
