@@ -261,7 +261,7 @@ public function employeeIndex()
     // send email to employee
     try {
         \Mail::to($salary->user->email)
-            ->send(new \App\Mail\SalaryPostedMail($salary));
+            ->queue(new \App\Mail\SalaryPostedMail($salary));
     } catch (\Exception $e) {
         \Log::error($e->getMessage());
     }
@@ -372,7 +372,7 @@ public function show($id)
         // send email
         try {
             \Mail::to($salary->user->email)
-                ->send(new \App\Mail\SalaryPostedMail($salary));
+                ->queue(new \App\Mail\SalaryPostedMail($salary));
         } catch (\Exception $e) {
             \Log::error($e->getMessage());
         }
