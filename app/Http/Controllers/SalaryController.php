@@ -118,31 +118,51 @@ public function employeeIndex()
         + ($request->increment ?? 0)
         + ($request->other_earnings ?? 0);
 
-    // ==========================
-    // LOAN DEDUCTION
-    // ==========================
-    $loanDeduction = 0;
-    $loan = \App\Models\Loan::where('user_id', $request->user_id)
-                ->where('status','approved')
-                ->where('remaining_balance','>',0)
-                ->first();
+    /// ==========================
+// LOAN DEDUCTION
+// ==========================
+$loanDeduction = 0;
 
-    if($loan){
-        $loanDeduction = $loan->monthly_installment;
+$loan = \App\Models\Loan::where('user_id', $request->user_id)
+            ->where('status','approved')
+            ->where('remaining_balance','>',0)
+            ->first();
+
+if ($loan) {
+
+    $loanDeduction = $loan->monthly_deduction;
+
+    // Prevent over deduction
+    if ($loan->remaining_balance < $loanDeduction) {
+        $loanDeduction = $loan->remaining_balance;
     }
 
-    // ==========================
-    // TOTAL DEDUCTIONS
-    // ==========================
-    $totalDeductions =
-        ($request->income_tax ?? 0)
-        + ($request->insurance ?? 0)
-        + ($request->extra_leaves ?? 0)
-        + ($request->other_deductions ?? 0)
-        + $loanDeduction;
+    // Update remaining balance
+    $loan->remaining_balance = $loan->remaining_balance - $loanDeduction;
+    $loan->save();
 
-    $netSalary = $totalEarnings - $totalDeductions;
+    // Add ledger entry
+    \App\Models\LoanLedger::create([
+        'loan_id' => $loan->id,
+        'date' => now(),
+        'type' => 'deduction',
+        'amount' => $loanDeduction,
+        'remarks' => 'Salary deduction'
+    ]);
+}
 
+
+// ==========================
+// TOTAL DEDUCTIONS
+// ==========================
+$totalDeductions =
+    ($request->income_tax ?? 0)
+    + ($request->insurance ?? 0)
+    + ($request->extra_leaves ?? 0)
+    + ($request->other_deductions ?? 0)
+    + $loanDeduction;
+
+$netSalary = $totalEarnings - $totalDeductions;
     // ==========================
     // CREATE SALARY
     // ==========================
