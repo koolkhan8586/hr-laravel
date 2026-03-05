@@ -222,40 +222,33 @@ class LoanController extends Controller
     }
 
     public function update(Request $request, $id)
-    {
-        $loan = Loan::findOrFail($id);
+{
+    $loan = Loan::findOrFail($id);
 
-        $request->validate([
-            'amount' => 'required|numeric|min:1',
-            'opening_balance' => 'nullable|numeric|min:0',
-            'installments' => 'required|integer|min:1',
-        ]);
+    $request->validate([
+        'opening_balance' => 'nullable|numeric|min:0',
+        'amount' => 'required|numeric|min:0',
+        'installments' => 'required|integer|min:1',
+    ]);
 
-          $openingBalance = $request->opening_balance ?? 0;
+    $opening = $request->opening_balance ?? 0;
+    $amount = $request->amount;
 
-        $monthly = $request->amount / $request->installments;
-        
+    $totalLoan = $opening + $amount;
 
-        // If no payments yet → reset remaining balance
-        if ($loan->payments()->count() == 0) {
-            $remaining = $request->amount;
-        } else {
-            // Keep remaining balance unchanged
-            $remaining = $loan->remaining_balance;
-        }
+    $monthly = round($totalLoan / $request->installments, 2);
 
-        $loan->update([
-            'amount' => $request->amount,
-            'opening_balance' => 'nullable|numeric|min:0',
-            'installments' => $request->installments,
-            'monthly_deduction' => $monthly,
-            'remaining_balance' => $remaining,
-        ]);
+    $loan->update([
+        'opening_balance' => $opening,
+        'amount' => $amount,
+        'installments' => $request->installments,
+        'monthly_deduction' => $monthly,
+        'remaining_balance' => $totalLoan,
+    ]);
 
-        return redirect()->route('admin.loan.index')
-            ->with('success', 'Loan Updated Successfully');
-    }
-
+    return redirect()->route('admin.loan.index')
+        ->with('success','Loan updated successfully');
+}
     public function destroy($id)
     {
         Loan::findOrFail($id)->delete();
