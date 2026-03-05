@@ -195,8 +195,8 @@ Route::post('/leave/bulk-allocation',[LeaveController::class, 'bulkAllocate'])->
     |--------------------------------------------------------------------------
     */
     Route::get('/loans', [LoanController::class, 'index'])->name('loan.index');
-    Route::get('/loans/create', [LoanController::class, 'create'])->name('loans.create');
-    Route::post('/loans/store', [LoanController::class, 'store'])->name('loans.store');
+    Route::get('/loans/create', [LoanController::class, 'create'])->name('loan.create');
+    Route::post('/loans/store', [LoanController::class, 'store'])->name('loan.store');
     Route::post('/loans/approve/{id}', [LoanController::class, 'approve'])->name('loan.approve');
     Route::post('/loans/reject/{id}', [LoanController::class, 'reject'])->name('loan.reject');
     Route::get('/loans/{id}/edit', [LoanController::class, 'edit'])->name('loan.edit');
