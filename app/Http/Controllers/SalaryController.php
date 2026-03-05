@@ -204,23 +204,53 @@ public function employeeIndex()
     $salary = Salary::findOrFail($id);
 
     if ($salary->is_posted) {
-        return back()->with('error', 'Salary already posted');
+        return back()->with('error','Salary already posted');
     }
 
+    // mark salary posted
     $salary->update([
         'is_posted' => 1,
-        'status'    => 'posted',
+        'status' => 'posted',
         'posted_at' => now()
     ]);
 
+    // ==========================
+    // LOAN DEDUCTION AFTER POST
+    // ==========================
+
+    $loan = \App\Models\Loan::where('user_id',$salary->user_id)
+        ->where('remaining_balance','>',0)
+        ->first();
+
+    if($loan && $salary->loan_deduction > 0){
+
+        $deduction = $salary->loan_deduction;
+
+        if($loan->remaining_balance < $deduction){
+            $deduction = $loan->remaining_balance;
+        }
+
+        // update loan balance
+        $loan->remaining_balance -= $deduction;
+        $loan->save();
+
+        // insert ledger
+        \App\Models\LoanLedger::create([
+            'loan_id' => $loan->id,
+            'amount' => $deduction,
+            'type' => 'deduction',
+            'remarks' => 'Salary deduction '.$salary->month.'/'.$salary->year
+        ]);
+    }
+
     try {
-        Mail::to($salary->user->email)
-            ->send(new SalaryPostedMail($salary));
+        \Mail::to($salary->user->email)
+            ->send(new \App\Mail\SalaryPostedMail($salary));
     } catch (\Exception $e) {
         \Log::error($e->getMessage());
     }
 
-    return back()->with('success', 'Salary posted successfully');
+    return back()->with('success','Salary posted successfully');
 }
 
 
