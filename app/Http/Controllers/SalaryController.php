@@ -119,34 +119,33 @@ public function employeeIndex()
         + ($request->other_earnings ?? 0);
 
  // ==========================
-// LOAN DEDUCTION
+// LOAN AUTO DEDUCTION
 // ==========================
-$loanDeduction = 0;
 
-$loan = \App\Models\Loan::where('user_id', $request->user_id)
-            ->where('status','approved')
-            ->where('remaining_balance','>',0)
+$loan = \App\Models\Loan::where('user_id', $salary->user_id)
+            ->where('status', 'approved')
+            ->where('remaining_balance', '>', 0)
             ->first();
 
 if ($loan) {
 
-    $loanDeduction = $loan->monthly_deduction;
+    $deduction = $loan->monthly_deduction;
 
     // Prevent over deduction
-    if ($loan->remaining_balance < $loanDeduction) {
-        $loanDeduction = $loan->remaining_balance;
+    if ($loan->remaining_balance < $deduction) {
+        $deduction = $loan->remaining_balance;
     }
 
     // Update remaining balance
-    $loan->remaining_balance = $loan->remaining_balance - $loanDeduction;
+    $loan->remaining_balance = $loan->remaining_balance - $deduction;
     $loan->save();
 
-    // Insert ledger record
+    // Insert ledger entry
     \App\Models\LoanLedger::create([
         'loan_id' => $loan->id,
-        'amount' => $loanDeduction,
+        'amount' => $deduction,
         'type' => 'deduction',
-        'remarks' => 'Salary deduction'
+        'remarks' => 'Salary deduction for ' . $salary->month . '/' . $salary->year
     ]);
 }
 
