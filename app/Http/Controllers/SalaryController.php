@@ -320,17 +320,23 @@ public function show($id)
 
     foreach ($salaries as $salary) {
 
-        if($salary->is_posted){
+        if ($salary->is_posted) {
             continue;
         }
 
-        if($salary->loan_deduction > 0){
+        // ==========================
+        // LOAN DEDUCTION
+        // ==========================
 
-            $loan = \App\Models\Loan::where('user_id',$salary->user_id)
-                ->where('remaining_balance','>',0)
-                ->first();
+        $loan = \App\Models\Loan::where('user_id',$salary->user_id)
+            ->where('remaining_balance','>',0)
+            ->first();
 
-            if($loan){
+        if($loan && $salary->loan_deduction > 0){
+
+            $ledgerExists = \App\Models\LoanLedger::where('salary_id',$salary->id)->exists();
+
+            if(!$ledgerExists){
 
                 $deduction = $salary->loan_deduction;
 
@@ -348,6 +354,7 @@ public function show($id)
 
                 \App\Models\LoanLedger::create([
                     'loan_id' => $loan->id,
+                    'salary_id' => $salary->id,
                     'amount' => $deduction,
                     'type' => 'deduction',
                     'remarks' => 'Salary deduction '.$salary->month.'/'.$salary->year
@@ -355,11 +362,20 @@ public function show($id)
             }
         }
 
+        // mark salary posted
         $salary->update([
             'is_posted' => 1,
             'status' => 'posted',
             'posted_at' => now()
         ]);
+
+        // send email
+        try {
+            \Mail::to($salary->user->email)
+                ->send(new \App\Mail\SalaryPostedMail($salary));
+        } catch (\Exception $e) {
+            \Log::error($e->getMessage());
+        }
     }
 
     return back()->with('success','Selected salaries posted successfully');
