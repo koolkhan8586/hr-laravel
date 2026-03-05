@@ -203,16 +203,10 @@ public function employeeIndex()
 {
     $salary = Salary::findOrFail($id);
 
+    // prevent double posting
     if ($salary->is_posted) {
         return back()->with('error','Salary already posted');
     }
-
-    // mark salary posted
-    $salary->update([
-        'is_posted' => 1,
-        'status' => 'posted',
-        'posted_at' => now()
-    ]);
 
     // ==========================
     // LOAN DEDUCTION AFTER POST
@@ -224,26 +218,47 @@ public function employeeIndex()
 
     if($loan && $salary->loan_deduction > 0){
 
-        $deduction = $salary->loan_deduction;
+        // prevent duplicate ledger entry
+        $ledgerExists = \App\Models\LoanLedger::where('salary_id',$salary->id)->exists();
 
-        if($loan->remaining_balance < $deduction){
-            $deduction = $loan->remaining_balance;
+        if(!$ledgerExists){
+
+            $deduction = $salary->loan_deduction;
+
+            // prevent over deduction
+            if($loan->remaining_balance < $deduction){
+                $deduction = $loan->remaining_balance;
+            }
+
+            // update loan balance
+            $loan->remaining_balance -= $deduction;
+
+            // auto close loan
+            if($loan->remaining_balance <= 0){
+                $loan->status = 'closed';
+            }
+
+            $loan->save();
+
+            // insert ledger entry
+            \App\Models\LoanLedger::create([
+                'loan_id' => $loan->id,
+                'salary_id' => $salary->id,
+                'amount' => $deduction,
+                'type' => 'deduction',
+                'remarks' => 'Salary deduction '.$salary->month.'/'.$salary->year
+            ]);
         }
-
-        // update loan balance
-        $loan->remaining_balance -= $deduction;
-        $loan->save();
-
-        // insert ledger
-        \App\Models\LoanLedger::create([
-            'loan_id' => $loan->id,
-            'salary_id' => $salary->id,                          
-            'amount' => $deduction,
-            'type' => 'deduction',
-            'remarks' => 'Salary deduction '.$salary->month.'/'.$salary->year
-        ]);
     }
 
+    // mark salary posted
+    $salary->update([
+        'is_posted' => 1,
+        'status' => 'posted',
+        'posted_at' => now()
+    ]);
+
+    // send email to employee
     try {
         \Mail::to($salary->user->email)
             ->send(new \App\Mail\SalaryPostedMail($salary));
@@ -301,14 +316,53 @@ public function show($id)
         return back()->with('error', 'No salaries selected');
     }
 
-    Salary::whereIn('id', $request->salary_ids)
-        ->update([
+    $salaries = Salary::whereIn('id', $request->salary_ids)->get();
+
+    foreach ($salaries as $salary) {
+
+        if($salary->is_posted){
+            continue;
+        }
+
+        if($salary->loan_deduction > 0){
+
+            $loan = \App\Models\Loan::where('user_id',$salary->user_id)
+                ->where('remaining_balance','>',0)
+                ->first();
+
+            if($loan){
+
+                $deduction = $salary->loan_deduction;
+
+                if($loan->remaining_balance < $deduction){
+                    $deduction = $loan->remaining_balance;
+                }
+
+                $loan->remaining_balance -= $deduction;
+
+                if($loan->remaining_balance <= 0){
+                    $loan->status = 'closed';
+                }
+
+                $loan->save();
+
+                \App\Models\LoanLedger::create([
+                    'loan_id' => $loan->id,
+                    'amount' => $deduction,
+                    'type' => 'deduction',
+                    'remarks' => 'Salary deduction '.$salary->month.'/'.$salary->year
+                ]);
+            }
+        }
+
+        $salary->update([
             'is_posted' => 1,
             'status' => 'posted',
             'posted_at' => now()
         ]);
+    }
 
-    return back()->with('success', 'Selected salaries posted successfully');
+    return back()->with('success','Selected salaries posted successfully');
 }
 
     /*
@@ -343,9 +397,35 @@ public function show($id)
         return back()->with('error', 'No salaries selected');
     }
 
-    Salary::whereIn('id', $request->salary_ids)->delete();
+    $salaries = Salary::whereIn('id', $request->salary_ids)->get();
 
-    return back()->with('success', 'Selected salaries deleted successfully');
+    foreach ($salaries as $salary) {
+
+        if($salary->loan_deduction > 0){
+
+            $loan = \App\Models\Loan::where('user_id',$salary->user_id)->first();
+
+            if($loan){
+
+                $loan->remaining_balance += $salary->loan_deduction;
+
+                if($loan->remaining_balance > 0){
+                    $loan->status = 'approved';
+                }
+
+                $loan->save();
+
+                \App\Models\LoanLedger::where('loan_id',$loan->id)
+                    ->where('type','deduction')
+                    ->where('remarks','LIKE','%'.$salary->month.'/'.$salary->year.'%')
+                    ->delete();
+            }
+        }
+
+        $salary->delete();
+    }
+
+    return back()->with('success','Selected salaries deleted and loans restored');
 }
 
     /*
