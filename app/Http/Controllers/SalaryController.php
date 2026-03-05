@@ -413,12 +413,15 @@ public function destroy($id)
 
         if($loan){
 
-            // restore balance
+            // restore loan balance
             $loan->remaining_balance += $salary->loan_deduction;
             $loan->save();
 
-            // delete ledger entry linked with this salary
-            \App\Models\LoanLedger::where('salary_id',$salary->id)->delete();
+            // remove ledger deduction entry
+            \App\Models\LoanLedger::where('loan_id',$loan->id)
+                ->where('type','deduction')
+                ->where('remarks','LIKE','%'.$salary->month.'/'.$salary->year.'%')
+                ->delete();
         }
     }
 
