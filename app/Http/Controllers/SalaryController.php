@@ -118,7 +118,7 @@ public function employeeIndex()
         + ($request->increment ?? 0)
         + ($request->other_earnings ?? 0);
 
-    /// ==========================
+ // ==========================
 // LOAN DEDUCTION
 // ==========================
 $loanDeduction = 0;
@@ -141,12 +141,11 @@ if ($loan) {
     $loan->remaining_balance = $loan->remaining_balance - $loanDeduction;
     $loan->save();
 
-    // Add ledger entry
+    // Insert ledger record
     \App\Models\LoanLedger::create([
         'loan_id' => $loan->id,
-        'date' => now(),
-        'type' => 'deduction',
         'amount' => $loanDeduction,
+        'type' => 'deduction',
         'remarks' => 'Salary deduction'
     ]);
 }
