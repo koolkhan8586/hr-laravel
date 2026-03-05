@@ -6,7 +6,7 @@
 <form method="POST" action="{{ route('admin.loan.store') }}">
 @csrf
 
-<div class="mb-3">
+<div class="mb-4">
 <label>Employee</label>
 <select name="user_id" class="border w-full p-2">
 @foreach($employees as $emp)
@@ -15,19 +15,19 @@
 </select>
 </div>
 
-<div class="mb-3">
+<div class="mb-4">
 <label>Opening Balance</label>
 <input type="number" name="opening_balance" class="border w-full p-2">
 </div>
 
-<div class="mb-3">
-<label>Installments</label>
-<input type="number" name="installments" class="border w-full p-2">
+<div class="mb-4">
+<label>New Loan Amount</label>
+<input type="number" name="amount" class="border w-full p-2">
 </div>
 
-<div class="mb-3">
-<label>Monthly Deduction</label>
-<input type="number" name="monthly_deduction" class="border w-full p-2">
+<div class="mb-4">
+<label>Installments</label>
+<input type="number" name="installments" class="border w-full p-2">
 </div>
 
 <button class="bg-blue-600 text-white px-4 py-2 rounded">
@@ -35,6 +35,5 @@ Save Loan
 </button>
 
 </form>
-
 </div>
 </x-app-layout>
