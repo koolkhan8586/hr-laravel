@@ -88,7 +88,7 @@ class LoanController extends Controller
     public function create()
 {
     $employees = \App\Models\User::where('role','employee')->get();
-    return view('loans.create',compact('employees'));
+    return view('loan.create',compact('employees'));
 }
 
     public function store(Request $request)
