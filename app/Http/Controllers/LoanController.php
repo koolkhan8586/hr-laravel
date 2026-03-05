@@ -77,13 +77,15 @@ class LoanController extends Controller
     */
 
     public function index()
-    {
-        $loans = Loan::with('user')
-            ->orderByDesc('created_at')
-            ->get();
+{
+    $loans = Loan::with('user')
+        ->latest()
+        ->get();
 
-        return view('loan.admin-index', compact('loans'));
-    }
+    return view('loan.admin-index', [
+        'loans' => $loans
+    ]);
+}
 
     public function create()
 {
