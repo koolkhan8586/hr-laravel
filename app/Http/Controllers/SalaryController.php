@@ -237,6 +237,7 @@ public function employeeIndex()
         // insert ledger
         \App\Models\LoanLedger::create([
             'loan_id' => $loan->id,
+            'salary_id' => $salary->id,                          
             'amount' => $deduction,
             'type' => 'deduction',
             'remarks' => 'Salary deduction '.$salary->month.'/'.$salary->year
@@ -406,7 +407,7 @@ public function destroy($id)
     // RESTORE LOAN BALANCE
     // ==========================
 
-    if($salary->loan_deduction > 0){
+    if($salary->is_posted && $salary->loan_deduction > 0){
 
         $loan = \App\Models\Loan::where('user_id',$salary->user_id)->first();
 
@@ -416,11 +417,8 @@ public function destroy($id)
             $loan->remaining_balance += $salary->loan_deduction;
             $loan->save();
 
-            // delete ledger entry
-            \App\Models\LoanLedger::where('loan_id',$loan->id)
-                ->where('type','deduction')
-                ->where('remarks','LIKE','%'.$salary->month.'/'.$salary->year.'%')
-                ->delete();
+            // delete ledger entry linked with this salary
+            \App\Models\LoanLedger::where('salary_id',$salary->id)->delete();
         }
     }
 
@@ -442,34 +440,9 @@ public function destroy($id)
 
     foreach ($rows as $row) {
 
-        $salary = Salary::create($row);
+        // only create salary
+        Salary::create($row);
 
-        // ==========================
-        // UPDATE LOAN AFTER IMPORT
-        // ==========================
-
-        $loan = \App\Models\Loan::where('user_id',$salary->user_id)
-            ->where('remaining_balance','>',0)
-            ->first();
-
-        if($loan && $salary->loan_deduction > 0){
-
-            $deduction = $salary->loan_deduction;
-
-            if($loan->remaining_balance < $deduction){
-                $deduction = $loan->remaining_balance;
-            }
-
-            $loan->remaining_balance -= $deduction;
-            $loan->save();
-
-            \App\Models\LoanLedger::create([
-                'loan_id' => $loan->id,
-                'amount' => $deduction,
-                'type' => 'deduction',
-                'remarks' => 'Salary deduction '.$salary->month.'/'.$salary->year
-            ]);
-        }
     }
 
     session()->forget('salary_preview');
