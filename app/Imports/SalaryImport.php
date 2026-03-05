@@ -66,7 +66,7 @@ class SalaryImport implements ToCollection
                 continue;
             }
 
-            // Calculate earnings
+            // Earnings
             $basic          = $row[3] ?? 0;
             $invigilation   = $row[4] ?? 0;
             $t_payment      = $row[5] ?? 0;
@@ -74,9 +74,13 @@ class SalaryImport implements ToCollection
             $increment      = $row[7] ?? 0;
             $other_earnings = $row[8] ?? 0;
 
+            // Deductions
             $extra_leaves   = $row[9] ?? 0;
             $income_tax     = $row[10] ?? 0;
-            $loan_deduction = $row[11] ?? 0;
+
+            // IMPORTANT: ensure loan deduction is numeric
+            $loan_deduction = isset($row[11]) ? (float) $row[11] : 0;
+
             $insurance      = $row[12] ?? 0;
             $other_deductions = $row[13] ?? 0;
 
