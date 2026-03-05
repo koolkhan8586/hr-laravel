@@ -396,40 +396,40 @@ public function show($id)
 
 public function destroy($id)
 {
-    $salary = \App\Models\Salary::where('id', $id)->first();
+    $salary = \App\Models\Salary::find($id);
 
     if (!$salary) {
         return redirect()->route('admin.salary.index')
             ->with('error', 'Salary not found');
     }
 
-    // ==========================
-    // RESTORE LOAN BALANCE
-    // ==========================
+    // Only proceed if there was a loan deduction
+    if ($salary->loan_deduction > 0) {
 
-    if($salary->is_posted && $salary->loan_deduction > 0){
+        $loan = \App\Models\Loan::where('user_id', $salary->user_id)->first();
 
-        $loan = \App\Models\Loan::where('user_id',$salary->user_id)->first();
+        if ($loan) {
 
-        if($loan){
-
-            // restore loan balance
+            // Restore loan balance
             $loan->remaining_balance += $salary->loan_deduction;
             $loan->save();
 
-            // remove ledger deduction entry
-            \App\Models\LoanLedger::where('loan_id',$loan->id)
-                ->where('type','deduction')
-                ->where('remarks','LIKE','%'.$salary->month.'/'.$salary->year.'%')
+            // Remove the ledger entry related to this salary
+            \App\Models\LoanLedger::where('loan_id', $loan->id)
+                ->where('type', 'deduction')
+                ->where(function ($q) use ($salary) {
+                    $q->where('remarks', 'LIKE', '%'.$salary->month.'/'.$salary->year.'%')
+                      ->orWhere('remarks', 'LIKE', '%'.$salary->month.'-'.$salary->year.'%');
+                })
                 ->delete();
         }
     }
 
-    // delete salary
+    // Delete salary record
     $salary->delete();
 
     return redirect()->route('admin.salary.index')
-        ->with('success', 'Salary deleted and loan balance restored');
+        ->with('success', 'Salary deleted and loan restored successfully');
 }
     
     public function confirmImport()
