@@ -402,10 +402,33 @@ public function destroy($id)
             ->with('error', 'Salary not found');
     }
 
+    // ==========================
+    // RESTORE LOAN BALANCE
+    // ==========================
+
+    if($salary->loan_deduction > 0){
+
+        $loan = \App\Models\Loan::where('user_id',$salary->user_id)->first();
+
+        if($loan){
+
+            // restore balance
+            $loan->remaining_balance += $salary->loan_deduction;
+            $loan->save();
+
+            // delete ledger entry
+            \App\Models\LoanLedger::where('loan_id',$loan->id)
+                ->where('type','deduction')
+                ->where('remarks','LIKE','%'.$salary->month.'/'.$salary->year.'%')
+                ->delete();
+        }
+    }
+
+    // delete salary
     $salary->delete();
 
     return redirect()->route('admin.salary.index')
-        ->with('success', 'Salary deleted successfully');
+        ->with('success', 'Salary deleted and loan balance restored');
 }
     
     public function confirmImport()
