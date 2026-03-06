@@ -6,16 +6,16 @@ use Illuminate\Console\Command;
 use App\Models\Attendance;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\DB;
 
 class AutoClockOut extends Command
 {
     protected $signature = 'attendance:auto-clockout';
 
-    protected $description = 'Auto clock out employees based on shift end time + 30 minute margin';
+    protected $description = 'Auto clock out employees based on shift end time + margin';
 
     public function handle()
     {
-
         $now = Carbon::now('Asia/Karachi');
 
         $attendances = Attendance::whereNull('clock_out')
@@ -24,19 +24,53 @@ class AutoClockOut extends Command
 
         foreach ($attendances as $attendance) {
 
-            if (!$attendance->user || !$attendance->user->shift_end_time) {
+            if (!$attendance->user) {
                 continue;
             }
 
-            $shiftEnd = Carbon::parse(
-                $attendance->date.' '.$attendance->user->shift_end_time
-            );
+            /*
+            |--------------------------------------------------------------------------
+            | Get today's shift from employee_schedules
+            |--------------------------------------------------------------------------
+            */
 
-            $autoClockOut = $shiftEnd->copy()->addMinutes(30);
+            $schedule = DB::table('employee_schedules')
+                ->join('shifts', 'employee_schedules.shift_id', '=', 'shifts.id')
+                ->where('employee_schedules.user_id', $attendance->user_id)
+                ->whereDate('employee_schedules.date', $attendance->date)
+                ->select('shifts.end_time', 'shifts.grace_minutes')
+                ->first();
+
+            if (!$schedule) {
+                continue;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Calculate auto clock-out time
+            |--------------------------------------------------------------------------
+            */
+
+            $shiftEnd = Carbon::parse($attendance->date . ' ' . $schedule->end_time);
+
+            $autoClockOut = $shiftEnd->copy()->addMinutes($schedule->grace_minutes ?? 30);
+
+            /*
+            |--------------------------------------------------------------------------
+            | If admin allowed overtime
+            |--------------------------------------------------------------------------
+            */
 
             if ($attendance->overtime_allowed_until) {
-                $autoClockOut = Carbon::parse($attendance->overtime_allowed_until)->addMinutes(30);
+                $autoClockOut = Carbon::parse($attendance->overtime_allowed_until)
+                    ->addMinutes(30);
             }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Auto Clock-Out Condition
+            |--------------------------------------------------------------------------
+            */
 
             if ($now->greaterThanOrEqualTo($autoClockOut)) {
 
@@ -50,9 +84,15 @@ class AutoClockOut extends Command
 
                 $minutes = $clockIn->diffInMinutes($autoClockOut);
 
-                $attendance->total_hours = round($minutes / 60,2);
+                $attendance->total_hours = round($minutes / 60, 2);
 
                 $attendance->save();
+
+                /*
+                |--------------------------------------------------------------------------
+                | Send Email
+                |--------------------------------------------------------------------------
+                */
 
                 try {
 
@@ -78,6 +118,5 @@ class AutoClockOut extends Command
         }
 
         $this->info('Auto clock-out check completed.');
-
     }
 }
