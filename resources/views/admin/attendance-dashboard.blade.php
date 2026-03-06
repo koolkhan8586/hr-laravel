@@ -200,14 +200,11 @@ $mins = $minutes % 60;
 
 @if($attendance->clock_in_latitude && $attendance->clock_in_longitude)
 
-<iframe
-width="200"
-height="120"
-style="border:0"
-loading="lazy"
-allowfullscreen
-src="https://www.google.com/maps?q={{ $attendance->clock_in_latitude }},{{ $attendance->clock_in_longitude }}&hl=en&z=15&output=embed">
-</iframe>
+<a href="https://maps.google.com/?q={{ $attendance->clock_in_latitude }},{{ $attendance->clock_in_longitude }}" 
+target="_blank" 
+class="text-blue-600 underline font-semibold">
+View Location
+</a>
 
 @else
 
