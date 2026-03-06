@@ -292,18 +292,43 @@ public function show($id)
     $salary = Salary::findOrFail($id);
 
     if (!$salary->is_posted) {
-        return back()->with('error', 'Salary already in draft');
+        return back()->with('error','Salary already draft');
     }
 
+    // ==========================
+    // RESTORE LOAN
+    // ==========================
+
+    $ledger = \App\Models\LoanLedger::where('salary_id',$salary->id)->first();
+
+    if($ledger){
+
+        $loan = \App\Models\Loan::find($ledger->loan_id);
+
+        if($loan){
+
+            $loan->remaining_balance += $ledger->amount;
+
+            if($loan->remaining_balance > 0){
+                $loan->status = 'approved';
+            }
+
+            $loan->save();
+        }
+
+        // remove ledger
+        $ledger->delete();
+    }
+
+    // mark salary draft
     $salary->update([
         'is_posted' => 0,
-        'status'    => 'draft',
+        'status' => 'draft',
         'posted_at' => null
     ]);
 
-    return back()->with('success', 'Salary moved to draft');
+    return back()->with('success','Salary unposted and loan restored');
 }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -392,16 +417,43 @@ public function show($id)
         return back()->with('error', 'No salaries selected');
     }
 
-    Salary::whereIn('id', $request->salary_ids)
-        ->update([
+    $salaries = Salary::whereIn('id',$request->salary_ids)->get();
+
+    foreach ($salaries as $salary) {
+
+        if(!$salary->is_posted){
+            continue;
+        }
+
+        $ledger = \App\Models\LoanLedger::where('salary_id',$salary->id)->first();
+
+        if($ledger){
+
+            $loan = \App\Models\Loan::find($ledger->loan_id);
+
+            if($loan){
+
+                $loan->remaining_balance += $ledger->amount;
+
+                if($loan->remaining_balance > 0){
+                    $loan->status = 'approved';
+                }
+
+                $loan->save();
+            }
+
+            $ledger->delete();
+        }
+
+        $salary->update([
             'is_posted' => 0,
             'status' => 'draft',
             'posted_at' => null
         ]);
+    }
 
-    return back()->with('success', 'Selected salaries unposted successfully');
+    return back()->with('success','Selected salaries unposted and loans restored');
 }
-
     /*
     |--------------------------------------------------------------------------
     | Bulk Delete
