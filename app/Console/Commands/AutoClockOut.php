@@ -12,31 +12,39 @@ class AutoClockOut extends Command
     protected $description = 'Auto clock out users at 9 PM if not clocked out';
 
     public function handle()
-    {
-        $today = Carbon::now('Asia/Karachi')->toDateString();
-        $autoTime = Carbon::createFromTime(21, 0, 0, 'Asia/Karachi');
+{
 
-        $records = Attendance::whereDate('clock_in', $today)
-            ->whereNull('clock_out')
-            ->get();
+    $attendances = Attendance::whereNull('clock_out')
+        ->with('user')
+        ->get();
 
-        foreach ($records as $attendance) {
+    foreach ($attendances as $attendance) {
+
+        $shiftEnd = Carbon::parse(
+            $attendance->date.' '.$attendance->user->shift_end_time
+        );
+
+        $autoTime = $shiftEnd->addMinutes(30);
+
+        if ($attendance->overtime_allowed_until) {
+
+            $autoTime = Carbon::parse(
+                $attendance->overtime_allowed_until
+            )->addMinutes(30);
+
+        }
+
+        if (now()->greaterThanOrEqualTo($autoTime)) {
 
             $attendance->clock_out = $autoTime;
 
-            $hours = Carbon::parse($attendance->clock_in)
-                        ->diffInMinutes($autoTime) / 60;
+            $minutes = Carbon::parse($attendance->clock_in)
+                ->diffInMinutes($autoTime);
 
-            $attendance->total_hours = round($hours, 2);
-
-            // Half-day detection
-            if ($hours < 4) {
-                $attendance->status = 'half_day';
-            }
+            $attendance->total_hours = round($minutes / 60,2);
 
             $attendance->save();
         }
-
-        $this->info('Auto clock-out executed successfully.');
     }
+
 }
