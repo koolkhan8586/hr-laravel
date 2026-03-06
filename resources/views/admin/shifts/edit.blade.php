@@ -23,6 +23,11 @@
             <input type="time" name="end_time" value="{{ $shift->end_time }}" class="border p-2 w-full rounded">
         </div>
 
+        <div class="mb-4">
+            <label class="block font-semibold">Grace Minutes</label>
+            <input type="number" name="grace_minutes"value="{{ $shift->grace_minutes }}"class="border p-2 w-full rounded"min="0">
+</div>
+
         <button class="bg-blue-600 text-white px-4 py-2 rounded">
             Update Shift
         </button>
