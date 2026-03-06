@@ -159,13 +159,14 @@ Employees Currently Working
 
 <div id="attendance-table" class="bg-white rounded-xl shadow border">
 
-<table class="w-full border-collapse">
+<table class="min-w-full border">
 
-<thead class="bg-gray-100">
+<thead class="bg-gray-200">
 <tr>
-<th class="p-3 border text-left">Employee</th>
-<th class="p-3 border text-left">Clock In</th>
-<th class="p-3 border text-left">Working Time</th>
+<th class="p-2 border">Employee</th>
+<th class="p-2 border">Clock In</th>
+<th class="p-2 border">Working Time</th>
+<th class="p-2 border">Location</th>
 </tr>
 </thead>
 
@@ -181,24 +182,38 @@ $hours = floor($minutes / 60);
 $mins = $minutes % 60;
 @endphp
 
-<tr class="hover:bg-gray-50">
+<tr>
 
-<td class="p-3 border">
+<td class="p-2 border">
 {{ $attendance->user->name ?? 'Unknown' }}
 </td>
 
-<td class="p-3 border">
+<td class="p-2 border">
 {{ \Carbon\Carbon::parse($attendance->clock_in)->format('H:i:s') }}
 </td>
 
-<td class="p-3 border">
-
-<span class="working-timer"
-data-clockin="{{ $attendance->clock_in }}">
-
+<td class="p-2 border">
 {{ $hours }}h {{ $mins }}m
+</td>
 
-</span>
+<td class="p-2 border text-center">
+
+@if($attendance->clock_in_latitude && $attendance->clock_in_longitude)
+
+<iframe
+width="200"
+height="120"
+style="border:0"
+loading="lazy"
+allowfullscreen
+src="https://www.google.com/maps?q={{ $attendance->clock_in_latitude }},{{ $attendance->clock_in_longitude }}&hl=en&z=15&output=embed">
+</iframe>
+
+@else
+
+-
+
+@endif
 
 </td>
 
