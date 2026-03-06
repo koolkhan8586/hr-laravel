@@ -167,6 +167,7 @@ Employees Currently Working
 <th class="p-2 border">Clock In</th>
 <th class="p-2 border">Working Time</th>
 <th class="p-2 border">Location</th>
+<th class="p-2 border">Overtime</th>
 </tr>
 </thead>
 
@@ -213,6 +214,31 @@ View Map
 @endif
 
 </td>
+
+
+<!-- Overtime Allow -->
+
+<td class="p-2 border text-center">
+
+<form method="POST" action="{{ route('admin.allow.overtime') }}">
+
+@csrf
+
+<input type="hidden" name="attendance_id" value="{{ $attendance->id }}">
+
+<input type="time"
+name="overtime_until"
+class="border rounded p-1 text-sm"
+required>
+
+<button class="bg-purple-600 text-white px-2 py-1 rounded text-sm mt-1">
+Allow OT
+</button>
+
+</form>
+
+</td>
+
 
 </tr>
 
