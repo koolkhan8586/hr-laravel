@@ -341,6 +341,29 @@ foreach ($attendances as $attendance) {
         $attendance->total_hours = round($minutes / 60, 2);
 
         $attendance->save();
+
+        try {
+
+    Mail::raw(
+        "Auto Clock-Out Notification\n\n".
+        "Date: ".$attendance->date."\n".
+        "Clock In: ".$attendance->clock_in."\n".
+        "Clock Out: ".$attendance->clock_out."\n".
+        "Total Hours: ".$attendance->total_hours."\n\n".
+        "Reason: You did not clock out before shift end.",
+        function ($message) use ($attendance) {
+
+            $message->to($attendance->user->email)
+                ->subject('Auto Clock-Out Recorded');
+
+        }
+    );
+
+} catch (\Exception $e) {
+
+    Log::error('Auto ClockOut Mail Error: '.$e->getMessage());
+
+}
     }
 }
 
