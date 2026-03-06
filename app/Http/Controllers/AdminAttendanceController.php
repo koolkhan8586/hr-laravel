@@ -298,6 +298,19 @@ public function attendanceList($type)
     abort(404);
 }
 
+public function allowOvertime(Request $request)
+{
+
+$attendance = \App\Models\Attendance::findOrFail($request->attendance_id);
+
+$attendance->overtime_allowed_until =
+$attendance->date.' '.$request->overtime_until;
+
+$attendance->save();
+
+return back()->with('success','Overtime allowed.');
+
+}
 
 public function attendanceCalendar(Request $request)
 {
