@@ -219,7 +219,7 @@ public function post($id)
 
     try{
         Mail::to($salary->user->email)
-            ->queue(new SalaryPostedMail($salary));
+            ->send(new SalaryPostedMail($salary));
     }catch(\Exception $e){
         \Log::error($e->getMessage());
     }
@@ -237,7 +237,7 @@ public function unpost($id)
 {
     $salary = Salary::findOrFail($id);
 
-    if(!$salary->is_posted){
+    if (!$salary->is_posted) {
         return back()->with('error','Salary already draft');
     }
 
@@ -248,7 +248,13 @@ public function unpost($id)
         $loan = Loan::find($ledger->loan_id);
 
         if($loan){
+
             $loan->remaining_balance += $ledger->amount;
+
+            if($loan->remaining_balance > 0){
+                $loan->status = 'approved';
+            }
+
             $loan->save();
         }
 
@@ -289,10 +295,43 @@ public function bulkPost(Request $request)
 
 public function bulkUnpost(Request $request)
 {
+    if (!$request->salary_ids) {
+        return back()->with('error', 'No salaries selected');
+    }
+
     $salaries = Salary::whereIn('id',$request->salary_ids)->get();
 
-    foreach($salaries as $salary){
-        $this->unpost($salary->id);
+    foreach ($salaries as $salary) {
+
+        if(!$salary->is_posted){
+            continue;
+        }
+
+        $ledger = LoanLedger::where('salary_id',$salary->id)->first();
+
+        if($ledger){
+
+            $loan = Loan::find($ledger->loan_id);
+
+            if($loan){
+
+                $loan->remaining_balance += $ledger->amount;
+
+                if($loan->remaining_balance > 0){
+                    $loan->status = 'approved';
+                }
+
+                $loan->save();
+            }
+
+            $ledger->delete();
+        }
+
+        $salary->update([
+            'is_posted'=>0,
+            'status'=>'draft',
+            'posted_at'=>null
+        ]);
     }
 
     return back()->with('success','Selected salaries unposted successfully');
