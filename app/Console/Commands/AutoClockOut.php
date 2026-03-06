@@ -7,7 +7,7 @@ use App\Models\Attendance;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Mail;
 
-class AutoClockOutAttendance extends Command
+class AutoClockOut extends Command
 {
     protected $signature = 'attendance:auto-clockout';
 
