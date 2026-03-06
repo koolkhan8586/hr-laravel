@@ -201,9 +201,9 @@ $mins = $minutes % 60;
 @if($attendance->clock_in_latitude && $attendance->clock_in_longitude)
 
 <a href="https://maps.google.com/?q={{ $attendance->clock_in_latitude }},{{ $attendance->clock_in_longitude }}" 
-target="_blank" 
-class="text-blue-600 underline font-semibold">
-View Location
+target="_blank"
+class="bg-blue-500 text-white px-3 py-1 rounded text-sm">
+View Map
 </a>
 
 @else
