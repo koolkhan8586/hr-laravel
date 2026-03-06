@@ -290,10 +290,9 @@ $attendances = \App\Models\Attendance::whereNull('clock_out')
     ->with('user')
     ->get();
 
-foreach($attendances as $attendance){
+foreach ($attendances as $attendance) {
 
     $user = $attendance->user;
-
     /*
     |--------------------------------------------------------------------------
     | Scheduled End Time
@@ -304,7 +303,7 @@ foreach($attendances as $attendance){
         $attendance->date.' '.$user->shift_end_time
     );
 
-    $autoTime = $scheduleEnd->copy()->addMinutes(30);
+    $autoClockOut = $scheduleEnd->copy()->addMinutes(30);
 
     /*
     |--------------------------------------------------------------------------
@@ -312,9 +311,9 @@ foreach($attendances as $attendance){
     |--------------------------------------------------------------------------
     */
 
-    if($attendance->overtime_allowed_until){
+    if ($attendance->overtime_allowed_until) {
 
-        $autoTime = \Carbon\Carbon::parse(
+        $autoClockOut = \Carbon\Carbon::parse(
             $attendance->overtime_allowed_until
         )->addMinutes(30);
 
@@ -326,19 +325,23 @@ foreach($attendances as $attendance){
     |--------------------------------------------------------------------------
     */
 
-    if($now >= $autoTime){
-
-        $attendance->clock_out = $autoTime;
+    if ($now >= $autoClockOut) {
 
         $clockIn = \Carbon\Carbon::parse($attendance->clock_in);
 
-        $minutes = $clockIn->diffInMinutes($autoTime);
+        // Prevent negative hours
+        if ($autoClockOut < $clockIn) {
+            $autoClockOut = $clockIn->copy()->addMinutes(1);
+        }
 
-        $attendance->total_hours = round($minutes/60,2);
+        $attendance->clock_out = $autoClockOut;
+
+        $minutes = $clockIn->diffInMinutes($autoClockOut);
+
+        $attendance->total_hours = round($minutes / 60, 2);
 
         $attendance->save();
     }
-
 }
 
 }
