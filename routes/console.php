@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 use App\Http\Controllers\AttendanceController;
+use App\Console\Commands\AutoClockOut;
 
 /*
 |--------------------------------------------------------------------------
@@ -38,8 +39,7 @@ Schedule::command('attendance:mark-absent')
 |--------------------------------------------------------------------------
 | Auto Clock-Out
 |--------------------------------------------------------------------------
-| Previously this ran once at 20:30.
-| Now it runs every minute so it can check:
+| Runs every minute to check:
 | - employee shift end time
 | - overtime allowed by admin
 | - 30 minute margin
