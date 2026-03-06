@@ -36,12 +36,13 @@ class AutoClockOut extends Command
 
             $day = Carbon::parse($attendance->date)->format('l');
 
-$schedule = DB::table('weekly_schedules')
-    ->join('shifts', 'weekly_schedules.shift_id', '=', 'shifts.id')
-    ->where('weekly_schedules.user_id', $attendance->user_id)
-    ->where('weekly_schedules.day', $day)
-    ->select('shifts.end_time', 'shifts.grace_minutes')
-    ->first();
+            $schedule = DB::table('weekly_schedules')
+                ->join('shifts', 'weekly_schedules.shift_id', '=', 'shifts.id')
+                ->where('weekly_schedules.user_id', $attendance->user_id)
+                ->where('weekly_schedules.day_of_week', $day)
+                ->select('shifts.end_time', 'shifts.grace_minutes')
+                ->first();
+            
             if (!$schedule) {
                 continue;
             }
