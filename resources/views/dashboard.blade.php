@@ -63,7 +63,8 @@ Clock In
 
 </form>
 
-@else
+
+@elseif($today && !$today->clock_out)
 
 <form id="clockOutForm" method="POST" action="{{ route('attendance.clockout') }}">
 @csrf
@@ -80,6 +81,17 @@ Clock Out
 </button>
 
 </form>
+
+
+@else
+
+<button
+class="bg-gray-400 text-white px-6 py-2 rounded-lg shadow cursor-not-allowed"
+disabled>
+
+Today's Attendance Completed
+
+</button>
 
 @endif
 
@@ -172,10 +184,14 @@ class="bg-white shadow rounded-xl p-4 text-center hover:bg-gray-50">
 <script>
 
 let clockInTime = "{{ $today && $today->clock_in ? $today->clock_in : '' }}";
+let clockOutTime = "{{ $today && $today->clock_out ? $today->clock_out : '' }}";
 
 function updateTimer(){
 
 if(!clockInTime) return;
+
+// STOP TIMER IF CLOCKED OUT
+if(clockOutTime) return;
 
 let start = new Date(clockInTime);
 let now = new Date();
