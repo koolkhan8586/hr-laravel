@@ -115,3 +115,13 @@ aside{
     background:#d1d5db;
     border-radius:10px;
 }
+
+header{
+position:sticky;
+top:0;
+z-index:40;
+}
+
+main{
+padding-bottom:80px;
+}
