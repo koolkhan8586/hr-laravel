@@ -20,6 +20,9 @@ header{
     min-height:60px;
     display:flex;
     align-items:center;
+    position:sticky;
+    top:0;
+    z-index:40;
 }
 
 
@@ -29,6 +32,7 @@ header{
 
 main{
     margin-top:10px;
+    padding-bottom:80px; /* prevents bottom nav overlap */
 }
 
 
@@ -63,11 +67,19 @@ aside{
 
     header .font-semibold{
         font-size:16px;
+        max-width:120px;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        white-space:nowrap;
     }
 
     /* USER NAME */
     header span{
         font-size:13px;
+        max-width:120px;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        white-space:nowrap;
     }
 
     /* LOGOUT BUTTON */
@@ -114,14 +126,4 @@ aside{
 ::-webkit-scrollbar-thumb {
     background:#d1d5db;
     border-radius:10px;
-}
-
-header{
-position:sticky;
-top:0;
-z-index:40;
-}
-
-main{
-padding-bottom:80px;
 }
