@@ -50,7 +50,7 @@ Welcome to your HR dashboard
 <h3 class="text-gray-600 mb-2">Attendance</h3>
 
 <a href="{{ route('attendance.index') }}"
-class="bg-green-500 text-white px-6 py-2 rounded-lg shadow hover:bg-green-600">
+class="bg-green-500 text-white px-8 py-3 rounded-lg shadow hover:bg-green-600">
 Clock In / Clock Out
 </a>
 
