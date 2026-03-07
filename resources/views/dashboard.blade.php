@@ -36,7 +36,9 @@ Welcome to your HR dashboard
 class="bg-green-500 text-white px-8 py-3 rounded-lg shadow hover:bg-green-600">
 Clock In / Clock Out
 </a>
-
+<div class="mt-2 text-sm text-green-600 font-semibold">
+Status: Present
+</div>
 </div>
 
 <!-- WORKING TIME -->
@@ -45,8 +47,8 @@ Clock In / Clock Out
 
 <h3 class="text-gray-600 mb-2">Working Time Today</h3>
 
-<div class="text-3xl font-bold text-blue-600">
-{{ now()->format('H:i') }}
+<div id="workingTimer" class="text-3xl font-bold text-blue-600">
+00:00:00
 </div>
 
 </div>
@@ -87,4 +89,27 @@ class="bg-white shadow rounded-xl p-4 text-center hover:bg-gray-50">
 
 </div>
 
+<script>
+
+let seconds = 0;
+
+function updateTimer() {
+
+seconds++;
+
+let hrs = Math.floor(seconds / 3600);
+let mins = Math.floor((seconds % 3600) / 60);
+let secs = seconds % 60;
+
+document.getElementById("workingTimer").innerHTML =
+String(hrs).padStart(2,'0') + ":" +
+String(mins).padStart(2,'0') + ":" +
+String(secs).padStart(2,'0');
+
+}
+
+setInterval(updateTimer,1000);
+
+</script>
+    
 </x-app-layout>
