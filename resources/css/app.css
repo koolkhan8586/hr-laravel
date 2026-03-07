@@ -3,18 +3,56 @@
 @tailwind utilities;
 
 
-/* ============================= */
-/* GLOBAL UI IMPROVEMENTS */
-/* ============================= */
+/* =============================== */
+/* GLOBAL STYLING */
+/* =============================== */
 
 body{
     background:#f5f6fa;
 }
 
 
-/* ============================= */
+/* =============================== */
+/* HEADER FIX */
+/* =============================== */
+
+header{
+    min-height:60px;
+    display:flex;
+    align-items:center;
+}
+
+
+/* =============================== */
+/* MAIN CONTENT SPACING */
+/* =============================== */
+
+main{
+    margin-top:10px;
+}
+
+
+/* =============================== */
+/* CARD IMPROVEMENT */
+/* =============================== */
+
+.card{
+    border-radius:12px;
+}
+
+
+/* =============================== */
+/* SIDEBAR IMPROVEMENT */
+/* =============================== */
+
+aside{
+    max-width:260px;
+}
+
+
+/* =============================== */
 /* MOBILE OPTIMIZATION */
-/* ============================= */
+/* =============================== */
 
 @media (max-width:768px){
 
@@ -27,11 +65,12 @@ body{
         font-size:16px;
     }
 
-    /* USER NAME + LOGOUT */
+    /* USER NAME */
     header span{
         font-size:13px;
     }
 
+    /* LOGOUT BUTTON */
     header form button{
         padding:4px 8px !important;
         font-size:12px !important;
@@ -40,9 +79,10 @@ body{
     /* MAIN CONTENT */
     main{
         padding:12px !important;
+        margin-top:12px;
     }
 
-    /* SIDEBAR */
+    /* SIDEBAR WIDTH */
     aside{
         width:80% !important;
         max-width:260px;
@@ -54,7 +94,7 @@ body{
         font-size:16px;
     }
 
-    /* SIDEBAR MENU */
+    /* SIDEBAR LINKS */
     nav a{
         font-size:14px;
         padding:8px 10px;
@@ -63,18 +103,9 @@ body{
 }
 
 
-/* ============================= */
-/* CARD STYLE IMPROVEMENT */
-/* ============================= */
-
-.card{
-    border-radius:12px;
-}
-
-
-/* ============================= */
-/* SCROLLBAR CLEANER */
-/* ============================= */
+/* =============================== */
+/* CLEAN SCROLLBAR */
+/* =============================== */
 
 ::-webkit-scrollbar {
     width:6px;
