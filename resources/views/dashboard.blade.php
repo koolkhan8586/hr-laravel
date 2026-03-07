@@ -7,8 +7,8 @@
 
     <div class="py-12">
         <div class="w-full px-3">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900">
+            <div class="bg-white shadow-sm rounded-lg w-full">
+                <div class="p-4 text-gray-900 text-center">
                     {{ __("You're logged in!") }}
                 </div>
             </div>
