@@ -1,8 +1,9 @@
 <x-app-layout>
-    <x-app-layout>
 
 <x-slot name="header">
+<div class="mobile-header font-semibold text-lg">
 Dashboard
+</div>
 </x-slot>
 
 <div class="space-y-4">
@@ -26,7 +27,8 @@ Welcome to your HR dashboard
 
 <a href="{{ route('attendance.index') }}"
 class="bg-green-500 text-white px-6 py-2 rounded-lg shadow hover:bg-green-600">
-Clock In / Clock Out </a>
+Clock In / Clock Out
+</a>
 
 </div>
 
@@ -77,7 +79,5 @@ class="bg-white shadow rounded-xl p-4 text-center hover:bg-gray-50">
 </div>
 
 </div>
-
-</x-app-layout>
 
 </x-app-layout>
