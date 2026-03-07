@@ -35,13 +35,13 @@ class="fixed inset-0 bg-black bg-opacity-40 z-30 md:hidden"
 
 <aside
 :class="sidebar ? 'translate-x-0' : '-translate-x-full'"
-class="fixed md:relative z-40 transform transition-transform duration-200 md:translate-x-0 w-64 bg-white shadow-lg min-h-screen">
+class="fixed md:relative z-40 transform transition-transform duration-200 md:translate-x-0 w-64 max-w-[80%] bg-white shadow-lg min-h-screen"
 
 <div class="p-6 font-bold text-lg border-b">
 LSAF HR
 </div>
 
-<nav class="p-4 text-sm space-y-1">
+<nav class="p-4 text-sm space-y-1 overflow-y-auto max-h-screen">
 
 <a href="{{ route('dashboard') }}" class="block px-3 py-2 rounded hover:bg-gray-200">
 Dashboard
@@ -237,7 +237,7 @@ Profile
 
 <!-- HEADER -->
 
-<header class="bg-white shadow flex justify-between items-center px-6 py-4">
+<header class="bg-white shadow flex flex-wrap justify-between items-center px-4 md:px-6 py-3 md:py-4">
 
 <div class="flex items-center space-x-3">
 
@@ -250,7 +250,7 @@ Profile
 
 </div>
 
-<div class="flex items-center space-x-4">
+<div class="flex items-center space-x-3 text-sm md:text-base">
 
 <span class="text-sm">
 {{ Auth::user()->name }}
@@ -258,7 +258,7 @@ Profile
 
 <form method="POST" action="{{ route('logout') }}">
 @csrf
-<button class="bg-red-500 text-white px-3 py-1 rounded text-sm">
+<button class="bg-red-500 text-white px-2 md:px-3 py-1 rounded text-xs md:text-sm">
 Logout
 </button>
 </form>
@@ -267,7 +267,7 @@ Logout
 
 </header>
 
-<main class="flex-1 p-6">
+<main class="flex-1 p-4 md:p-6 overflow-x-hidden">
 {{ $slot }}
 </main>
 
