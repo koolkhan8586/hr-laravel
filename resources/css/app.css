@@ -27,6 +27,16 @@ header{
 
 
 /* =============================== */
+/* HEADER VISIBILITY CONTROL
+/* =============================== */
+
+/* Dashboard header hidden by default (desktop) */
+.mobile-header{
+    display:none;
+}
+
+
+/* =============================== */
 /* MAIN CONTENT SPACING */
 /* =============================== */
 
@@ -59,6 +69,18 @@ aside{
 /* =============================== */
 
 @media (max-width:768px){
+
+    /* Hide web layout header in mobile */
+    .desktop-header{
+        display:none !important;
+    }
+
+    /* Show dashboard header in mobile */
+    .mobile-header{
+        display:flex !important;
+        align-items:center;
+        justify-content:space-between;
+    }
 
     /* HEADER */
     header{
