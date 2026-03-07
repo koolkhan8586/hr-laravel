@@ -23,14 +23,16 @@ header{
     position:sticky;
     top:0;
     z-index:40;
+    background:white;
 }
 
 
 /* =============================== */
-/* HEADER VISIBILITY CONTROL
+/* HEADER VISIBILITY CONTROL */
 /* =============================== */
 
 /* Dashboard header hidden by default (desktop) */
+
 .mobile-header{
     display:none;
 }
@@ -70,18 +72,33 @@ aside{
 
 @media (max-width:768px){
 
+    /* ===============================
+       FIX MOBILE STATUS BAR OVERLAP
+       =============================== */
+
+    header{
+        padding-top:28px !important; /* prevents overlap with phone time/battery */
+        padding-left:12px !important;
+        padding-right:12px !important;
+        min-height:70px;
+    }
+
     
-    /* Show dashboard header in mobile */
+    /* ===============================
+       SHOW MOBILE HEADER
+       =============================== */
+
     .mobile-header{
         display:flex !important;
         align-items:center;
         justify-content:space-between;
+        width:100%;
     }
 
-    /* HEADER */
-    header{
-        padding:10px 12px !important;
-    }
+
+    /* ===============================
+       HEADER TEXT CONTROL
+       =============================== */
 
     header .font-semibold{
         font-size:16px;
@@ -91,7 +108,11 @@ aside{
         white-space:nowrap;
     }
 
-    /* USER NAME */
+
+    /* ===============================
+       USER NAME
+       =============================== */
+
     header span{
         font-size:13px;
         max-width:120px;
@@ -100,31 +121,51 @@ aside{
         white-space:nowrap;
     }
 
-    /* LOGOUT BUTTON */
+
+    /* ===============================
+       LOGOUT BUTTON
+       =============================== */
+
     header form button{
         padding:4px 8px !important;
         font-size:12px !important;
     }
 
-    /* MAIN CONTENT */
+
+    /* ===============================
+       MAIN CONTENT
+       =============================== */
+
     main{
         padding:12px !important;
         margin-top:12px;
     }
 
-    /* SIDEBAR WIDTH */
+
+    /* ===============================
+       SIDEBAR WIDTH
+       =============================== */
+
     aside{
         width:80% !important;
         max-width:260px;
     }
 
-    /* SIDEBAR TITLE */
+
+    /* ===============================
+       SIDEBAR TITLE
+       =============================== */
+
     aside .p-6{
         padding:16px;
         font-size:16px;
     }
 
-    /* SIDEBAR LINKS */
+
+    /* ===============================
+       SIDEBAR LINKS
+       =============================== */
+
     nav a{
         font-size:14px;
         padding:8px 10px;
