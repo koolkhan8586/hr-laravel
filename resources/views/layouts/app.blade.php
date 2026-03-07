@@ -238,34 +238,36 @@ Profile
 
 <!-- HEADER (WEB LAYOUT HEADER) -->
 
-<header class="bg-white shadow flex justify-between items-center px-4 py-3">
+<header class="bg-white shadow flex items-center justify-between px-6 py-4">
 
-<div class="flex items-center space-x-3">
+    <!-- LEFT SIDE -->
+    <div class="flex items-center gap-3">
 
-<button @click="sidebar=true" class="text-2xl md:hidden">
-☰
-</button>
+        <button @click="sidebar=true" class="text-2xl">
+            ☰
+        </button>
 
-<div class="font-semibold text-lg">
-{{ $header ?? '' }}
-</div>
+        <div class="font-semibold text-lg">
+            {{ $header ?? 'LSAF HR' }}
+        </div>
 
-</div>
+    </div>
 
-<div class="flex items-center space-x-4">
+    <!-- RIGHT SIDE -->
+    <div class="flex items-center gap-4 ml-auto">
 
-<span class="text-sm">
-{{ Auth::user()->name }}
-</span>
+        <span class="text-sm font-medium">
+            {{ Auth::user()->name }}
+        </span>
 
-<form method="POST" action="{{ route('logout') }}">
-@csrf
-<button class="bg-red-500 text-white px-3 py-1 rounded text-sm">
-Logout
-</button>
-</form>
+        <form method="POST" action="{{ route('logout') }}">
+            @csrf
+            <button class="bg-red-500 text-white px-3 py-1 rounded text-sm">
+                Logout
+            </button>
+        </form>
 
-</div>
+    </div>
 
 </header>
 
