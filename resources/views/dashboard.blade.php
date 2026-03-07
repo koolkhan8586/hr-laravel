@@ -213,7 +213,6 @@ alert("Location not detected. Please enable GPS.");
 
 },{
 enableHighAccuracy:true
-timeout:15000
 });
 
 });
