@@ -70,11 +70,7 @@ aside{
 
 @media (max-width:768px){
 
-    /* Hide web layout header in mobile */
-    .desktop-header{
-        display:none !important;
-    }
-
+    
     /* Show dashboard header in mobile */
     .mobile-header{
         display:flex !important;
