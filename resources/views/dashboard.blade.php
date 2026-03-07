@@ -1,5 +1,10 @@
 <x-app-layout>
-
+@if(session('success'))
+<script>
+alert("{{ session('success') }}");
+</script>
+@endif
+    
 <x-slot name="header">
 <div class="mobile-header flex items-center justify-between w-full">
 
@@ -45,12 +50,9 @@ $today = \App\Models\Attendance::where('user_id', auth()->id())
 <input type="hidden" name="latitude" id="latitude">
 <input type="hidden" name="longitude" id="longitude">
 
-<button type="button"
-onclick="getLocationAndSubmit()"
+<button type="submit" id="clockInBtn"
 class="bg-green-500 text-white px-8 py-3 rounded-lg shadow hover:bg-green-600">
-
 Clock In
-
 </button>
 
 </form>
@@ -194,26 +196,27 @@ navigator.geolocation.getCurrentPosition(
 
 function(position){
 
-document.getElementById("latitude").value =
-position.coords.latitude;
+document.getElementById("clockInBtn").addEventListener("click", function(e){
 
-document.getElementById("longitude").value =
-position.coords.longitude;
+e.preventDefault();
+
+navigator.geolocation.getCurrentPosition(function(position){
+
+document.getElementById("latitude").value = position.coords.latitude;
+document.getElementById("longitude").value = position.coords.longitude;
 
 document.getElementById("clockInForm").submit();
 
-},
+}, function(){
 
-function(){
 alert("Location not detected. Please enable GPS.");
-},
 
-{
-enableHighAccuracy:true,
+},{
+enableHighAccuracy:true
 timeout:15000
-}
+});
 
-);
+});
 
 }
 
