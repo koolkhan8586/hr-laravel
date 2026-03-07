@@ -242,7 +242,7 @@ Profile
 
 <div class="flex items-center space-x-3">
 
-<button @click="sidebar=true" class="md:hidden text-xl">
+<button @click="sidebar=true" class="text-2xl md:hidden">
 ☰
 </button>
 
