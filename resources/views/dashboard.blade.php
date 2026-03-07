@@ -62,7 +62,7 @@ Clock In / Clock Out
 
 <h3 class="text-gray-600 mb-2">Working Time Today</h3>
 
-<div class="text-2xl font-bold text-blue-600">
+<div class="text-3xl font-bold text-blue-600">
 {{ now()->format('H:i') }}
 </div>
 
