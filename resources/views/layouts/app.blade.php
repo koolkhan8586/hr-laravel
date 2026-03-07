@@ -254,15 +254,21 @@ Profile
     </div>
 
     <!-- RIGHT SIDE -->
-    <div class="flex items-center gap-4 ml-auto">
+    <div class="flex items-center gap-3 ml-auto">
 
-        <span class="text-sm font-medium">
+        <!-- REFRESH BUTTON (MAINLY FOR MOBILE APP) -->
+        <button onclick="location.reload()"
+        class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-2 py-1 rounded text-sm">
+            🔄
+        </button>
+
+        <span class="text-sm font-medium hidden sm:block">
             {{ Auth::user()->name }}
         </span>
 
         <form method="POST" action="{{ route('logout') }}">
             @csrf
-            <button class="bg-red-500 text-white px-3 py-1 rounded text-sm">
+            <button class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">
                 Logout
             </button>
         </form>
