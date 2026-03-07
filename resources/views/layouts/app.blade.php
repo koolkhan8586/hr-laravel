@@ -267,7 +267,7 @@ Logout
 
 </header>
 
-<main class="flex-1 p-6">
+<main class="flex-1 p-6 pb-20">
 {{ $slot }}
 </main>
 
@@ -275,5 +275,40 @@ Logout
 
 </div>
 
+<!-- MOBILE BOTTOM NAVIGATION -->
+
+<div class="fixed bottom-0 left-0 w-full bg-white border-t shadow md:hidden z-50">
+
+    <div class="grid grid-cols-5 text-center text-xs">
+
+        <a href="{{ route('dashboard') }}" class="py-2 hover:bg-gray-100">
+            <div>🏠</div>
+            <div>Home</div>
+        </a>
+
+        <a href="{{ route('attendance.index') }}" class="py-2 hover:bg-gray-100">
+            <div>⏰</div>
+            <div>Attendance</div>
+        </a>
+
+        <a href="{{ route('leave.index') }}" class="py-2 hover:bg-gray-100">
+            <div>📅</div>
+            <div>Leave</div>
+        </a>
+
+        <a href="{{ route('salary.index') }}" class="py-2 hover:bg-gray-100">
+            <div>💰</div>
+            <div>Salary</div>
+        </a>
+
+        <a href="{{ route('profile.edit') }}" class="py-2 hover:bg-gray-100">
+            <div>👤</div>
+            <div>Profile</div>
+        </a>
+
+    </div>
+
+</div>
+    
 </body>
 </html>
