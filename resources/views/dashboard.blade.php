@@ -32,13 +32,41 @@ Welcome to your HR dashboard
 
 <h3 class="text-gray-600 mb-2">Attendance</h3>
 
-<a href="{{ route('attendance.index') }}"
-class="bg-green-500 text-white px-8 py-3 rounded-lg shadow hover:bg-green-600">
-Clock In / Clock Out
-</a>
-<div class="mt-2 text-sm text-green-600 font-semibold">
+@php
+$today = \App\Models\Attendance::where('user_id', auth()->id())
+    ->whereDate('created_at', today())
+    ->first();
+@endphp
+
+@if(!$today)
+<form method="POST" action="{{ route('attendance.clockin') }}">
+@csrf
+<button class="bg-green-500 text-white px-8 py-3 rounded-lg shadow hover:bg-green-600">
+Clock In
+</button>
+</form>
+@else
+<form method="POST" action="{{ route('attendance.clockout') }}">
+@csrf
+<button class="bg-red-500 text-white px-8 py-3 rounded-lg shadow hover:bg-red-600">
+Clock Out
+</button>
+</form>
+@endif
+    
+@if(!$today)
+<div class="mt-2 text-gray-500 text-sm">
+Status: Not Clocked In
+</div>
+@elseif($today && !$today->clock_out)
+<div class="mt-2 text-green-600 text-sm font-semibold">
 Status: Present
 </div>
+@else
+<div class="mt-2 text-blue-600 text-sm font-semibold">
+Status: Completed
+</div>
+@endif
 </div>
 
 <!-- WORKING TIME -->
