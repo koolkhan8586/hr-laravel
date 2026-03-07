@@ -39,18 +39,36 @@ $today = \App\Models\Attendance::where('user_id', auth()->id())
 @endphp
 
 @if(!$today)
-<form method="POST" action="{{ route('attendance.clockin') }}">
+<form id="clockInForm" method="POST" action="{{ route('attendance.clockin') }}">
 @csrf
-<button class="bg-green-500 text-white px-8 py-3 rounded-lg shadow hover:bg-green-600">
+
+<input type="hidden" name="latitude" id="latitude">
+<input type="hidden" name="longitude" id="longitude">
+
+<button type="button"
+onclick="getLocationAndSubmit()"
+class="bg-green-500 text-white px-8 py-3 rounded-lg shadow hover:bg-green-600">
+
 Clock In
+
 </button>
+
 </form>
 @else
-<form method="POST" action="{{ route('attendance.clockout') }}">
+<form id="clockOutForm" method="POST" action="{{ route('attendance.clockout') }}">
 @csrf
-<button class="bg-red-500 text-white px-8 py-3 rounded-lg shadow hover:bg-red-600">
+
+<input type="hidden" name="latitude" id="out_latitude">
+<input type="hidden" name="longitude" id="out_longitude">
+
+<button type="button"
+onclick="getLocationAndClockOut()"
+class="bg-red-500 text-white px-8 py-3 rounded-lg shadow hover:bg-red-600">
+
 Clock Out
+
 </button>
+
 </form>
 @endif
     
@@ -160,6 +178,44 @@ String(secs).padStart(2,'0');
 }
 
 setInterval(updateTimer,1000);
+
+</script>
+
+<script>
+
+function getLocationAndSubmit(){
+
+if(!navigator.geolocation){
+alert("GPS not supported");
+return;
+}
+
+navigator.geolocation.getCurrentPosition(
+
+function(position){
+
+document.getElementById("latitude").value =
+position.coords.latitude;
+
+document.getElementById("longitude").value =
+position.coords.longitude;
+
+document.getElementById("clockInForm").submit();
+
+},
+
+function(){
+alert("Location not detected. Please enable GPS.");
+},
+
+{
+enableHighAccuracy:true,
+timeout:15000
+}
+
+);
+
+}
 
 </script>
     
