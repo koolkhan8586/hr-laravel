@@ -185,10 +185,8 @@ class AttendanceController extends Controller
         Log::error('ClockIn Mail Error: '.$e->getMessage());
     }
 
-    return response()->json([
-        'success' => true,
-        'message' => 'Clock-in successful! Attendance marked.'
-    ]);
+    return redirect()->route('dashboard')
+    ->with('success', 'Clock-in successful! Attendance marked.');
 } /*
     |--------------------------------------------------------------------------
     | Clock Out
@@ -265,10 +263,10 @@ if (!$attendance) {
         Log::error('ClockOut Mail Error: '.$e->getMessage());
     }
 
-    return response()->json([
-        'success' => true,
-        'message' => 'Clock-out successful! Attendance marked.'
-    ]);
+    return redirect()->route('dashboard')
+    ->with('success', 'Clock-out successful!');
+
+    
 }   /*
     |--------------------------------------------------------------------------
     | Admin Edit Attendance
