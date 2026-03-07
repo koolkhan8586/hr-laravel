@@ -180,10 +180,11 @@ Loan Management
 <div x-show="open" class="pl-4 space-y-1">
 
 <li>
-    <a href="{{ route('admin.loan.create') }}">
-        Loan Opening Balance
-    </a>
+<a href="{{ route('admin.loan.create') }}">
+Loan Opening Balance
+</a>
 </li>
+
 <a href="{{ route('admin.loan.index') }}" class="block py-1 hover:text-blue-600">
 Loan Management
 </a>
@@ -235,14 +236,15 @@ Profile
 
 <div class="flex-1 flex flex-col w-full">
 
-<!-- HEADER -->
+<!-- HEADER (WEB LAYOUT HEADER) -->
 
-<header class="bg-white shadow flex justify-between items-center px-6 py-4">
+<header class="desktop-header bg-white shadow flex justify-between items-center px-6 py-4">
 
 <div class="flex items-center space-x-3">
 
 <button @click="sidebar=true" class="md:hidden text-xl">
-☰ </button>
+☰
+</button>
 
 <div class="font-semibold text-lg">
 {{ $header ?? '' }}
@@ -279,36 +281,36 @@ Logout
 
 <div class="fixed bottom-0 left-0 w-full bg-white border-t shadow md:hidden z-50">
 
-    <div class="grid grid-cols-5 text-center text-xs">
+<div class="grid grid-cols-5 text-center text-xs">
 
-        <a href="{{ route('dashboard') }}" class="py-2 hover:bg-gray-100">
-            <div>🏠</div>
-            <div>Home</div>
-        </a>
+<a href="{{ route('dashboard') }}" class="py-2 hover:bg-gray-100">
+<div>🏠</div>
+<div>Home</div>
+</a>
 
-        <a href="{{ route('attendance.index') }}" class="py-2 hover:bg-gray-100">
-            <div>⏰</div>
-            <div>Attendance</div>
-        </a>
+<a href="{{ route('attendance.index') }}" class="py-2 hover:bg-gray-100">
+<div>⏰</div>
+<div>Attendance</div>
+</a>
 
-        <a href="{{ route('leave.index') }}" class="py-2 hover:bg-gray-100">
-            <div>📅</div>
-            <div>Leave</div>
-        </a>
+<a href="{{ route('leave.index') }}" class="py-2 hover:bg-gray-100">
+<div>📅</div>
+<div>Leave</div>
+</a>
 
-        <a href="{{ route('salary.index') }}" class="py-2 hover:bg-gray-100">
-            <div>💰</div>
-            <div>Salary</div>
-        </a>
+<a href="{{ route('salary.index') }}" class="py-2 hover:bg-gray-100">
+<div>💰</div>
+<div>Salary</div>
+</a>
 
-        <a href="{{ route('profile.edit') }}" class="py-2 hover:bg-gray-100">
-            <div>👤</div>
-            <div>Profile</div>
-        </a>
-
-    </div>
+<a href="{{ route('profile.edit') }}" class="py-2 hover:bg-gray-100">
+<div>👤</div>
+<div>Profile</div>
+</a>
 
 </div>
-    
+
+</div>
+
 </body>
 </html>
