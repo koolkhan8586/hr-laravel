@@ -237,7 +237,7 @@ Profile
 
 <!-- HEADER -->
 
-<header class="desktop-header bg-white shadow">
+<header class="bg-white shadow flex justify-between items-center px-6 py-4">
 
 <div class="flex items-center space-x-3">
 
