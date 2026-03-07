@@ -1,28 +1,33 @@
 <x-app-layout>
 
 <x-slot name="header">
+
+<!-- MOBILE HEADER -->
 <div class="mobile-header flex items-center justify-between w-full">
 
-<div class="flex items-center gap-3">
+    <!-- LEFT SIDE -->
+    <div class="flex items-center gap-3">
 
-<button @click="sidebar=true" class="text-xl md:hidden">
-☰
-</button>
+        <button @click="sidebar=true" class="text-2xl md:hidden">
+            ☰
+        </button>
 
-<span class="font-semibold text-lg">
-Dashboard
-</span>
+        <span class="font-semibold text-lg">
+            LSAF HR
+        </span>
+
+    </div>
+
+    <!-- RIGHT SIDE -->
+    <form method="POST" action="{{ route('logout') }}">
+        @csrf
+        <button class="bg-red-500 text-white px-3 py-1 rounded text-xs shadow hover:bg-red-600">
+            Logout
+        </button>
+    </form>
 
 </div>
 
-<form method="POST" action="{{ route('logout') }}">
-@csrf
-<button class="bg-red-500 text-white px-3 py-1 rounded text-sm">
-Logout
-</button>
-</form>
-
-</div>
 </x-slot>
 
 <div class="space-y-4">
