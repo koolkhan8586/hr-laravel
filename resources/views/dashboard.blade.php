@@ -50,8 +50,9 @@ $today = \App\Models\Attendance::where('user_id', auth()->id())
 <input type="hidden" name="latitude" id="latitude">
 <input type="hidden" name="longitude" id="longitude">
 
-<button type="submit" id="clockInBtn"
-class="bg-green-500 text-white px-8 py-3 rounded-lg shadow hover:bg-green-600">
+<button type="button"
+onclick="clockInWithGPS()"
+class="bg-green-500 text-white px-6 py-2 rounded-lg shadow hover:bg-green-600">
 Clock In
 </button>
 
@@ -64,11 +65,9 @@ Clock In
 <input type="hidden" name="longitude" id="out_longitude">
 
 <button type="button"
-onclick="getLocationAndClockOut()"
-class="bg-red-500 text-white px-8 py-3 rounded-lg shadow hover:bg-red-600">
-
+onclick="clockOutWithGPS()"
+class="bg-red-500 text-white px-6 py-2 rounded-lg shadow hover:bg-red-600">
 Clock Out
-
 </button>
 
 </form>
@@ -185,37 +184,31 @@ setInterval(updateTimer,1000);
 
 <script>
 
-function getLocationAndSubmit(){
-
-if(!navigator.geolocation){
-alert("GPS not supported");
-return;
-}
+function clockOutWithGPS(){
 
 navigator.geolocation.getCurrentPosition(
 
 function(position){
 
-document.getElementById("clockInBtn").addEventListener("click", function(e){
+document.getElementById("out_latitude").value =
+position.coords.latitude;
 
-e.preventDefault();
+document.getElementById("out_longitude").value =
+position.coords.longitude;
 
-navigator.geolocation.getCurrentPosition(function(position){
+document.getElementById("clockOutForm").submit();
 
-document.getElementById("latitude").value = position.coords.latitude;
-document.getElementById("longitude").value = position.coords.longitude;
+},
 
-document.getElementById("clockInForm").submit();
-
-}, function(){
-
+function(){
 alert("Location not detected. Please enable GPS.");
+},
 
-},{
+{
 enableHighAccuracy:true
-});
+}
 
-});
+);
 
 }
 
