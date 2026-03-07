@@ -1,8 +1,27 @@
 <x-app-layout>
 
 <x-slot name="header">
-<div class="mobile-header font-semibold text-lg">
+<div class="mobile-header flex items-center justify-between w-full">
+
+<div class="flex items-center gap-3">
+
+<button @click="sidebar=true" class="text-xl md:hidden">
+☰
+</button>
+
+<span class="font-semibold text-lg">
 Dashboard
+</span>
+
+</div>
+
+<form method="POST" action="{{ route('logout') }}">
+@csrf
+<button class="bg-red-500 text-white px-3 py-1 rounded text-sm">
+Logout
+</button>
+</form>
+
 </div>
 </x-slot>
 
