@@ -75,9 +75,32 @@ Status: Completed
 
 <h3 class="text-gray-600 mb-2">Working Time Today</h3>
 
-<div id="workingTimer" class="text-3xl font-bold text-blue-600">
-00:00:00
-</div>
+<script>
+
+let clockInTime = "{{ $today && $today->clock_in ? $today->clock_in : '' }}";
+
+function updateTimer() {
+
+    if(!clockInTime) return;
+
+    let start = new Date(clockInTime);
+    let now = new Date();
+
+    let diff = Math.floor((now - start) / 1000);
+
+    let hrs = Math.floor(diff / 3600);
+    let mins = Math.floor((diff % 3600) / 60);
+    let secs = diff % 60;
+
+    document.getElementById("workingTimer").innerHTML =
+        String(hrs).padStart(2,'0') + ":" +
+        String(mins).padStart(2,'0') + ":" +
+        String(secs).padStart(2,'0');
+}
+
+setInterval(updateTimer,1000);
+
+</script>
 
 </div>
 
