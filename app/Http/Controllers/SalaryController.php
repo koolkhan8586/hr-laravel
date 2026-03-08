@@ -384,11 +384,11 @@ public function bulkDelete(Request $request)
     return back()->with('success','Selected salaries deleted successfully');
 }
 
-    public function download($id)
+   public function download($id)
 {
     $salary = Salary::with('user')->findOrFail($id);
 
-    // security check
+    // Security check
     if (auth()->user()->role !== 'admin' 
         && $salary->user_id !== auth()->id()) {
         abort(403);
@@ -396,7 +396,7 @@ public function bulkDelete(Request $request)
 
     $pdf = Pdf::loadView('salary.payslip-pdf', compact('salary'));
 
-    return $pdf->download(
+    return $pdf->stream(
         'Salary_Slip_'.$salary->month.'_'.$salary->year.'.pdf'
     );
 }
