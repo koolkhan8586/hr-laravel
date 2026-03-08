@@ -80,11 +80,11 @@
                         </td>
 
                         <td class="p-3 sm:p-4">
-                            <a href="https://docs.google.com/gview?embedded=1&url={{ urlencode(route('salary.download',$salary->id)) }}"
-target="_blank"
-class="bg-blue-500 text-white px-3 py-1 rounded">
-View Salary Slip
-</a>
+                            <a href="{{ route('salary.download',$salary->id) }}"
+                            target="_blank"
+                            class="bg-blue-500 text-white px-3 py-1 rounded">
+                            View Salary Slip
+                            </a>
                         </td>
 
                     </tr>
