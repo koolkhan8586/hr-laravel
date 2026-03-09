@@ -12,12 +12,13 @@ class HolidayController extends Controller
      * Show all holidays
      */
     public function index()
-    {
-        $holidays = Holiday::orderBy('date','desc')->get();
-        $employees = User::where('role','employee')->get();
+{
+    $holidays = Holiday::orderBy('start_date','desc')->get();
 
-        return view('holidays.index', compact('holidays','employees'));
-    }
+    $employees = User::where('role','employee')->get();
+
+    return view('holidays.index', compact('holidays','employees'));
+}
 
     /**
      * Store new holiday
