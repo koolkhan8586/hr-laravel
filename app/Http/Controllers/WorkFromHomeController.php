@@ -18,8 +18,7 @@ $wfh = WorkFromHome::with('user')
 ->orderBy('start_date','desc')
 ->get();
 
-return view('admin.work-from-home.index',
-compact('employees','wfh'));
+return view('wfh.index', compact('employees','wfh'));
 
 }
 public function store(Request $request)
