@@ -51,7 +51,7 @@ id="holidayType">
 <select name="user_id[]"
 multiple
 id="employeeSelectBox"
-class="border rounded px-3 py-2 w-full">
+class="w-full border rounded px-3 py-2">
 
 @foreach($employees as $employee)
 
