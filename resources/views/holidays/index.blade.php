@@ -50,6 +50,7 @@ id="holidayType">
 
 <select name="user_id[]"
 multiple
+id="employeeSelectBox"
 class="border rounded px-3 py-2 w-full">
 
 @foreach($employees as $employee)
@@ -156,5 +157,17 @@ document.getElementById('employeeSelect').style.display="none";
 });
 
 </script>
+<script>
 
+$(document).ready(function(){
+
+$('#employeeSelectBox').select2({
+placeholder: "Search and select employees",
+width: '100%'
+});
+
+});
+
+</script>
+    
 </x-app-layout>
