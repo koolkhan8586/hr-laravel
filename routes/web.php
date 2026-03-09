@@ -12,6 +12,7 @@ use App\Http\Controllers\ShiftController;
 use App\Http\Controllers\EmployeeScheduleController;
 use App\Http\Controllers\WeeklyScheduleController;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\HolidayController;
 
 
 /*
@@ -169,8 +170,12 @@ Route::get('/attendance/monthly/{user}/{month}',[AttendanceController::class,'do
     Route::post('/allow-overtime',[AdminAttendanceController::class,'allowOvertime'])->name('allow.overtime');
 
 
+    Route::get('/dashboard', [DashboardController::class,'index'])->name('dashboard');
+
     Route::get('/holidays', [HolidayController::class,'index'])->name('holidays.index');
+
     Route::post('/holidays', [HolidayController::class,'store'])->name('holidays.store');
+
     Route::delete('/holidays/{id}', [HolidayController::class,'destroy'])->name('holidays.delete');
     
 
