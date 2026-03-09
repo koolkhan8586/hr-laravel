@@ -11,7 +11,7 @@
 <title>{{ config('app.name', 'LSAF-HR') }}</title>
 
 <link rel="icon" type="image/png" href="{{ asset('uol-logo.png') }}">
-
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <link rel="preconnect" href="https://fonts.bunny.net">
 <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
@@ -328,6 +328,6 @@ Profile
 </div>
 
 </div>
-
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 </body>
 </html>
