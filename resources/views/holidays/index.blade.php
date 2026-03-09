@@ -1,43 +1,47 @@
-<x-app-layout>
-
-<div class="max-w-7xl mx-auto py-6 px-4">
-
-<h2 class="text-2xl font-bold mb-6">Holiday Management</h2>
-
-@if(session('success'))
-<div class="bg-green-100 text-green-700 p-3 rounded mb-4">
-{{ session('success') }}
-</div>
-@endif
-
-<!-- ADD HOLIDAY -->
-
-<div class="bg-white p-4 shadow rounded mb-6">
-
 <form method="POST" action="{{ route('admin.holidays.store') }}">
 @csrf
 
 <div class="grid grid-cols-4 gap-4">
 
-<input type="text" name="title" placeholder="Holiday Title"
-class="border rounded px-3 py-2" required>
+<input type="text"
+name="title"
+placeholder="Holiday Title"
+class="border rounded px-3 py-2"
+required>
 
-<input type="date" name="date"
-class="border rounded px-3 py-2" required>
+<input type="date"
+name="start_date"
+class="border rounded px-3 py-2"
+required>
 
-<select name="for_all" class="border rounded px-3 py-2">
+<input type="date"
+name="end_date"
+class="border rounded px-3 py-2"
+required>
+
+<select name="for_all"
+class="border rounded px-3 py-2"
+id="holidayType">
+
 <option value="1">All Employees</option>
-<option value="0">Specific Employee</option>
+<option value="0">Specific Employees</option>
+
 </select>
 
-<select name="user_id" class="border rounded px-3 py-2">
+</div>
 
-<option value="">Select Employee</option>
+<div class="mt-3" id="employeeSelect" style="display:none">
+
+<select name="user_id[]"
+multiple
+class="border rounded px-3 py-2 w-full">
 
 @foreach($employees as $employee)
+
 <option value="{{ $employee->id }}">
 {{ $employee->name }}
 </option>
+
 @endforeach
 
 </select>
@@ -49,73 +53,3 @@ Add Holiday
 </button>
 
 </form>
-
-</div>
-
-<!-- HOLIDAY LIST -->
-
-<div class="bg-white shadow rounded overflow-x-auto">
-
-<table class="min-w-full text-sm">
-
-<thead class="bg-gray-100">
-<tr>
-<th class="p-3 text-left">Title</th>
-<th class="p-3 text-left">Date</th>
-<th class="p-3 text-left">Type</th>
-<th class="p-3 text-left">Action</th>
-</tr>
-</thead>
-
-<tbody>
-
-@foreach($holidays as $holiday)
-
-<tr class="border-t">
-
-<td class="p-3">
-{{ $holiday->title }}
-</td>
-
-<td class="p-3">
-{{ $holiday->date }}
-</td>
-
-<td class="p-3">
-
-@if($holiday->for_all)
-All Employees
-@else
-Specific Employee
-@endif
-
-</td>
-
-<td class="p-3">
-
-<form method="POST"
-action="{{ route('admin.holidays.delete',$holiday->id) }}">
-@csrf
-@method('DELETE')
-
-<button class="bg-red-500 text-white px-3 py-1 rounded">
-Delete
-</button>
-
-</form>
-
-</td>
-
-</tr>
-
-@endforeach
-
-</tbody>
-
-</table>
-
-</div>
-
-</div>
-
-</x-app-layout>
