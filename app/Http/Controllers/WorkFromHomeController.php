@@ -24,12 +24,21 @@ public function store(Request $request)
 {
 
 $request->validate([
-'user_id'=>'required',
-'start_date'=>'required',
-'end_date'=>'required'
+'user_id' => 'required',
+'start_date' => 'required',
+'end_date' => 'required'
 ]);
 
-WorkFromHome::create($request->all());
+foreach($request->user_id as $user){
+
+WorkFromHome::create([
+'user_id' => $user,
+'start_date' => $request->start_date,
+'end_date' => $request->end_date,
+'reason' => $request->reason
+]);
+
+}
 
 return back()->with('success','WFH assigned');
 
