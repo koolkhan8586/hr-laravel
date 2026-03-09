@@ -232,8 +232,7 @@ My Loans
 Profile
 </a>
 
-<a href="{{ route('holidays.index') }}">Holiday Management
-</a>
+<a href="{{ route('admin.holidays.index') }}">Holiday Management</a>
 
 </div>
 </div>
