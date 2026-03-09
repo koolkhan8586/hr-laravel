@@ -40,6 +40,9 @@
                         Salary
                     </a>
 
+                    <a href="{{ route('employees.index') }}">
+                    Employee Directory
+                    </a>
                     <!-- Loans Section -->
                     @if(auth()->user()->role === 'admin')
 
