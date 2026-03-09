@@ -71,6 +71,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/loan/store-request', [LoanController::class, 'storeRequest'])->name('loan.store.request');
     Route::get('/loan/{id}/ledger', [LoanController::class,'employeeLedger'])->name('loan.ledger');
 
+    Route::get('/employees', [App\Http\Controllers\EmployeeController::class, 'index'])->name('employees.index');
+
 
     /* Salary (Employee) */
     Route::get('/salary', [SalaryController::class,'employeeIndex'])->name('salary.index');
