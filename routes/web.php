@@ -180,16 +180,23 @@ Route::get('/attendance/monthly/{user}/{month}',[AttendanceController::class,'do
     Route::delete('/holidays/{id}', [HolidayController::class,'destroy'])->name('holidays.delete');
 
 
-Route::get('/work-from-home', [WorkFromHomeController::class,'index'])->name('wfh.index');
+/*
+|--------------------------------------------------------------------------
+| Work From Home Management
+|--------------------------------------------------------------------------
+*/
 
-Route::post('/work-from-home', [WorkFromHomeController::class,'store'])->name('wfh.store');
+Route::get('/work-from-home',
+    [WorkFromHomeController::class,'index']
+)->name('wfh.index');
 
-Route::delete('/work-from-home/{id}', [WorkFromHomeController::class,'destroy'])->name('wfh.delete');
+Route::post('/work-from-home',
+    [WorkFromHomeController::class,'store']
+)->name('wfh.store');
 
-Route::post('/work-from-home',[WorkFromHomeController::class,'store'])->name('wfh.edit');
-
-
-Route::delete('/work-from-home/{id}',[WorkFromHomeController::class,'destroy'])->name('wfh.delete');
+Route::delete('/work-from-home/{id}',
+    [WorkFromHomeController::class,'destroy']
+)->name('wfh.delete');
     
 
 
