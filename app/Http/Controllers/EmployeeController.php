@@ -7,10 +7,20 @@ use App\Models\User;
 
 class EmployeeController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $employees = User::orderBy('name')->get();
 
-        return view('employees.index', compact('employees'));
+        $search = $request->search;
+
+        $employees = User::where('role','employee')
+            ->when($search,function($query,$search){
+                return $query->where('name','like','%'.$search.'%')
+                             ->orWhere('employee_id','like','%'.$search.'%')
+                             ->orWhere('designation','like','%'.$search.'%');
+            })
+            ->orderBy('name')
+            ->get();
+
+        return view('employees.index',compact('employees','search'));
     }
 }
