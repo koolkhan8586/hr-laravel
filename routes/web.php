@@ -167,6 +167,11 @@ Route::get('/attendance/monthly/{user}/{month}',[AttendanceController::class,'do
     Route::post('/attendance/manual-mark', [AdminAttendanceController::class,'manualMarkAttendance'])->name('attendance.manual');
     Route::get('/attendance-calendar', [AdminAttendanceController::class,'attendanceCalendar'])->name('attendance.calendar');
     Route::post('/allow-overtime',[AdminAttendanceController::class,'allowOvertime'])->name('allow.overtime');
+
+
+    Route::get('/holidays', [HolidayController::class,'index'])->name('holidays.index');
+    Route::post('/holidays', [HolidayController::class,'store'])->name('holidays.store');
+    Route::delete('/holidays/{id}', [HolidayController::class,'destroy'])->name('holidays.delete');
     
 
 
