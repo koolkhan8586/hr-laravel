@@ -2,10 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Request;
 use App\Models\User;
 
-public function index()
+class EmployeeController extends Controller
 {
-    $employees = User::orderBy('name')->get();
-    return view('employees.index', compact('employees'));
+    public function index()
+    {
+        $employees = User::orderBy('name')->get();
+
+        return view('employees.index', compact('employees'));
+    }
 }
