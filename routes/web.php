@@ -184,6 +184,9 @@ Route::get('/work-from-home',[WorkFromHomeController::class,'index'])->name('wfh
 
 Route::post('/work-from-home',[WorkFromHomeController::class,'store'])->name('wfh.store');
 
+Route::post('/work-from-home',[WorkFromHomeController::class,'store'])->name('wfh.edit');
+
+
 Route::delete('/work-from-home/{id}',[WorkFromHomeController::class,'destroy'])->name('wfh.delete');
     
 
