@@ -139,35 +139,38 @@ Delete
 
 </div>
 
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+
 <script>
 
-document.getElementById('holidayType')
-.addEventListener('change',function(){
+document.addEventListener("DOMContentLoaded", function () {
 
-if(this.value == "0"){
+    // Holiday type change
+    document.getElementById('holidayType')
+    .addEventListener('change',function(){
 
-document.getElementById('employeeSelect').style.display="block";
+        if(this.value == "0"){
+            document.getElementById('employeeSelect').style.display="block";
+        }else{
+            document.getElementById('employeeSelect').style.display="none";
+        }
 
-}else{
+    });
 
-document.getElementById('employeeSelect').style.display="none";
 
-}
+    // Activate Select2
+    $('#employeeSelectBox').select2({
+        placeholder: "Search and select employees",
+        width: '100%'
+    });
 
 });
 
 </script>
-<script>
 
-$(document).ready(function(){
-
-$('#employeeSelectBox').select2({
-placeholder: "Search and select employees",
-width: '100%'
-});
-
-});
-
-</script>
-    
 </x-app-layout>
