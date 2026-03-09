@@ -98,7 +98,7 @@ Add Holiday
 </td>
 
 <td class="p-3">
-{{ $holiday->date }}
+{{ $holiday->start_date }} - {{ $holiday->end_date }}
 </td>
 
 <td class="p-3">
