@@ -232,8 +232,13 @@ My Loans
 Profile
 </a>
 
-<a href="{{ route('admin.holidays.index') }}">Holiday Management</a>
+<a href="{{ route('admin.holidays.index') }}" class="block py-2 hover:text-blue-600">
+Holiday Management
+</a>
 
+<a href="{{ route('admin.wfh.index') }}" class="block py-2 hover:text-blue-600">
+Work From Home
+</a>
 </div>
 </div>
 
