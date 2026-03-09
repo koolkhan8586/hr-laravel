@@ -23,21 +23,42 @@ class HolidayController extends Controller
      * Store new holiday
      */
     public function store(Request $request)
-    {
-        $request->validate([
-            'title' => 'required',
-            'date' => 'required|date'
-        ]);
+{
 
-        Holiday::create([
-            'title' => $request->title,
-            'date' => $request->date,
-            'for_all' => $request->for_all,
-            'user_id' => $request->user_id
-        ]);
+$request->validate([
+'title' => 'required',
+'start_date' => 'required|date',
+'end_date' => 'required|date'
+]);
 
-        return redirect()->back()->with('success','Holiday added successfully');
-    }
+if($request->for_all){
+
+Holiday::create([
+'title'=>$request->title,
+'start_date'=>$request->start_date,
+'end_date'=>$request->end_date,
+'for_all'=>1
+]);
+
+}else{
+
+foreach($request->user_id as $user){
+
+Holiday::create([
+'title'=>$request->title,
+'start_date'=>$request->start_date,
+'end_date'=>$request->end_date,
+'for_all'=>0,
+'user_id'=>$user
+]);
+
+}
+
+}
+
+return back()->with('success','Holiday added successfully');
+
+}
 
     /**
      * Delete holiday
