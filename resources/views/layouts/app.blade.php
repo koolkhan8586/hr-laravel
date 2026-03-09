@@ -49,6 +49,11 @@ LSAF HR
 Dashboard
 </a>
 
+<a href="{{ route('employees.index') }}" 
+   class="block px-4 py-2 hover:bg-gray-200 rounded">
+    Employee Directory
+</a>
+
 {{-- ================= ADMIN MENUS ================= --}}
 @if(Auth::user()->role === 'admin')
 
