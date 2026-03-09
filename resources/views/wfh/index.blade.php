@@ -16,16 +16,12 @@
 
 <div class="grid grid-cols-4 gap-4">
 
-<select name="user_id" class="border rounded px-3 py-2">
-
+<select name="user_id[]" multiple class="border rounded w-full p-2">
 @foreach($employees as $employee)
-
 <option value="{{ $employee->id }}">
 {{ $employee->name }}
 </option>
-
 @endforeach
-
 </select>
 
 <input type="date" name="start_date" class="border rounded px-3 py-2">
