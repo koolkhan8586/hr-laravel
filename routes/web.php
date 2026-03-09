@@ -11,6 +11,7 @@ use App\Http\Controllers\AdminAttendanceController;
 use App\Http\Controllers\ShiftController;
 use App\Http\Controllers\EmployeeScheduleController;
 use App\Http\Controllers\WeeklyScheduleController;
+use Illuminate\Support\Facades\Auth;
 
 
 /*
@@ -19,7 +20,13 @@ use App\Http\Controllers\WeeklyScheduleController;
 |--------------------------------------------------------------------------
 */
 Route::get('/', function () {
+
+    if (Auth::check()) {
+        return redirect()->route('dashboard');
+    }
+
     return redirect()->route('login');
+
 });
 
 /*
