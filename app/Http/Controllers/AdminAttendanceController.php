@@ -480,5 +480,75 @@ return view('admin.attendance-calendar',compact(
 ));
 
 }
+
+public function monthlySummary(Request $request)
+{
+
+$month = $request->month ?? now()->format('Y-m');
+
+$start = \Carbon\Carbon::parse($month.'-01')->startOfMonth();
+$end   = \Carbon\Carbon::parse($month.'-01')->endOfMonth();
+
+/* Employees */
+
+$users = \App\Models\User::where('role','employee')
+->orderBy('name','asc')
+->get();
+
+$data = [];
+
+foreach($users as $user){
+
+$present = \App\Models\Attendance::where('user_id',$user->id)
+->whereBetween('date',[$start,$end])
+->where('status','present')
+->count();
+
+$late = \App\Models\Attendance::where('user_id',$user->id)
+->whereBetween('date',[$start,$end])
+->where('status','late')
+->count();
+
+$halfday = \App\Models\Attendance::where('user_id',$user->id)
+->whereBetween('date',[$start,$end])
+->where('status','half_day')
+->count();
+
+$leave = \App\Models\Leave::where('user_id',$user->id)
+->where('status','approved')
+->whereBetween('start_date',[$start,$end])
+->count();
+
+$workingDays = $present + $late + $halfday + $leave;
+
+$monthDays = $start->diffInWeekdays($end) + 1;
+
+$absent = max($monthDays - $workingDays,0);
+
+$attendancePercent = $monthDays > 0
+? round(($workingDays / $monthDays) * 100)
+: 0;
+
+$data[] = [
+
+'user' => $user,
+'present' => $present,
+'late' => $late,
+'halfday' => $halfday,
+'leave' => $leave,
+'absent' => $absent,
+'percent' => $attendancePercent
+
+];
+
+}
+
+return view('admin.monthly-summary',compact(
+'data',
+'month'
+));
+
+}
+
     
 }
