@@ -40,8 +40,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 
 Route::get('/dashboard', function () {
-    return view('dashboard');
+
+$nextHoliday = \App\Models\Holiday::whereDate('start_date','>=',now())
+->orderBy('start_date','asc')
+->first();
+
+return view('dashboard', compact('nextHoliday'));
+
 })->name('dashboard');
+
 
 
 });
