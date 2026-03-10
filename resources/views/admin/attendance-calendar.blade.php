@@ -206,31 +206,39 @@ title="Full Day Leave">🌴</span>
 
 @if($record->status == 'present')
 
-<span class="text-green-600 font-bold"
-title="Present">✔</span>
+<span
+class="text-green-600 font-bold cursor-pointer"
+title="Present
+Clock In: {{ $record->clock_in ? \Carbon\Carbon::parse($record->clock_in)->format('H:i') : '-' }}
+Clock Out: {{ $record->clock_out ? \Carbon\Carbon::parse($record->clock_out)->format('H:i') : '-' }}
+Total Hours: {{ $record->total_hours ?? '-' }}"
+>
+✔
+</span>
 
 @elseif($record->status == 'late')
 
-<span class="text-yellow-600 font-bold"
-title="Late">⏰</span>
+<span
+class="text-yellow-600 font-bold cursor-pointer"
+title="Late
+Clock In: {{ $record->clock_in ? \Carbon\Carbon::parse($record->clock_in)->format('H:i') : '-' }}
+Clock Out: {{ $record->clock_out ? \Carbon\Carbon::parse($record->clock_out)->format('H:i') : '-' }}
+Total Hours: {{ $record->total_hours ?? '-' }}"
+>
+⏰
+</span>
 
 @elseif($record->status == 'half_day')
 
-<span class="text-purple-600 font-bold"
-title="Half Day">🕒</span>
-
-@endif
-
-{{-- Weekend --}}
-@elseif($isWeekend)
-
-<span class="text-gray-300">-</span>
-
-{{-- Absent --}}
-@else
-
-<span class="text-red-500 font-bold"
-title="Absent">✖</span>
+<span
+class="text-purple-600 font-bold cursor-pointer"
+title="Half Day
+Clock In: {{ $record->clock_in ? \Carbon\Carbon::parse($record->clock_in)->format('H:i') : '-' }}
+Clock Out: {{ $record->clock_out ? \Carbon\Carbon::parse($record->clock_out)->format('H:i') : '-' }}
+Total Hours: {{ $record->total_hours ?? '-' }}"
+>
+🕒
+</span>
 
 @endif
 
