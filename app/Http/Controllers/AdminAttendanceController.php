@@ -243,7 +243,8 @@ public function liveAttendance()
 
 public function attendanceList($type)
 {
-    $today = request('date', Carbon::today('Asia/Karachi')->toDateString());
+
+$today = request('date', Carbon::today('Asia/Karachi')->toDateString());
 
 /*
 |--------------------------------------------------------------------------
@@ -251,31 +252,48 @@ public function attendanceList($type)
 |--------------------------------------------------------------------------
 */
 
-    if ($type === 'leave') {
+if ($type === 'leave') {
 
-        $records = Leave::where('status','approved')
-            ->whereDate('start_date','<=',$today)
-            ->whereDate('end_date','>=',$today)
-            ->with('user')
-            ->get();
+$records = Leave::where('status','approved')
+->whereDate('start_date','<=',$today)
+->whereDate('end_date','>=',$today)
+->with('user')
+->get();
 
-        return view('admin.attendance-list', compact('records','type'));
-    }
+return view('admin.attendance-list', compact('records','type'));
+}
 
-    /*
+/*
 |--------------------------------------------------------------------------
-| Work From Home Employees
+| Work From Home
 |--------------------------------------------------------------------------
 */
 
 if ($type === 'wfh') {
 
-    $records = \App\Models\WorkFromHome::whereDate('start_date','<=',$today)
-        ->whereDate('end_date','>=',$today)
-        ->with('user')
-        ->get();
+$records = \App\Models\WorkFromHome::whereDate('start_date','<=',$today)
+->whereDate('end_date','>=',$today)
+->with('user')
+->get();
 
-    return view('admin.attendance-list', compact('records','type'));
+return view('admin.attendance-list', compact('records','type'));
+}
+
+/*
+|--------------------------------------------------------------------------
+| Working Employees
+|--------------------------------------------------------------------------
+*/
+
+if ($type === 'working') {
+
+$records = Attendance::whereDate('date',$today)
+->whereNotNull('clock_in')
+->whereNull('clock_out')
+->with('user')
+->get();
+
+return view('admin.attendance-list', compact('records','type'));
 }
 
 /*
@@ -284,40 +302,52 @@ if ($type === 'wfh') {
 |--------------------------------------------------------------------------
 */
 
-if($type == 'absent'){
+if ($type === 'absent') {
 
-    $date = $today;
+$attendanceUsers = Attendance::whereDate('date',$today)->pluck('user_id');
 
-    /* Attendance Users */
+$leaveUsers = Leave::where('status','approved')
+->whereDate('start_date','<=',$today)
+->whereDate('end_date','>=',$today)
+->pluck('user_id');
 
-    $attendanceUsers = Attendance::whereDate('date',$date)
-        ->pluck('user_id');
+$wfhUsers = \App\Models\WorkFromHome::whereDate('start_date','<=',$today)
+->whereDate('end_date','>=',$today)
+->pluck('user_id');
 
-    /* Leave Users */
+$records = User::where('role','employee')
+->whereNotIn('id',$attendanceUsers)
+->whereNotIn('id',$leaveUsers)
+->whereNotIn('id',$wfhUsers)
+->get();
 
-    $leaveUsers = Leave::where('status','approved')
-        ->whereDate('start_date','<=',$date)
-        ->whereDate('end_date','>=',$date)
-        ->pluck('user_id');
-
-    /* WFH Users */
-
-    $wfhUsers = \App\Models\WorkFromHome::whereDate('start_date','<=',$date)
-        ->whereDate('end_date','>=',$date)
-        ->pluck('user_id');
-
-    /* Absent Employees */
-
-    $records = User::where('role','employee')
-        ->whereNotIn('id',$attendanceUsers)
-        ->whereNotIn('id',$leaveUsers)
-        ->whereNotIn('id',$wfhUsers)
-        ->get();
-
-    return view('admin.attendance-list', compact('records','type'));
+return view('admin.attendance-list', compact('records','type'));
 }
 
-    abort(404);
+/*
+|--------------------------------------------------------------------------
+| Present / Late / Half Day
+|--------------------------------------------------------------------------
+*/
+
+$statusMap = [
+'present' => 'present',
+'late' => 'late',
+'halfday' => 'half_day'
+];
+
+if (isset($statusMap[$type])) {
+
+$records = Attendance::whereDate('date',$today)
+->where('status',$statusMap[$type])
+->with('user')
+->get();
+
+return view('admin.attendance-list', compact('records','type'));
+}
+
+abort(404);
+
 }
 
 public function allowOvertime(Request $request)
