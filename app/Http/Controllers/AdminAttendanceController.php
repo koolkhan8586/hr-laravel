@@ -386,36 +386,45 @@ public function attendanceCalendar(Request $request)
 $month = $request->month ?? now()->format('Y-m');
 
 $start = \Carbon\Carbon::parse($month.'-01')->startOfMonth();
-$end = \Carbon\Carbon::parse($month.'-01')->endOfMonth();
+$end   = \Carbon\Carbon::parse($month.'-01')->endOfMonth();
 
-$users = \App\Models\User::where('role','employee')
-    ->orderBy('name')
-    ->get();
+/* Users */
+
+$users = \App\Models\User::where('role','employee')->get();
+
+/* Attendance */
 
 $attendances = \App\Models\Attendance::whereBetween('date',[$start,$end])
-    ->get()
-    ->groupBy('user_id');
+->get()
+->groupBy('user_id');
 
-$leaves = Leave::where('status','approved')
-    ->where(function($q) use ($start,$end){
+/* Leave */
 
-        $q->whereBetween('start_date',[$start,$end])
-          ->orWhereBetween('end_date',[$start,$end])
-          ->orWhere(function($q2) use ($start,$end){
-                $q2->where('start_date','<=',$start)
-                   ->where('end_date','>=',$end);
-          });
+$leaves = \App\Models\Leave::where('status','approved')
+->where(function($q) use ($start,$end){
+$q->whereBetween('start_date',[$start,$end])
+  ->orWhereBetween('end_date',[$start,$end]);
+})
+->get()
+->groupBy('user_id');
 
-    })
-    ->get()
-    ->groupBy('user_id');
+/* Holidays */
+
+$holidays = \App\Models\Holiday::all();
+
+/* Work From Home */
+
+$wfhData = \App\Models\WorkFromHome::get()->groupBy('user_id');
+
 return view('admin.attendance-calendar',compact(
-    'users',
-    'attendances',
-    'leaves',
-    'start',
-    'end',
-    'month'
+'users',
+'attendances',
+'leaves',
+'holidays',
+'wfhData',
+'start',
+'end',
+'month'
 ));
 
 }
