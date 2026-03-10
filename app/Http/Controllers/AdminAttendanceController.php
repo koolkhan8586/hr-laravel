@@ -130,15 +130,15 @@ $wfhEmployees = \App\Models\WorkFromHome::with('user')
 |--------------------------------------------------------------------------
 */
 
-return view('admin.attendance-dashboard', compact(
-    'present',
-    'late',
-    'halfday',
-    'leave',
-    'absent',
-    'working',
-    'wfhEmployees'
-    'date'
+return view('admin.attendance-dashboard',compact(
+'present',
+'late',
+'halfday',
+'leave',
+'absent',
+'working',
+'wfhEmployees',
+'date'
 ));
 }
 
