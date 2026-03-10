@@ -270,4 +270,75 @@ location.reload();
 
 </script>
 
+<div id="attendanceModal"
+class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center">
+
+<div class="bg-white rounded-lg shadow-lg w-96 p-6">
+
+<h3 class="text-lg font-bold mb-3" id="modalTitle"></h3>
+
+<div id="modalContent" class="text-sm text-gray-700">
+
+Loading...
+
+</div>
+
+<div class="mt-4 text-right">
+
+<button
+onclick="closeModal()"
+class="bg-red-500 text-white px-4 py-2 rounded">
+Close
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+function showAttendance(userId,date,userName){
+
+document.getElementById('attendanceModal').classList.remove('hidden');
+
+document.getElementById('modalTitle').innerHTML =
+userName + " - " + date;
+
+fetch('/admin/attendance-details/'+userId+'/'+date)
+
+.then(res => res.json())
+
+.then(data => {
+
+let html = '';
+
+if(data){
+
+html += "<p><b>Status:</b> "+data.status+"</p>";
+html += "<p><b>Clock In:</b> "+(data.clock_in ?? '-')+"</p>";
+html += "<p><b>Clock Out:</b> "+(data.clock_out ?? '-')+"</p>";
+html += "<p><b>Total Hours:</b> "+(data.total_hours ?? '-')+"</p>";
+
+}else{
+
+html = "No attendance record.";
+
+}
+
+document.getElementById('modalContent').innerHTML = html;
+
+});
+
+}
+
+function closeModal(){
+
+document.getElementById('attendanceModal').classList.add('hidden');
+
+}
+
+</script>
+
 </x-app-layout>
