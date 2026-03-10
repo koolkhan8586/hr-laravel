@@ -33,9 +33,14 @@ Print / Export
 <span class="text-purple-600 font-bold">🕒 Half Day</span>
 
 <span class="text-blue-600 font-bold">🌴 Leave</span>
+
 <span class="text-blue-600 font-bold">🌅 Morning Leave</span>
 
 <span class="text-blue-600 font-bold">🌇 Afternoon Leave</span>
+
+<span class="text-indigo-600 font-bold">🏠 Work From Home</span>
+
+<span class="text-red-600 font-bold">🎉 Holiday</span>
 
 <span class="text-red-600 font-bold">✖ Absent</span>
 
@@ -104,7 +109,7 @@ $record = isset($attendances[$user->id])
 
 /*
 |--------------------------------------------------------------------------
-| FIXED LEAVE CHECK (handles datetime correctly)
+| Leave Check
 |--------------------------------------------------------------------------
 */
 
@@ -126,6 +131,49 @@ if(isset($leaves[$user->id])){
 
 }
 
+/*
+|--------------------------------------------------------------------------
+| Work From Home Check
+|--------------------------------------------------------------------------
+*/
+
+$wfh = null;
+
+if(isset($wfhData[$user->id])){
+
+    foreach($wfhData[$user->id] as $w){
+
+        if(
+            \Carbon\Carbon::parse($w->start_date)->toDateString() <= $date &&
+            \Carbon\Carbon::parse($w->end_date)->toDateString() >= $date
+        ){
+            $wfh = $w;
+            break;
+        }
+
+    }
+
+}
+
+/*
+|--------------------------------------------------------------------------
+| Holiday Check
+|--------------------------------------------------------------------------
+*/
+
+$holiday = null;
+
+foreach($holidays as $h){
+
+    if(
+        \Carbon\Carbon::parse($h->start_date)->toDateString() <= $date &&
+        \Carbon\Carbon::parse($h->end_date)->toDateString() >= $date
+    ){
+        $holiday = $h;
+        break;
+    }
+
+}
 
 $dayDate = $start->copy()->day($d);
 $isWeekend = $dayDate->isWeekend();
@@ -141,7 +189,19 @@ $today = now()->toDateString();
 
 <span class="text-gray-300">-</span>
 
-{{-- Leave priority --}}
+{{-- Holiday --}}
+@elseif($holiday)
+
+<span class="text-red-600 font-bold"
+title="{{ $holiday->title }}">🎉</span>
+
+{{-- Work From Home --}}
+@elseif($wfh)
+
+<span class="text-indigo-600 font-bold"
+title="Work From Home">🏠</span>
+
+{{-- Leave --}}
 @elseif($leave)
 
 @if($leave->duration_type == 'half_day')
@@ -160,8 +220,8 @@ $today = now()->toDateString();
 
 @else
 
-    <span class="text-blue-600 font-bold"
-    title="Full Day Leave">🌴</span>
+<span class="text-blue-600 font-bold"
+title="Full Day Leave">🌴</span>
 
 @endif
 
@@ -208,7 +268,6 @@ title="Absent">✖</span>
 </div>
 
 </div>
-
 
 <script>
 
