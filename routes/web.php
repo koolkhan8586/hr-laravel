@@ -105,7 +105,7 @@ Route::get('/holidays', [HolidayController::class,'index'])->name('holidays.inde
 
 /* Work From Home (Employee View Only) */
 Route::get('/my-wfh', [WorkFromHomeController::class,'employeeWFH'])->name('employee.wfh');
-```
+
 
 });
 
