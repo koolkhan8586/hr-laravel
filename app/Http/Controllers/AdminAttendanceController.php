@@ -481,6 +481,17 @@ return view('admin.attendance-calendar',compact(
 
 }
 
+public function attendanceDetails($user,$date)
+{
+
+$record = \App\Models\Attendance::where('user_id',$user)
+    ->whereDate('date',$date)
+    ->first();
+
+return response()->json($record);
+
+}
+
 public function monthlySummary(Request $request)
 {
 
