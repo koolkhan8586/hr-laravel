@@ -31,6 +31,41 @@ Welcome to your HR dashboard
 </p>
 </div>
 
+<!-- Next Holiday Widget -->
+
+<div class="bg-white shadow rounded-xl p-5 text-center">
+
+<h3 class="text-gray-600 mb-2">
+Next Holiday
+</h3>
+
+@if($nextHoliday)
+
+<div class="text-lg font-bold text-green-700">
+{{ $nextHoliday->title }}
+</div>
+
+<div class="text-sm text-gray-500">
+
+{{ \Carbon\Carbon::parse($nextHoliday->start_date)->format('d M Y') }}
+
+(
+{{ \Carbon\Carbon::parse($nextHoliday->start_date)->format('l') }}
+)
+
+</div>
+
+@else
+
+<div class="text-gray-400">
+No upcoming holidays
+</div>
+
+@endif
+
+</div>
+
+
 
 <!-- CLOCK IN / CLOCK OUT -->
 
