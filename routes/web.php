@@ -31,72 +31,84 @@ Route::get('/', function () {
 
 });
 
-/*
-|--------------------------------------------------------------------------
-| Dashboard
-|--------------------------------------------------------------------------
-*/
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
+| /*                                                                         |
+| -------------------------------------------------------------------------- |
+| Dashboard                                                                  |
+| -------------------------------------------------------------------------- |
+| */                                                                         |
+| Route::middleware(['auth', 'verified'])->group(function () {               |
+
+```
+Route::get('/dashboard', function () {
+    return view('dashboard');
+})->name('dashboard');
+```
+
 });
 
-require __DIR__.'/auth.php';
+require **DIR**.'/auth.php';
 
-/*
-|--------------------------------------------------------------------------
-| AUTHENTICATED USER ROUTES
-|--------------------------------------------------------------------------
-*/
-Route::middleware(['auth'])->group(function () {
+| /*                                                                         |
+| -------------------------------------------------------------------------- |
+| AUTHENTICATED USER ROUTES                                                  |
+| -------------------------------------------------------------------------- |
+| */                                                                         |
+| Route::middleware(['auth'])->group(function () {                           |
 
-    /* Profile */
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+```
+/* Profile */
+Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    /* Attendance (Employee) */
-    Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
-    Route::post('/attendance/clock-in', [AttendanceController::class, 'clockIn'])->name('attendance.clockin');
-    Route::post('/attendance/clock-out', [AttendanceController::class, 'clockOut'])->name('attendance.clockout');
+/* Attendance (Employee) */
+Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
+Route::post('/attendance/clock-in', [AttendanceController::class, 'clockIn'])->name('attendance.clockin');
+Route::post('/attendance/clock-out', [AttendanceController::class, 'clockOut'])->name('attendance.clockout');
 
-    /* Leave (Employee) */
-    Route::get('/leave', [LeaveController::class, 'index'])->name('leave.index');
-    Route::get('/leave/apply', [LeaveController::class, 'create'])->name('leave.create');
-    Route::post('/leave/store', [LeaveController::class, 'store'])->name('leave.store');
-    Route::get('/leave/history', [LeaveController::class, 'history'])->name('leave.history');
+/* Leave (Employee) */
+Route::get('/leave', [LeaveController::class, 'index'])->name('leave.index');
+Route::get('/leave/apply', [LeaveController::class, 'create'])->name('leave.create');
+Route::post('/leave/store', [LeaveController::class, 'store'])->name('leave.store');
+Route::get('/leave/history', [LeaveController::class, 'history'])->name('leave.history');
 
-    /* Loans (Employee) */
-    Route::get('/my-loans', [LoanController::class, 'myLoan'])->name('loan.my');
-    Route::get('/loan/apply', [LoanController::class, 'apply'])->name('loan.apply');
-    Route::post('/loan/store-request', [LoanController::class, 'storeRequest'])->name('loan.store.request');
-    Route::get('/loan/{id}/ledger', [LoanController::class,'employeeLedger'])->name('loan.ledger');
+/* Loans (Employee) */
+Route::get('/my-loans', [LoanController::class, 'myLoan'])->name('loan.my');
+Route::get('/loan/apply', [LoanController::class, 'apply'])->name('loan.apply');
+Route::post('/loan/store-request', [LoanController::class, 'storeRequest'])->name('loan.store.request');
+Route::get('/loan/{id}/ledger', [LoanController::class,'employeeLedger'])->name('loan.ledger');
 
-    Route::get('/employees', [App\Http\Controllers\EmployeeController::class, 'index'])->name('employees.index');
+/* Employees Directory */
+Route::get('/employees', [EmployeeController::class, 'index'])->name('employees.index');
 
+/* Salary (Employee) */
+Route::get('/salary', [SalaryController::class,'employeeIndex'])->name('salary.index');
+Route::get('/salary/download/{id}', [SalaryController::class,'download'])->name('salary.download');
 
-    /* Salary (Employee) */
-    Route::get('/salary', [SalaryController::class,'employeeIndex'])->name('salary.index');
-    Route::get('/salary/download/{id}', [SalaryController::class,'download'])->name('salary.download');
+/* Shift & Schedule */
+Route::resource('shifts', ShiftController::class);
+Route::resource('schedules', EmployeeScheduleController::class);
 
-    Route::resource('shifts', \App\Http\Controllers\ShiftController::class);
-    Route::resource('schedules', \App\Http\Controllers\EmployeeScheduleController::class);
-    Route::get('/weekly-schedule', [\App\Http\Controllers\WeeklyScheduleController::class,'create'])->name('weekly.schedule');
-    Route::post('/weekly-schedule', [\App\Http\Controllers\WeeklyScheduleController::class,'store']);
-    Route::get('/weekly-schedules', [App\Http\Controllers\WeeklyScheduleController::class, 'index'])->name('weekly.schedules');
-    Route::get('/weekly-schedule/{user}/edit', [App\Http\Controllers\WeeklyScheduleController::class,'edit'])->name('weekly.edit');
-    Route::delete('/weekly-schedule/{user}', [App\Http\Controllers\WeeklyScheduleController::class,'delete'])->name('weekly.delete');
-    Route::get('/schedule-calendar', [App\Http\Controllers\WeeklyScheduleController::class, 'calendar'])->name('schedule.calendar');
-    Route::get('/schedule-editor', [App\Http\Controllers\WeeklyScheduleController::class,'editor'])->name('schedule.editor');
-    Route::post('/schedule-editor', [App\Http\Controllers\WeeklyScheduleController::class,'updateGrid'])->name('schedule.editor.update');
+Route::get('/weekly-schedule', [WeeklyScheduleController::class,'create'])->name('weekly.schedule');
+Route::post('/weekly-schedule', [WeeklyScheduleController::class,'store']);
 
-    Route::get('/holidays', [HolidayController::class,'index'])->name('employee.holidays');
+Route::get('/weekly-schedules', [WeeklyScheduleController::class, 'index'])->name('weekly.schedules');
+Route::get('/weekly-schedule/{user}/edit', [WeeklyScheduleController::class,'edit'])->name('weekly.edit');
+Route::delete('/weekly-schedule/{user}', [WeeklyScheduleController::class,'delete'])->name('weekly.delete');
 
-    Route::get('/work-from-home', [WorkFromHomeController::class,'index'])->name('employee.wfh');
-    
-    
+Route::get('/schedule-calendar', [WeeklyScheduleController::class, 'calendar'])->name('schedule.calendar');
+Route::get('/schedule-editor', [WeeklyScheduleController::class,'editor'])->name('schedule.editor');
+Route::post('/schedule-editor', [WeeklyScheduleController::class,'updateGrid'])->name('schedule.editor.update');
+
+/* Holidays (Employee View Only) */
+Route::get('/holidays', [HolidayController::class,'index'])->name('holidays.index');
+
+/* Work From Home (Employee View Only) */
+Route::get('/my-wfh', [WorkFromHomeController::class,'employeeWFH'])->name('employee.wfh');
+```
+
 });
+
 
 /*
 |--------------------------------------------------------------------------
