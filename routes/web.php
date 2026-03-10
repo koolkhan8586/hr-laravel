@@ -123,7 +123,7 @@ Route::middleware(['auth', 'admin'])
     Route::get('/staff/{id}/view',[StaffController::class,'view'])->name('staff.view');
     Route::get('/staff/export',[StaffController::class, 'export'])->name('staff.export');
 
-    /*
+  /*
 |--------------------------------------------------------------------------
 | Admin Attendance Management
 |--------------------------------------------------------------------------
@@ -165,24 +165,79 @@ Route::get('/hr-calendar-events',
     [AdminAttendanceController::class,'calendarEvents']
 )->name('calendar.events');
 
-Route::get('/attendance/monthly/{user}/{month}',[AttendanceController::class,'downloadMonthlyAttendance'])->name('attendance.monthly.download');
+Route::get('/attendance/monthly/{user}/{month}',
+    [AttendanceController::class,'downloadMonthlyAttendance']
+)->name('attendance.monthly.download');
 
-    Route::get('/attendance-dashboard', [AdminAttendanceController::class, 'dashboard'])->name('attendance.dashboard');
-    Route::get('/attendance-list/{type}', [AdminAttendanceController::class,'attendanceList'])->name('attendance.list')->middleware(['auth','admin']);
-    Route::get('/live-attendance', [AdminAttendanceController::class, 'liveAttendance']);
-    Route::post('/attendance/manual-mark', [AdminAttendanceController::class,'manualMarkAttendance'])->name('attendance.manual');
-    Route::get('/attendance-calendar', [AdminAttendanceController::class,'attendanceCalendar'])->name('attendance.calendar');
-    Route::post('/allow-overtime',[AdminAttendanceController::class,'allowOvertime'])->name('allow.overtime');
+/*
+|--------------------------------------------------------------------------
+| Admin Attendance Dashboard
+|--------------------------------------------------------------------------
+*/
 
+Route::get('/attendance-dashboard',
+    [AdminAttendanceController::class,'dashboard']
+)->name('attendance.dashboard');
 
-    Route::get('/dashboard', [DashboardController::class,'index'])->name('dashboard');
+/*
+|--------------------------------------------------------------------------
+| Attendance List (Present, Late, Half Day, Leave, WFH, Absent)
+|--------------------------------------------------------------------------
+*/
 
-    Route::get('/holidays', [HolidayController::class,'index'])->name('holidays.index');
+Route::get('/attendance-list/{type}',
+    [AdminAttendanceController::class,'attendanceList']
+)->name('attendance.list');
 
-    Route::post('/holidays', [HolidayController::class,'store'])->name('holidays.store');
+/*
+|--------------------------------------------------------------------------
+| Live Attendance
+|--------------------------------------------------------------------------
+*/
 
-    Route::delete('/holidays/{id}', [HolidayController::class,'destroy'])->name('holidays.delete');
+Route::get('/live-attendance',
+    [AdminAttendanceController::class,'liveAttendance']
+);
 
+Route::post('/attendance/manual-mark',
+    [AdminAttendanceController::class,'manualMarkAttendance']
+)->name('attendance.manual');
+
+Route::get('/attendance-calendar',
+    [AdminAttendanceController::class,'attendanceCalendar']
+)->name('attendance.calendar');
+
+Route::post('/allow-overtime',
+    [AdminAttendanceController::class,'allowOvertime']
+)->name('allow.overtime');
+
+/*
+|--------------------------------------------------------------------------
+| Dashboard
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/dashboard',
+    [DashboardController::class,'index']
+)->name('dashboard');
+
+/*
+|--------------------------------------------------------------------------
+| Holiday Management
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/holidays',
+    [HolidayController::class,'index']
+)->name('holidays.index');
+
+Route::post('/holidays',
+    [HolidayController::class,'store']
+)->name('holidays.store');
+
+Route::delete('/holidays/{id}',
+    [HolidayController::class,'destroy']
+)->name('holidays.delete');
 
 /*
 |--------------------------------------------------------------------------
