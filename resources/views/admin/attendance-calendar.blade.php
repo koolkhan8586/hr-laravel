@@ -18,31 +18,15 @@ View
 <button type="button"
 onclick="printCalendar()"
 class="bg-green-600 text-white px-4 py-2 rounded">
-Print / Export
-</button>
+Print / Export </button>
 
 </form>
 
 {{-- Legend --}}
-<div class="mb-4 flex gap-6 text-sm">
 
-<span class="text-green-600 font-bold">✔ Present</span>
+<div class="mb-4 flex gap-6 text-sm flex-wrap">
 
-<span class="text-yellow-600 font-bold">⏰ Late</span>
-
-<span class="text-purple-600 font-bold">🕒 Half Day</span>
-
-<span class="text-blue-600 font-bold">🌴 Leave</span>
-
-<span class="text-blue-600 font-bold">🌅 Morning Leave</span>
-
-<span class="text-blue-600 font-bold">🌇 Afternoon Leave</span>
-
-<span class="text-indigo-600 font-bold">🏠 Work From Home</span>
-
-<span class="text-red-600 font-bold">🎉 Holiday</span>
-
-<span class="text-red-600 font-bold">✖ Absent</span>
+<span class="text-green-600 font-bold">✔ Present</span> <span class="text-yellow-600 font-bold">⏰ Late</span> <span class="text-purple-600 font-bold">🕒 Half Day</span> <span class="text-blue-600 font-bold">🌴 Leave</span> <span class="text-blue-600 font-bold">🌅 Morning Leave</span> <span class="text-blue-600 font-bold">🌇 Afternoon Leave</span> <span class="text-indigo-600 font-bold">🏠 Work From Home</span> <span class="text-red-600 font-bold">🎉 Holiday</span> <span class="text-gray-400 font-bold">- Weekend / Future</span> <span class="text-red-600 font-bold">✖ Absent</span>
 
 </div>
 
@@ -101,90 +85,83 @@ $isToday = $dayDate->toDateString() == now()->toDateString();
 @php
 
 $date = $start->copy()->day($d)->toDateString();
+$today = now()->toDateString();
+$dayDate = $start->copy()->day($d);
+$isWeekend = $dayDate->isWeekend();
+
+/* Attendance */
 
 $record = isset($attendances[$user->id])
-    ? $attendances[$user->id]->where('date',$date)->first()
-    : null;
+? $attendances[$user->id]->where('date',$date)->first()
+: null;
 
-
-/*
-|--------------------------------------------------------------------------
-| Leave Check
-|--------------------------------------------------------------------------
-*/
+/* Leave */
 
 $leave = null;
 
 if(isset($leaves[$user->id])){
 
-    foreach($leaves[$user->id] as $l){
+```
+foreach($leaves[$user->id] as $l){
 
-        if(
-            \Carbon\Carbon::parse($l->start_date)->toDateString() <= $date &&
-            \Carbon\Carbon::parse($l->end_date)->toDateString() >= $date
-        ){
-            $leave = $l;
-            break;
-        }
-
+    if(
+        \Carbon\Carbon::parse($l->start_date)->toDateString() <= $date &&
+        \Carbon\Carbon::parse($l->end_date)->toDateString() >= $date
+    ){
+        $leave = $l;
+        break;
     }
 
 }
+```
 
-/*
-|--------------------------------------------------------------------------
-| Work From Home Check
-|--------------------------------------------------------------------------
-*/
+}
+
+/* Work From Home */
 
 $wfh = null;
 
 if(isset($wfhData[$user->id])){
 
-    foreach($wfhData[$user->id] as $w){
+```
+foreach($wfhData[$user->id] as $w){
 
-        if(
-            \Carbon\Carbon::parse($w->start_date)->toDateString() <= $date &&
-            \Carbon\Carbon::parse($w->end_date)->toDateString() >= $date
-        ){
-            $wfh = $w;
-            break;
-        }
-
+    if(
+        \Carbon\Carbon::parse($w->start_date)->toDateString() <= $date &&
+        \Carbon\Carbon::parse($w->end_date)->toDateString() >= $date
+    ){
+        $wfh = $w;
+        break;
     }
 
 }
+```
 
-/*
-|--------------------------------------------------------------------------
-| Holiday Check
-|--------------------------------------------------------------------------
-*/
+}
+
+/* Holiday */
 
 $holiday = null;
 
 foreach($holidays as $h){
 
-    if(
-        \Carbon\Carbon::parse($h->start_date)->toDateString() <= $date &&
-        \Carbon\Carbon::parse($h->end_date)->toDateString() >= $date
-    ){
-        $holiday = $h;
-        break;
-    }
+```
+if(
+    \Carbon\Carbon::parse($h->start_date)->toDateString() <= $date &&
+    \Carbon\Carbon::parse($h->end_date)->toDateString() >= $date
+){
+    $holiday = $h;
+    break;
+}
+```
 
 }
-
-$dayDate = $start->copy()->day($d);
-$isWeekend = $dayDate->isWeekend();
-
-$today = now()->toDateString();
 
 @endphp
 
 <td class="border text-center {{ $isWeekend ? 'bg-red-50' : '' }}">
 
-{{-- Future dates --}}
+{{-- Future Date --}}
 @if($date > $today)
 
 <span class="text-gray-300">-</span>
@@ -206,17 +183,17 @@ title="Work From Home">🏠</span>
 
 @if($leave->duration_type == 'half_day')
 
-    @if($leave->half_day_type == 'morning')
+@if($leave->half_day_type == 'morning')
 
-        <span class="text-blue-600 font-bold"
-        title="Half Day Leave (Morning)">🌅</span>
+<span class="text-blue-600 font-bold"
+title="Half Day Leave (Morning)">🌅</span>
 
-    @elseif($leave->half_day_type == 'afternoon')
+@elseif($leave->half_day_type == 'afternoon')
 
-        <span class="text-blue-600 font-bold"
-        title="Half Day Leave (Afternoon)">🌇</span>
+<span class="text-blue-600 font-bold"
+title="Half Day Leave (Afternoon)">🌇</span>
 
-    @endif
+@endif
 
 @else
 
@@ -244,6 +221,11 @@ title="Late">⏰</span>
 title="Half Day">🕒</span>
 
 @endif
+
+{{-- Weekend --}}
+@elseif($isWeekend)
+
+<span class="text-gray-300">-</span>
 
 {{-- Absent --}}
 @else
