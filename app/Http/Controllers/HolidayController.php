@@ -20,7 +20,7 @@ if(auth()->user()->role == 'admin'){
 return view('holidays.index',compact('holidays'));
 }
 
-return view('employee.holidays',compact('holidays'));
+return view('employees.holidays',compact('holidays'));
 
 }
     /**
