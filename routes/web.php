@@ -90,6 +90,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/schedule-calendar', [App\Http\Controllers\WeeklyScheduleController::class, 'calendar'])->name('schedule.calendar');
     Route::get('/schedule-editor', [App\Http\Controllers\WeeklyScheduleController::class,'editor'])->name('schedule.editor');
     Route::post('/schedule-editor', [App\Http\Controllers\WeeklyScheduleController::class,'updateGrid'])->name('schedule.editor.update');
+
+    Route::get('/holidays', [HolidayController::class,'index'])->name('employee.holidays');
+
+    Route::get('/work-from-home', [WorkFromHomeController::class,'index'])->name('employee.wfh');
+    
     
 });
 
