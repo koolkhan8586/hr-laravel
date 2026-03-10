@@ -71,6 +71,17 @@ $working = Attendance::whereDate('date',$date)
     ->with('user')
     ->get();
 
+
+/* Work From Home Today */
+
+$today = now()->toDateString();
+
+$wfhToday = \App\Models\WorkFromHome::with('user')
+->whereDate('start_date','<=',$today)
+->whereDate('end_date','>=',$today)
+->get();
+
+$wfhCount = $wfhToday->count();
 /*
 |--------------------------------------------------------------------------
 | Attendance Users
