@@ -158,7 +158,10 @@ if(
 
 @endphp
 
-<td class="border text-center {{ $isWeekend ? 'bg-red-50' : '' }}">
+<td
+class="border text-center cursor-pointer hover:bg-gray-100 {{ $isWeekend ? 'bg-red-50' : '' }}"
+onclick="showAttendance('{{ $user->id }}','{{ $date }}','{{ $user->name }}')"
+>
 
 {{-- Future Date --}}
 @if($date > $today)
