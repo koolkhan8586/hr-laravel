@@ -290,23 +290,23 @@ location.reload();
 </script>
 
 <div id="attendanceModal"
-class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center">
+class="fixed inset-0 bg-black bg-opacity-40 hidden flex items-center justify-center z-50">
 
-<div class="bg-white rounded-lg shadow-lg w-96 p-6">
+<div class="bg-white rounded-xl shadow-xl w-96 p-6">
 
-<h3 class="text-lg font-bold mb-3" id="modalTitle"></h3>
+<h3 class="text-lg font-bold mb-4 text-gray-700" id="modalTitle"></h3>
 
-<div id="modalContent" class="text-sm text-gray-700">
+<div id="modalContent" class="text-sm text-gray-600 space-y-2">
 
 Loading...
 
 </div>
 
-<div class="mt-4 text-right">
+<div class="mt-6 text-right">
 
 <button
 onclick="closeModal()"
-class="bg-red-500 text-white px-4 py-2 rounded">
+class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">
 Close
 </button>
 
@@ -315,7 +315,6 @@ Close
 </div>
 
 </div>
-
 <script>
 
 function showAttendance(userId,date,userName){
