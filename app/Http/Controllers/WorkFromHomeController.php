@@ -90,4 +90,16 @@ return back()->with('success','WFH removed');
 
 }
 
+public function employeeWFH()
+{
+
+$wfh = \App\Models\WorkFromHome::where('user_id',auth()->id())
+->orderBy('start_date','desc')
+->get();
+
+return view('employees.wfh', compact('wfh'));
+
+}
+
+
 }
