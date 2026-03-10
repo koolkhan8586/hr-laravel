@@ -118,26 +118,24 @@ $absent = $absentEmployees->count();
   
 
 /* Work From Home Today */
+$today = now()->toDateString();
 
-$wfhEmployees = \App\Models\WorkFromHome::with('user')
-->whereDate('start_date','<=',$today)
-->whereDate('end_date','>=',$today)
-->get();
+$wfhToday = \App\Models\WorkFromHome::with('user')
+    ->whereDate('start_date','<=',$today)
+    ->whereDate('end_date','>=',$today)
+    ->get();
 
-/*
-|--------------------------------------------------------------------------
-| Return View
-|--------------------------------------------------------------------------
-*/
+$wfhCount = $wfhToday->count();
 
-return view('admin.attendance-dashboard',compact(
+return view('admin.attendance-dashboard', compact(
 'present',
 'late',
 'halfday',
 'leave',
 'absent',
 'working',
-'wfhEmployees',
+'wfhToday',
+'wfhCount',
 'date'
 ));
 }
