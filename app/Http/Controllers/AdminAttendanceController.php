@@ -262,6 +262,22 @@ public function attendanceList($type)
         return view('admin.attendance-list', compact('records','type'));
     }
 
+    /*
+|--------------------------------------------------------------------------
+| Work From Home Employees
+|--------------------------------------------------------------------------
+*/
+
+if ($type === 'wfh') {
+
+    $records = \App\Models\WorkFromHome::whereDate('start_date','<=',$today)
+        ->whereDate('end_date','>=',$today)
+        ->with('user')
+        ->get();
+
+    return view('admin.attendance-list', compact('records','type'));
+}
+
 /*
 |--------------------------------------------------------------------------
 | Absent Employees
