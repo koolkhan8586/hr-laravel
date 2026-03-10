@@ -184,10 +184,13 @@ Employees Currently Working
 <th class="p-2 border">Working Time</th>
 <th class="p-2 border">Location</th>
 <th class="p-2 border">Overtime</th>
+<th class="p-2 border">Status</th>
 </tr>
 </thead>
 
 <tbody>
+
+{{-- OFFICE WORKING EMPLOYEES --}}
 
 @foreach($working as $attendance)
 
@@ -209,7 +212,8 @@ $mins = $minutes % 60;
 {{ \Carbon\Carbon::parse($attendance->clock_in)->format('H:i:s') }}
 </td>
 
-<td class="p-2 border">
+<td class="p-2 border working-timer"
+data-clockin="{{ $attendance->clock_in }}">
 {{ $hours }}h {{ $mins }}m
 </td>
 
@@ -217,7 +221,7 @@ $mins = $minutes % 60;
 
 @if($attendance->clock_in_latitude && $attendance->clock_in_longitude)
 
-<a href="https://maps.google.com/?q={{ $attendance->clock_in_latitude }},{{ $attendance->clock_in_longitude }}" 
+<a href="https://maps.google.com/?q={{ $attendance->clock_in_latitude }},{{ $attendance->clock_in_longitude }}"
 target="_blank"
 class="bg-blue-500 text-white px-3 py-1 rounded text-sm">
 View Map
@@ -231,41 +235,55 @@ View Map
 
 </td>
 
-<h3 class="text-lg font-bold mt-8 mb-4">
-Employees Working From Home
-</h3>
+<td class="p-2 border text-center">
 
-<table class="w-full border">
+<form method="POST" action="{{ route('admin.allow.overtime') }}">
+@csrf
 
-<thead class="bg-gray-100">
-<tr>
-<th class="border p-2">Employee</th>
-<th class="border p-2">From</th>
-<th class="border p-2">To</th>
-<th class="border p-2">Reason</th>
+<input type="hidden" name="attendance_id" value="{{ $attendance->id }}">
+
+<input type="time"
+name="overtime_until"
+class="border rounded p-1 text-sm"
+required>
+
+<button class="bg-purple-600 text-white px-2 py-1 rounded text-sm mt-1">
+Allow OT
+</button>
+
+</form>
+
+</td>
+
+<td class="p-2 border text-green-700 font-bold">
+Office
+</td>
+
 </tr>
-</thead>
 
-<tbody>
+@endforeach
+
+
+{{-- WFH EMPLOYEES --}}
 
 @foreach($wfhToday as $item)
 
-<tr>
+<tr class="bg-indigo-50">
 
-<td class="border p-2">
+<td class="p-2 border">
 {{ $item->user->name }}
 </td>
 
-<td class="border p-2">
-{{ $item->start_date }}
-</td>
+<td class="p-2 border">—</td>
 
-<td class="border p-2">
-{{ $item->end_date }}
-</td>
+<td class="p-2 border">WFH</td>
 
-<td class="border p-2">
-{{ $item->reason }}
+<td class="p-2 border text-center">—</td>
+
+<td class="p-2 border text-center">—</td>
+
+<td class="p-2 border text-indigo-700 font-bold">
+WFH 🏠
 </td>
 
 </tr>
@@ -275,6 +293,8 @@ Employees Working From Home
 </tbody>
 
 </table>
+
+
 
 
 <!-- Overtime Allow -->
