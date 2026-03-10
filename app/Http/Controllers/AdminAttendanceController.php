@@ -268,20 +268,19 @@ public function attendanceList($type)
 |--------------------------------------------------------------------------
 */
 
-    if ($type === 'absent') {
+    if($type == 'absent'){
 
-        $presentUsers = Attendance::whereDate('date',$today)
-            ->pluck('user_id');
+    $wfhUsers = \App\Models\WorkFromHome::whereDate('start_date','<=',$date)
+        ->whereDate('end_date','>=',$date)
+        ->pluck('user_id')
+        ->toArray();
 
-        $leaveUsers = Leave::where('status','approved')
-            ->whereDate('start_date','<=',$today)
-            ->whereDate('end_date','>=',$today)
-            ->pluck('user_id');
-
-        $records = User::where('role','employee')
-            ->whereNotIn('id',$presentUsers)
-            ->whereNotIn('id',$leaveUsers)
-            ->get();
+    $employees = User::where('role','employee')
+        ->whereNotIn('id',$attendanceUsers)
+        ->whereNotIn('id',$leaveUsers)
+        ->whereNotIn('id',$wfhUsers)
+        ->get();
+}
 
         return view('admin.attendance-list', compact('records','type'));
     }
