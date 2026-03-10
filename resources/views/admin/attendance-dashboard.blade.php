@@ -231,6 +231,51 @@ View Map
 
 </td>
 
+<h3 class="text-lg font-bold mt-8 mb-4">
+Employees Working From Home
+</h3>
+
+<table class="w-full border">
+
+<thead class="bg-gray-100">
+<tr>
+<th class="border p-2">Employee</th>
+<th class="border p-2">From</th>
+<th class="border p-2">To</th>
+<th class="border p-2">Reason</th>
+</tr>
+</thead>
+
+<tbody>
+
+@foreach($wfhToday as $item)
+
+<tr>
+
+<td class="border p-2">
+{{ $item->user->name }}
+</td>
+
+<td class="border p-2">
+{{ $item->start_date }}
+</td>
+
+<td class="border p-2">
+{{ $item->end_date }}
+</td>
+
+<td class="border p-2">
+{{ $item->reason }}
+</td>
+
+</tr>
+
+@endforeach
+
+</tbody>
+
+</table>
+
 
 <!-- Overtime Allow -->
 
