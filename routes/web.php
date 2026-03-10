@@ -197,7 +197,7 @@ Route::get('/attendance-summary',
 [AdminAttendanceController::class,'monthlySummary'])
 ->name('attendance.summary');
 
-Route::get('/admin/attendance-details/{user}/{date}',
+Route::get('/attendance-details/{user}/{date}',
 [AdminAttendanceController::class,'attendanceDetails']);
 
 
