@@ -115,6 +115,15 @@ $absentEmployees = User::where('role','employee')
 
 $absent = $absentEmployees->count();
 
+  
+
+/* Work From Home Today */
+
+$wfhEmployees = \App\Models\WorkFromHome::with('user')
+->whereDate('start_date','<=',$today)
+->whereDate('end_date','>=',$today)
+->get();
+
 /*
 |--------------------------------------------------------------------------
 | Return View
@@ -128,6 +137,7 @@ return view('admin.attendance-dashboard', compact(
     'leave',
     'absent',
     'working',
+    'wfhEmployees'
     'date'
 ));
 }
