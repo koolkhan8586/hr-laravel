@@ -108,24 +108,22 @@ $leaveUsers = Leave::where('status','approved')
 |--------------------------------------------------------------------------
 */
 
-$today = now()->toDateString();
+$today = $date;
 
-/* WFH Users Today */
+/* WFH users */
 
 $wfhUsers = \App\Models\WorkFromHome::whereDate('start_date','<=',$today)
     ->whereDate('end_date','>=',$today)
     ->pluck('user_id')
     ->toArray();
 
-/* Absent Employees */
+/* Absent employees */
 
 $absentEmployees = User::where('role','employee')
     ->whereNotIn('id',$attendanceUsers)
     ->whereNotIn('id',$leaveUsers)
-    ->whereNotIn('id',$wfhUsers) // exclude WFH employees
+    ->whereNotIn('id',$wfhUsers)
     ->get();
-
-/* Absent Count */
 
 $absent = $absentEmployees->count();
   
