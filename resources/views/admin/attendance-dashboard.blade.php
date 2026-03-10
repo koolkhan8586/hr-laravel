@@ -124,6 +124,22 @@ View
 </div>
 </a>
 
+<div class="bg-indigo-100 p-5 rounded shadow">
+
+<div class="text-indigo-700 font-semibold">
+WFH
+</div>
+
+<div class="text-3xl font-bold">
+{{ $wfhCount }}
+</div>
+
+<div class="text-2xl">
+🏠
+</div>
+
+</div>
+
 <a href="{{ route('admin.attendance.list',['type'=>'absent','date'=>$date]) }}">
 <div class="bg-red-100 p-6 rounded-xl shadow hover:shadow-lg transition">
 <div class="flex items-center justify-between">
