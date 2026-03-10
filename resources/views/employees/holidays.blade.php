@@ -20,10 +20,23 @@ Holiday Calendar
 
 @foreach($holidays as $holiday)
 
+@php
+$day = \Carbon\Carbon::parse($holiday->start_date)->format('l');
+@endphp
+
 <tr>
-<td class="border p-2">{{ $holiday->title }}</td>
-<td class="border p-2">{{ $holiday->start_date }}</td>
-<td class="border p-2">{{ $holiday->end_date }}</td>
+<td>{{ $holiday->title }}</td>
+
+<td>
+{{ $holiday->start_date }}
+<br>
+<span class="text-xs text-gray-500">
+{{ $day }}
+</span>
+</td>
+
+<td>{{ $holiday->end_date }}</td>
+
 </tr>
 
 @endforeach
