@@ -101,7 +101,6 @@ $leave = null;
 
 if(isset($leaves[$user->id])){
 
-```
 foreach($leaves[$user->id] as $l){
 
     if(
@@ -113,7 +112,7 @@ foreach($leaves[$user->id] as $l){
     }
 
 }
-```
+
 
 }
 
@@ -123,7 +122,7 @@ $wfh = null;
 
 if(isset($wfhData[$user->id])){
 
-```
+
 foreach($wfhData[$user->id] as $w){
 
     if(
@@ -135,7 +134,7 @@ foreach($wfhData[$user->id] as $w){
     }
 
 }
-```
+
 
 }
 
@@ -145,7 +144,7 @@ $holiday = null;
 
 foreach($holidays as $h){
 
-```
+
 if(
     \Carbon\Carbon::parse($h->start_date)->toDateString() <= $date &&
     \Carbon\Carbon::parse($h->end_date)->toDateString() >= $date
@@ -153,7 +152,7 @@ if(
     $holiday = $h;
     break;
 }
-```
+
 
 }
 
