@@ -312,6 +312,74 @@ return back()->with('success','Overtime allowed.');
 
 }
 
+public function calendarEvents()
+{
+
+$events = [];
+
+/* Holidays */
+
+$holidays = \App\Models\Holiday::all();
+
+foreach($holidays as $holiday){
+
+$events[] = [
+'title' => 'Holiday: '.$holiday->title,
+'start' => $holiday->start_date,
+'end' => $holiday->end_date,
+'color' => 'red'
+];
+
+}
+
+/* Leave */
+
+$leaves = \App\Models\Leave::where('status','approved')->get();
+
+foreach($leaves as $leave){
+
+$events[] = [
+'title' => $leave->user->name.' (Leave)',
+'start' => $leave->start_date,
+'end' => $leave->end_date,
+'color' => 'orange'
+];
+
+}
+
+/* Work From Home */
+
+$wfh = \App\Models\WorkFromHome::with('user')->get();
+
+foreach($wfh as $item){
+
+$events[] = [
+'title' => $item->user->name.' (WFH)',
+'start' => $item->start_date,
+'end' => $item->end_date,
+'color' => 'blue'
+];
+
+}
+
+/* Attendance */
+
+$attendance = \App\Models\Attendance::with('user')->get();
+
+foreach($attendance as $att){
+
+$events[] = [
+'title' => $att->user->name.' Present',
+'start' => $att->clock_in,
+'color' => 'green'
+];
+
+}
+
+return response()->json($events);
+
+}
+
 public function attendanceCalendar(Request $request)
 {
 
