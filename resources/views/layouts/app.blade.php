@@ -94,6 +94,10 @@ Attendance Calendar
 Attendance Management
 </a>
 
+<a href="{{ route('admin.attendance.summary') }}" class="block py-1 hover:text-blue-600">
+Monthly Summary
+</a>
+
 </div>
 </div>
 
