@@ -102,10 +102,24 @@ View
 </div>
 </a>
 
-<div class="bg-indigo-100 p-6 rounded-xl shadow">
+<a href="{{ route('admin.attendance.list',['type'=>'wfh','date'=>$date]) }}">
+
+<div class="bg-indigo-100 p-6 rounded-xl shadow hover:shadow-lg transition">
+
+<div class="flex items-center justify-between">
+
+<div>
 <p class="text-indigo-700 font-semibold">WFH</p>
-<p class="text-3xl font-bold">{{ $wfhCount }}</p>
+<p class="text-3xl font-bold text-indigo-800">{{ $wfhCount }}</p>
 </div>
+
+<div class="text-indigo-600 text-3xl">🏠</div>
+
+</div>
+
+</div>
+
+</a>
 
 <a href="{{ route('admin.attendance.list',['type'=>'absent','date'=>$date]) }}">
 <div class="bg-red-100 p-6 rounded-xl shadow">
