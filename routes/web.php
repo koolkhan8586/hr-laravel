@@ -31,12 +31,12 @@ Route::get('/', function () {
 
 });
 
-/*                                                                         |
+/*|                                                                          |
 | -------------------------------------------------------------------------- |
 | Dashboard                                                                  |
 | -------------------------------------------------------------------------- |
-| */                                                                         |
-| Route::middleware(['auth', 'verified'])->group(function () {               |
+| */                                                                         
+Route::middleware(['auth', 'verified'])->group(function () {               
 
 ```
 Route::get('/dashboard', function () {
@@ -48,12 +48,12 @@ Route::get('/dashboard', function () {
 
 require **DIR**.'/auth.php';
 
-| /*                                                                         |
+ /* |                                                                        |
 | -------------------------------------------------------------------------- |
 | AUTHENTICATED USER ROUTES                                                  |
 | -------------------------------------------------------------------------- |
-| */                                                                         |
-| Route::middleware(['auth'])->group(function () {                           |
+| */                                                                         
+ Route::middleware(['auth'])->group(function () {                           
 
 ```
 /* Profile */
