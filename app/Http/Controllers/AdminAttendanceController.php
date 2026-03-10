@@ -268,61 +268,38 @@ public function attendanceList($type)
 |--------------------------------------------------------------------------
 */
 
-    if($type == 'absent'){
+if($type == 'absent'){
+
+    $date = $today;
+
+    /* Attendance Users */
+
+    $attendanceUsers = Attendance::whereDate('date',$date)
+        ->pluck('user_id');
+
+    /* Leave Users */
+
+    $leaveUsers = Leave::where('status','approved')
+        ->whereDate('start_date','<=',$date)
+        ->whereDate('end_date','>=',$date)
+        ->pluck('user_id');
+
+    /* WFH Users */
 
     $wfhUsers = \App\Models\WorkFromHome::whereDate('start_date','<=',$date)
         ->whereDate('end_date','>=',$date)
-        ->pluck('user_id')
-        ->toArray();
+        ->pluck('user_id');
 
-    $employees = User::where('role','employee')
+    /* Absent Employees */
+
+    $records = User::where('role','employee')
         ->whereNotIn('id',$attendanceUsers)
         ->whereNotIn('id',$leaveUsers)
         ->whereNotIn('id',$wfhUsers)
         ->get();
+
+    return view('admin.attendance-list', compact('records','type'));
 }
-
-        return view('admin.attendance-list', compact('records','type'));
-    }
-
-/*
-|--------------------------------------------------------------------------
-| Working Employees
-|--------------------------------------------------------------------------
-*/
-
-    if ($type === 'working') {
-
-        $records = Attendance::whereDate('date',$today)
-            ->whereNotNull('clock_in')
-            ->whereNull('clock_out')
-            ->with('user')
-            ->get();
-
-        return view('admin.attendance-list', compact('records','type'));
-    }
-
-/*
-|--------------------------------------------------------------------------
-| Present / Late / Half Day
-|--------------------------------------------------------------------------
-*/
-
-    $statusMap = [
-        'present' => 'present',
-        'late' => 'late',
-        'halfday' => 'half_day'
-    ];
-
-    if (isset($statusMap[$type])) {
-
-        $records = Attendance::whereDate('date',$today)
-            ->where('status',$statusMap[$type])
-            ->with('user')
-            ->get();
-
-        return view('admin.attendance-list', compact('records','type'));
-    }
 
     abort(404);
 }
