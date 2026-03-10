@@ -232,7 +232,7 @@ My Loans
 Profile
 </a>
 
-<a href="{{ route('employee.holidays') }}" class="block py-2 hover:text-blue-600">
+<a href="{{ route('holidays.index') }}" class="block py-2 hover:text-blue-600">
 Holiday Calendar
 </a>
 
