@@ -45,6 +45,42 @@ return back()->with('success','WFH assigned');
 
 }
 
+
+public function edit($id)
+{
+
+$wfh = WorkFromHome::findOrFail($id);
+
+$employees = User::where('role','employee')->get();
+
+return view('wfh.edit', compact('wfh','employees'));
+
+}
+
+
+public function update(Request $request, $id)
+{
+
+$request->validate([
+'user_id' => 'required',
+'start_date' => 'required',
+'end_date' => 'required'
+]);
+
+$wfh = WorkFromHome::findOrFail($id);
+
+$wfh->update([
+'user_id' => $request->user_id,
+'start_date' => $request->start_date,
+'end_date' => $request->end_date,
+'reason' => $request->reason
+]);
+
+return redirect()->route('admin.wfh.index')
+->with('success','WFH updated successfully');
+
+}
+
 public function destroy($id)
 {
 
