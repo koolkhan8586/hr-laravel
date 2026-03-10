@@ -46,7 +46,7 @@ Route::get('/dashboard', function () {
 
 });
 
-require **DIR**.'/auth.php';
+require DIR.'/auth.php';
 
  /* |                                                                        |
 | -------------------------------------------------------------------------- |
