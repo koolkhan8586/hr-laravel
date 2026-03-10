@@ -16,13 +16,18 @@ class HolidayController extends Controller
 
 $holidays = Holiday::orderBy('start_date','desc')->get();
 
+$employees = \App\Models\User::where('role','employee')
+->orderBy('name','asc')
+->get();
+
 if(auth()->user()->role == 'admin'){
-return view('holidays.index',compact('holidays'));
+return view('holidays.index',compact('holidays','employees'));
 }
 
 return view('employees.holidays',compact('holidays'));
 
 }
+
     /**
      * Store new holiday
      */
