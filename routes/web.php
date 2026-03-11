@@ -14,6 +14,7 @@ use App\Http\Controllers\WeeklyScheduleController;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\HolidayController;
 use App\Http\Controllers\WorkFromHomeController;
+use App\Http\Controllers\EmployeeController;
 
 
 /*
