@@ -112,20 +112,33 @@ Specific Employee
 
 </td>
 
-<td class="p-3">
+<td class="p-2">
+
+<div class="flex gap-2">
+
+<a href="{{ route('admin.holidays.edit',$holiday->id) }}"
+class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm">
+Edit
+</a>
 
 <form method="POST"
-action="{{ route('admin.holidays.delete',$holiday->id) }}">
+action="{{ route('admin.holidays.delete',$holiday->id) }}"
+onsubmit="return confirm('Delete this holiday?')">
+
 @csrf
 @method('DELETE')
 
-<button class="bg-red-500 text-white px-3 py-1 rounded">
+<button
+class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">
 Delete
 </button>
 
 </form>
 
+</div>
+
 </td>
+
 
 </tr>
 
