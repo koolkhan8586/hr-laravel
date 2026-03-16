@@ -25,17 +25,26 @@ class HolidayController extends Controller
 |
 */
 
-$holidays = Holiday::with('users')->where(function($q){
+if(auth()->user()->role == 'admin'){
 
-    $q->where('for_all',1)
-      ->orWhereHas('users',function($q2){
-          $q2->where('users.id',auth()->id());
-      });
+    $holidays = Holiday::with('users')
+        ->orderBy('start_date','desc')
+        ->get();
 
-})
-->orderBy('start_date','desc')
-->get();
+}else{
 
+    $holidays = Holiday::with('users')->where(function($q){
+
+        $q->where('for_all',1)
+          ->orWhereHas('users',function($q2){
+              $q2->where('users.id',auth()->id());
+          });
+
+    })
+    ->orderBy('start_date','desc')
+    ->get();
+
+}
 /*
 |--------------------------------------------------------------------------
 | Employees List (for Admin Holiday Assignment)
