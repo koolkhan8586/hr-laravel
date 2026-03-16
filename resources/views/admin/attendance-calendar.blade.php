@@ -91,9 +91,10 @@ $isWeekend = $dayDate->isWeekend();
 
 /* Attendance */
 
-$record = isset($attendances[$user->id])
-? $attendances[$user->id]->where('date',$date)->first()
-: null;
+$key = $user->id.'_'.$date;
+
+$record = $attendances[$key][0] ?? null;
+
 
 /* Leave */
 
