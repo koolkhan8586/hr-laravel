@@ -144,30 +144,31 @@ $holiday = null;
 
 foreach($holidays as $h){
 
-    if(
-        \Carbon\Carbon::parse($h->start_date)->toDateString() <= $date &&
-        \Carbon\Carbon::parse($h->end_date)->toDateString() >= $date
-    ){
+if(
+\Carbon\Carbon::parse($h->start_date)->toDateString() <= $date &&
+\Carbon\Carbon::parse($h->end_date)->toDateString() >= $date
+){
 
-        /* Holiday for ALL employees */
-        if($h->employee_id == null){
+/* Holiday for all employees */
+if($h->for_all == 1){
 
-            $holiday = $h;
-            break;
-
-        }
-
-        /* Holiday for specific employee */
-        if($h->employee_id == $user->id){
-
-            $holiday = $h;
-            break;
-
-        }
-
-    }
+$holiday = $h;
+break;
 
 }
+
+/* Holiday for specific employee */
+if($h->for_all == 0 && $h->user_id == $user->id){
+
+$holiday = $h;
+break;
+
+}
+
+}
+
+}
+
 
 
 @endphp
