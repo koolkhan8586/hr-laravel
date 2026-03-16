@@ -14,22 +14,53 @@ class HolidayController extends Controller
    public function index()
 {
 
+/*
+|--------------------------------------------------------------------------
+| Holidays
+|--------------------------------------------------------------------------
+|
+| Show holiday if:
+| 1. It is for all employees
+| 2. Logged employee is assigned in holiday_users table
+|
+*/
+
 $holidays = Holiday::where(function($q){
 
-$q->where('for_all',1)
-  ->orWhere('user_id',auth()->id());
+    $q->where('for_all',1)
+      ->orWhereHas('users',function($q2){
+          $q2->where('users.id',auth()->id());
+      });
 
 })
 ->orderBy('start_date','desc')
 ->get();
 
+/*
+|--------------------------------------------------------------------------
+| Employees List (for Admin Holiday Assignment)
+|--------------------------------------------------------------------------
+*/
+
 $employees = \App\Models\User::where('role','employee')
 ->orderBy('name','asc')
 ->get();
 
+/*
+|--------------------------------------------------------------------------
+| Admin Panel
+|--------------------------------------------------------------------------
+*/
+
 if(auth()->user()->role == 'admin'){
-return view('holidays.index',compact('holidays','employees'));
+    return view('holidays.index',compact('holidays','employees'));
 }
+
+/*
+|--------------------------------------------------------------------------
+| Employee Portal
+|--------------------------------------------------------------------------
+*/
 
 return view('employees.holidays',compact('holidays'));
 
