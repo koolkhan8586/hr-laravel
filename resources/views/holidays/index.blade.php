@@ -105,9 +105,19 @@ Add Holiday
 <td class="p-3">
 
 @if($holiday->for_all)
+
 All Employees
+
 @else
-Specific Employee
+
+@foreach($holiday->users as $user)
+
+<span class="inline-block bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs mr-1 mb-1">
+{{ $user->name }}
+</span>
+
+@endforeach
+
 @endif
 
 </td>
