@@ -8,23 +8,22 @@ class Holiday extends Model
 {
 
 protected $fillable = [
-
 'title',
 'start_date',
 'end_date',
-'for_all'
-
+'for_all',
+'user_id'
 ];
 
 /*
 |--------------------------------------------------------------------------
-| Users Assigned To Holiday
+| Employees assigned to holiday
 |--------------------------------------------------------------------------
 */
 
 public function users()
 {
-    return $this->belongsToMany(User::class,'holiday_users');
+return $this->belongsToMany(User::class,'holiday_users');
 }
 
 }
