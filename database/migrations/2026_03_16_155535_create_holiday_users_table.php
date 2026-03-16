@@ -6,31 +6,25 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('holiday_users', function (Blueprint $table) {
+
             $table->id();
 
-            // Holiday reference
             $table->foreignId('holiday_id')
                 ->constrained('holidays')
                 ->cascadeOnDelete();
 
-            // Employee reference
             $table->foreignId('user_id')
                 ->constrained('users')
                 ->cascadeOnDelete();
 
             $table->timestamps();
+
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('holiday_users');
