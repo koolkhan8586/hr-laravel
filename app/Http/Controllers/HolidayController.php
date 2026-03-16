@@ -78,4 +78,31 @@ return back()->with('success','Holiday added successfully');
 
         return redirect()->back()->with('success','Holiday deleted');
     }
+
+    public function edit($id)
+{
+
+$holiday = Holiday::findOrFail($id);
+$employees = User::where('role','employee')->get();
+
+return view('holidays.edit',compact('holiday','employees'));
+
+}
+public function update(Request $request,$id)
+{
+
+$holiday = Holiday::findOrFail($id);
+
+$holiday->update([
+'title'=>$request->title,
+'start_date'=>$request->start_date,
+'end_date'=>$request->end_date,
+'user_id'=>$request->user_id,
+'for_all'=>$request->user_id ? 0 : 1
+]);
+
+return redirect()->back()->with('success','Holiday updated');
+
+}
+
 }
