@@ -18,7 +18,8 @@ View
 <button type="button"
 onclick="printCalendar()"
 class="bg-green-600 text-white px-4 py-2 rounded">
-Print / Export </button>
+Print / Export
+</button>
 
 </form>
 
@@ -26,7 +27,16 @@ Print / Export </button>
 
 <div class="mb-4 flex gap-6 text-sm flex-wrap">
 
-<span class="text-green-600 font-bold">✔ Present</span> <span class="text-yellow-600 font-bold">⏰ Late</span> <span class="text-purple-600 font-bold">🕒 Half Day</span> <span class="text-blue-600 font-bold">🌴 Leave</span> <span class="text-blue-600 font-bold">🌅 Morning Leave</span> <span class="text-blue-600 font-bold">🌇 Afternoon Leave</span> <span class="text-indigo-600 font-bold">🏠 Work From Home</span> <span class="text-red-600 font-bold">🎉 Holiday</span> <span class="text-gray-400 font-bold">- Weekend / Future</span> <span class="text-red-600 font-bold">✖ Absent</span>
+<span class="text-green-600 font-bold">✔ Present</span>
+<span class="text-yellow-600 font-bold">⏰ Late</span>
+<span class="text-purple-600 font-bold">🕒 Half Day</span>
+<span class="text-blue-600 font-bold">🌴 Leave</span>
+<span class="text-blue-600 font-bold">🌅 Morning Leave</span>
+<span class="text-blue-600 font-bold">🌇 Afternoon Leave</span>
+<span class="text-indigo-600 font-bold">🏠 Work From Home</span>
+<span class="text-red-600 font-bold">🎉 Holiday</span>
+<span class="text-gray-400 font-bold">- Weekend / Future</span>
+<span class="text-red-600 font-bold">✖ Absent</span>
 
 </div>
 
@@ -92,29 +102,24 @@ $isWeekend = $dayDate->isWeekend();
 /* Attendance */
 
 $key = $user->id.'_'.$date;
-
 $record = $attendances[$key][0] ?? null;
-
 
 /* Leave */
 
 $leave = null;
 
 if(isset($leaves[$user->id])){
-
 foreach($leaves[$user->id] as $l){
 
-    if(
-        \Carbon\Carbon::parse($l->start_date)->toDateString() <= $date &&
-        \Carbon\Carbon::parse($l->end_date)->toDateString() >= $date
-    ){
-        $leave = $l;
-        break;
-    }
-
+if(
+\Carbon\Carbon::parse($l->start_date)->toDateString() <= $date &&
+\Carbon\Carbon::parse($l->end_date)->toDateString() >= $date
+){
+$leave = $l;
+break;
 }
 
-
+}
 }
 
 /* Work From Home */
@@ -122,21 +127,17 @@ foreach($leaves[$user->id] as $l){
 $wfh = null;
 
 if(isset($wfhData[$user->id])){
-
-
 foreach($wfhData[$user->id] as $w){
 
-    if(
-        \Carbon\Carbon::parse($w->start_date)->toDateString() <= $date &&
-        \Carbon\Carbon::parse($w->end_date)->toDateString() >= $date
-    ){
-        $wfh = $w;
-        break;
-    }
-
+if(
+\Carbon\Carbon::parse($w->start_date)->toDateString() <= $date &&
+\Carbon\Carbon::parse($w->end_date)->toDateString() >= $date
+){
+$wfh = $w;
+break;
 }
 
-
+}
 }
 
 /* Holiday */
@@ -147,28 +148,18 @@ foreach($holidays as $h){
 
 $isForEmployee = false;
 
-/* Holiday for all employees */
-
 if($h->for_all == 1){
 $isForEmployee = true;
-}
-
-/* Holiday for specific employees */
-
-else{
+}else{
 
 foreach($h->users as $u){
-
 if($u->id == $user->id){
 $isForEmployee = true;
 break;
 }
-
 }
 
 }
-
-/* Check date range */
 
 if(
 $isForEmployee &&
@@ -181,33 +172,27 @@ break;
 
 }
 
-
-
 @endphp
 
 <td
-class="border text-center cursor-pointer hover:bg-gray-100 {{ $isWeekend ? 'bg-red-50' : '' }}"
+class="border text-center cursor-pointer hover:bg-blue-50 {{ $isWeekend ? 'bg-red-50' : '' }}"
 onclick="showAttendance('{{ $user->id }}','{{ $date }}','{{ $user->name }}')"
 >
 
-{{-- Future Date --}}
 @if($date > $today)
 
 <span class="text-gray-300">-</span>
 
-{{-- Holiday --}}
 @elseif($holiday)
 
 <span class="text-red-600 font-bold"
 title="{{ $holiday->title }}">🎉</span>
 
-{{-- Work From Home --}}
 @elseif($wfh)
 
 <span class="text-indigo-600 font-bold"
 title="Work From Home">🏠</span>
 
-{{-- Leave --}}
 @elseif($leave)
 
 @if($leave->duration_type == 'half_day')
@@ -231,53 +216,29 @@ title="Full Day Leave">🌴</span>
 
 @endif
 
-{{-- Attendance --}}
 @elseif($record)
 
-    @if($record->status == 'present')
+@if($record->status == 'present')
 
-        <span
-        class="text-green-600 font-bold cursor-pointer"
-        title="Present
-Clock In: {{ $record->clock_in ? \Carbon\Carbon::parse($record->clock_in)->format('H:i') : '-' }}
-Clock Out: {{ $record->clock_out ? \Carbon\Carbon::parse($record->clock_out)->format('H:i') : '-' }}
-Total Hours: {{ $record->total_hours ?? '-' }}">
-        ✔
-        </span>
+<span class="text-green-600 font-bold">✔</span>
 
-    @elseif($record->status == 'late')
+@elseif($record->status == 'late')
 
-        <span
-        class="text-yellow-600 font-bold cursor-pointer"
-        title="Late
-Clock In: {{ $record->clock_in ? \Carbon\Carbon::parse($record->clock_in)->format('H:i') : '-' }}
-Clock Out: {{ $record->clock_out ? \Carbon\Carbon::parse($record->clock_out)->format('H:i') : '-' }}
-Total Hours: {{ $record->total_hours ?? '-' }}">
-        ⏰
-        </span>
+<span class="text-yellow-600 font-bold">⏰</span>
 
-    @elseif($record->status == 'half_day')
+@elseif($record->status == 'half_day')
 
-        <span
-        class="text-purple-600 font-bold cursor-pointer"
-        title="Half Day
-Clock In: {{ $record->clock_in ? \Carbon\Carbon::parse($record->clock_in)->format('H:i') : '-' }}
-Clock Out: {{ $record->clock_out ? \Carbon\Carbon::parse($record->clock_out)->format('H:i') : '-' }}
-Total Hours: {{ $record->total_hours ?? '-' }}">
-        🕒
-        </span>
+<span class="text-purple-600 font-bold">🕒</span>
 
-    @endif
+@endif
 
-{{-- Weekend --}}
 @elseif($isWeekend)
 
-    <span class="text-gray-300">-</span>
+<span class="text-gray-300">-</span>
 
-{{-- Absent --}}
 @else
 
-    <span class="text-red-500 font-bold" title="Absent">✖</span>
+<span class="text-red-500 font-bold" title="Absent">✖</span>
 
 @endif
 
@@ -301,15 +262,12 @@ Total Hours: {{ $record->total_hours ?? '-' }}">
 function printCalendar(){
 
 let printContents = document.getElementById('calendarArea').innerHTML;
-
 let originalContents = document.body.innerHTML;
 
 document.body.innerHTML = printContents;
-
 window.print();
 
 document.body.innerHTML = originalContents;
-
 location.reload();
 
 }
@@ -342,6 +300,7 @@ Close
 </div>
 
 </div>
+
 <script>
 
 function showAttendance(userId,date,userName){
@@ -361,7 +320,7 @@ let html = '';
 
 if(data){
 
-html += "<p><b>Status:</b> "+data.status+"</p>";
+html += "<p><b>Status:</b> "+(data.status ?? '-')+"</p>";
 html += "<p><b>Clock In:</b> "+(data.clock_in ?? '-')+"</p>";
 html += "<p><b>Clock Out:</b> "+(data.clock_out ?? '-')+"</p>";
 html += "<p><b>Total Hours:</b> "+(data.total_hours ?? '-')+"</p>";
@@ -374,14 +333,16 @@ html = "No attendance record.";
 
 document.getElementById('modalContent').innerHTML = html;
 
+}).catch(()=>{
+
+document.getElementById('modalContent').innerHTML = "Unable to load attendance.";
+
 });
 
 }
 
 function closeModal(){
-
 document.getElementById('attendanceModal').classList.add('hidden');
-
 }
 
 </script>
