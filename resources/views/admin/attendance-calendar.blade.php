@@ -145,29 +145,41 @@ $holiday = null;
 
 foreach($holidays as $h){
 
+$isForEmployee = false;
+
+/* Holiday for all employees */
+
+if($h->for_all == 1){
+$isForEmployee = true;
+}
+
+/* Holiday for specific employees */
+
+else{
+
+foreach($h->users as $u){
+
+if($u->id == $user->id){
+$isForEmployee = true;
+break;
+}
+
+}
+
+}
+
+/* Check date range */
+
 if(
+$isForEmployee &&
 \Carbon\Carbon::parse($h->start_date)->toDateString() <= $date &&
 \Carbon\Carbon::parse($h->end_date)->toDateString() >= $date
 ){
-
-/* Holiday for all employees */
-if($h->for_all == 1){
-
 $holiday = $h;
 break;
-
-}
-
-/* Holiday for specific employee */
-if($h->for_all == 0 && $h->user_id == $user->id){
-
-$holiday = $h;
-break;
-
 }
 
 }
-
 }
 
 
