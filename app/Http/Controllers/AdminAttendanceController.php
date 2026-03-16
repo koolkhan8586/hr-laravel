@@ -461,33 +461,66 @@ $month = $request->month ?? now()->format('Y-m');
 $start = \Carbon\Carbon::parse($month.'-01')->startOfMonth();
 $end   = \Carbon\Carbon::parse($month.'-01')->endOfMonth();
 
-/* Users */
+/*
+|--------------------------------------------------------------------------
+| Users
+|--------------------------------------------------------------------------
+*/
 
-$users = \App\Models\User::where('role','employee')->get();
+$users = \App\Models\User::where('role','employee')
+->orderBy('name','asc')
+->get();
 
-/* Attendance */
+/*
+|--------------------------------------------------------------------------
+| Attendance (Optimized)
+|--------------------------------------------------------------------------
+*/
 
 $attendances = \App\Models\Attendance::whereBetween('date',[$start,$end])
 ->get()
-->groupBy('user_id');
+->groupBy(function($item){
+    return $item->user_id.'_'.$item->date;
+});
 
-/* Leave */
+/*
+|--------------------------------------------------------------------------
+| Leaves
+|--------------------------------------------------------------------------
+*/
 
 $leaves = \App\Models\Leave::where('status','approved')
 ->where(function($q) use ($start,$end){
+
 $q->whereBetween('start_date',[$start,$end])
   ->orWhereBetween('end_date',[$start,$end]);
+
 })
 ->get()
 ->groupBy('user_id');
 
-/* Holidays */
+/*
+|--------------------------------------------------------------------------
+| Holidays
+|--------------------------------------------------------------------------
+*/
 
 $holidays = \App\Models\Holiday::all();
 
-/* Work From Home */
+/*
+|--------------------------------------------------------------------------
+| Work From Home
+|--------------------------------------------------------------------------
+*/
 
-$wfhData = \App\Models\WorkFromHome::get()->groupBy('user_id');
+$wfhData = \App\Models\WorkFromHome::all()
+->groupBy('user_id');
+
+/*
+|--------------------------------------------------------------------------
+| Return View
+|--------------------------------------------------------------------------
+*/
 
 return view('admin.attendance-calendar',compact(
 'users',
@@ -501,6 +534,7 @@ return view('admin.attendance-calendar',compact(
 ));
 
 }
+
 
 public function attendanceDetails($user,$date)
 {
