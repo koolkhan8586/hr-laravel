@@ -538,4 +538,19 @@ foreach ($attendances as $attendance) {
 
         return response()->json($data);
     }
+
+    public function details(Request $request)
+{
+
+$attendance = Attendance::where('user_id',$request->user_id)
+->whereDate('clock_in',$request->date)
+->first();
+
+if(!$attendance){
+return "No attendance record.";
+}
+
+return view('admin.partials.attendance-details',compact('attendance'));
+
+}
 }
