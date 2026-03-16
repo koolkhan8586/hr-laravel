@@ -25,7 +25,7 @@ class HolidayController extends Controller
 |
 */
 
-$holidays = Holiday::where(function($q){
+$holidays = Holiday::with('users')->where(function($q){
 
     $q->where('for_all',1)
       ->orWhereHas('users',function($q2){
@@ -65,7 +65,6 @@ if(auth()->user()->role == 'admin'){
 return view('employees.holidays',compact('holidays'));
 
 }
-
    /**
  * Store new holiday
  */
