@@ -14,7 +14,14 @@ class HolidayController extends Controller
    public function index()
 {
 
-$holidays = Holiday::orderBy('start_date','desc')->get();
+$holidays = Holiday::where(function($q){
+
+$q->where('for_all',1)
+  ->orWhere('user_id',auth()->id());
+
+})
+->orderBy('start_date','desc')
+->get();
 
 $employees = \App\Models\User::where('role','employee')
 ->orderBy('name','asc')
