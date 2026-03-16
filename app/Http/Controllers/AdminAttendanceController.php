@@ -371,18 +371,39 @@ $events = [];
 
 /* Holidays */
 
+
 $holidays = \App\Models\Holiday::all();
 
 foreach($holidays as $holiday){
 
-$events[] = [
-'title' => 'Holiday: '.$holiday->title,
-'start' => $holiday->start_date,
-'end' => $holiday->end_date,
-'color' => 'red'
-];
+    /* If holiday is for all employees */
+    if($holiday->employee_id == null){
+
+        $events[] = [
+            'title' => 'Holiday: '.$holiday->title,
+            'start' => $holiday->start_date,
+            'end'   => $holiday->end_date,
+            'color' => 'red'
+        ];
+
+    }
+
+    /* If holiday is assigned to a specific employee */
+    else{
+
+        $employee = \App\Models\User::find($holiday->employee_id);
+
+        $events[] = [
+            'title' => $holiday->title.' ('.$employee->name.')',
+            'start' => $holiday->start_date,
+            'end'   => $holiday->end_date,
+            'color' => 'orange'
+        ];
+
+    }
 
 }
+
 
 /* Leave */
 
