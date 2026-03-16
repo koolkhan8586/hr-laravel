@@ -31,6 +31,20 @@ Welcome to your HR dashboard
 </p>
 </div>
 
+@php
+
+$nextHoliday = \App\Models\Holiday::where(function($q){
+
+$q->where('for_all',1)
+  ->orWhere('user_id',auth()->id());
+
+})
+->whereDate('start_date','>=',now())
+->orderBy('start_date')
+->first();
+
+@endphp
+
 <!-- Next Holiday Widget -->
 
 <div class="bg-white shadow rounded-xl p-5 text-center">
