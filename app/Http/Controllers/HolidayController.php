@@ -35,10 +35,10 @@ return view('employees.holidays',compact('holidays'));
 
 }
 
-    /**
-     * Store new holiday
-     */
-    public function store(Request $request)
+   /**
+ * Store new holiday
+ */
+public function store(Request $request)
 {
 
 $request->validate([
@@ -46,6 +46,12 @@ $request->validate([
 'start_date' => 'required|date',
 'end_date' => 'required|date'
 ]);
+
+/*
+|--------------------------------------------------------------------------
+| Holiday For All Employees
+|--------------------------------------------------------------------------
+*/
 
 if($request->for_all){
 
@@ -56,17 +62,28 @@ Holiday::create([
 'for_all'=>1
 ]);
 
-}else{
+}
 
-foreach($request->user_id as $user){
+/*
+|--------------------------------------------------------------------------
+| Holiday For Specific Employees
+|--------------------------------------------------------------------------
+*/
 
-Holiday::create([
+else{
+
+$holiday = Holiday::create([
 'title'=>$request->title,
 'start_date'=>$request->start_date,
 'end_date'=>$request->end_date,
-'for_all'=>0,
-'user_id'=>$user
+'for_all'=>0
 ]);
+
+/* Attach Employees */
+
+if($request->user_id){
+
+$holiday->users()->sync($request->user_id);
 
 }
 
