@@ -505,7 +505,7 @@ $q->whereBetween('start_date',[$start,$end])
 |--------------------------------------------------------------------------
 */
 
-$holidays = \App\Models\Holiday::all();
+$holidays = \App\Models\Holiday::with('users')->get();
 
 /*
 |--------------------------------------------------------------------------
