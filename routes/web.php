@@ -260,18 +260,18 @@ Route::get('/dashboard',
 |--------------------------------------------------------------------------
 */
 
-Route::get('/holidays',
-    [HolidayController::class,'index']
-)->name('holidays.index');
+Route::get('/holidays',[HolidayController::class,'index'])->name('holidays.index');
 
-Route::post('/holidays',
-    [HolidayController::class,'store']
-)->name('holidays.store');
+Route::post('/holidays',[HolidayController::class,'store'])->name('holidays.store');
 
-Route::delete('/holidays/{id}',
-    [HolidayController::class,'destroy']
-)->name('holidays.delete');
+Route::get('/admin/holidays/{id}/edit',
+[HolidayController::class,'edit'])->name('admin.holidays.edit');
 
+Route::put('/admin/holidays/{id}',
+[HolidayController::class,'update'])->name('admin.holidays.update');
+
+Route::delete('/admin/holidays/{id}',
+[HolidayController::class,'destroy'])->name('admin.holidays.delete');
 /*
 |--------------------------------------------------------------------------
 | Work From Home Management
