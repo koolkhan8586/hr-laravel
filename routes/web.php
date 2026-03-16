@@ -201,6 +201,8 @@ Route::get('/attendance-summary',
 Route::get('/attendance-details/{user}/{date}',
 [AdminAttendanceController::class,'attendanceDetails']);
 
+Route::get('/attendance/details',[AttendanceController::class,'details']);
+
 
 /*
 |--------------------------------------------------------------------------
