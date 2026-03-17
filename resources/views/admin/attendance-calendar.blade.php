@@ -188,7 +188,7 @@ onclick="showAttendance('{{ $user->id }}','{{ $date }}','{{ $user->name }}')"
 <span
 class="text-red-600 font-bold cursor-pointer"
 title="{{ $holiday->title }}"
-onclick="showHoliday('{{ $holiday->title }}','{{ $holiday->start_date }}','{{ $holiday->end_date }}')">
+onclick="event.stopPropagation(); showHoliday('{{ $holiday->title }}','{{ $holiday->start_date }}','{{ $holiday->end_date }}')">
 🎉
 </span>
 
