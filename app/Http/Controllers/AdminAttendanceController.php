@@ -117,18 +117,56 @@ $wfhUsers = \App\Models\WorkFromHome::whereDate('start_date','<=',$today)
     ->pluck('user_id')
     ->toArray();
 
+/* Holiday users */
+
+$holidayUsers = [];
+
+$holidays = \App\Models\Holiday::with('users')
+    ->whereDate('start_date','<=',$today)
+    ->whereDate('end_date','>=',$today)
+    ->get();
+
+foreach($holidays as $h){
+
+    if($h->for_all == 1){
+
+        $holidayUsers = User::where('role','employee')
+            ->pluck('id')
+            ->toArray();
+
+    }else{
+
+        foreach($h->users as $u){
+            $holidayUsers[] = $u->id;
+        }
+
+    }
+
+}
+
+/* Weekend check */
+
+$isWeekend = \Carbon\Carbon::parse($today)->isWeekend();
+
 /* Absent employees */
+
+$absentEmployees = collect();
+
+if(!$isWeekend){
 
 $absentEmployees = User::where('role','employee')
     ->whereNotIn('id',$attendanceUsers)
     ->whereNotIn('id',$leaveUsers)
     ->whereNotIn('id',$wfhUsers)
+    ->whereNotIn('id',$holidayUsers)
     ->get();
 
+}
+
 $absent = $absentEmployees->count();
-  
 
 /* Work From Home Today */
+
 $today = now()->toDateString();
 
 $wfhToday = \App\Models\WorkFromHome::with('user')
@@ -149,7 +187,6 @@ return view('admin.attendance-dashboard', compact(
 'wfhCount',
 'date'
 ));
-}
 
 
 /*
