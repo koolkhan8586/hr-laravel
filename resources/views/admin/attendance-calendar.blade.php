@@ -185,8 +185,12 @@ onclick="showAttendance('{{ $user->id }}','{{ $date }}','{{ $user->name }}')"
 
 @elseif($holiday)
 
-<span class="text-red-600 font-bold"
-title="{{ $holiday->title }}">🎉</span>
+<span
+class="text-red-600 font-bold cursor-pointer"
+title="{{ $holiday->title }}"
+onclick="showHoliday('{{ $holiday->title }}','{{ $holiday->start_date }}','{{ $holiday->end_date }}')">
+🎉
+</span>
 
 @elseif($wfh)
 
@@ -338,6 +342,24 @@ document.getElementById('modalContent').innerHTML = html;
 document.getElementById('modalContent').innerHTML = "Unable to load attendance.";
 
 });
+
+}
+
+function showHoliday(title,start,end){
+
+document.getElementById('attendanceModal').classList.remove('hidden');
+
+document.getElementById('modalTitle').innerHTML =
+"Holiday";
+
+let html = "";
+
+html += "<p><b>Title:</b> "+title+"</p>";
+html += "<p><b>Start Date:</b> "+start+"</p>";
+html += "<p><b>End Date:</b> "+end+"</p>";
+html += "<p class='text-green-600 font-semibold mt-2'>This day is marked as a holiday.</p>";
+
+document.getElementById('modalContent').innerHTML = html;
 
 }
 
