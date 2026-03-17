@@ -354,15 +354,69 @@ $wfhUsers = \App\Models\WorkFromHome::whereDate('start_date','<=',$today)
 ->whereDate('end_date','>=',$today)
 ->pluck('user_id');
 
+/*
+|--------------------------------------------------------------------------
+| Holiday Users
+|--------------------------------------------------------------------------
+*/
+
+$holidayUsers = [];
+
+$holidays = \App\Models\Holiday::with('users')
+->whereDate('start_date','<=',$today)
+->whereDate('end_date','>=',$today)
+->get();
+
+foreach($holidays as $h){
+
+if($h->for_all == 1){
+
+$holidayUsers = User::where('role','employee')
+->pluck('id')
+->toArray();
+
+}else{
+
+foreach($h->users as $u){
+$holidayUsers[] = $u->id;
+}
+
+}
+
+}
+
+/*
+|--------------------------------------------------------------------------
+| Weekend Check
+|--------------------------------------------------------------------------
+*/
+
+$isWeekend = \Carbon\Carbon::parse($today)->isWeekend();
+
+/*
+|--------------------------------------------------------------------------
+| Absent Records
+|--------------------------------------------------------------------------
+*/
+
+if(!$isWeekend){
+
 $records = User::where('role','employee')
 ->whereNotIn('id',$attendanceUsers)
 ->whereNotIn('id',$leaveUsers)
 ->whereNotIn('id',$wfhUsers)
+->whereNotIn('id',$holidayUsers)
 ->get();
 
-return view('admin.attendance-list', compact('records','type'));
+}else{
+
+$records = collect();
+
 }
 
+return view('admin.attendance-list', compact('records','type'));
+
+}
 /*
 |--------------------------------------------------------------------------
 | Present / Late / Half Day
