@@ -18,7 +18,7 @@ My Work From Home
 
 <tbody>
 
-@foreach($wfh as $item)
+@forelse($wfh as $item)
 
 <tr>
 
@@ -36,7 +36,15 @@ My Work From Home
 
 </tr>
 
-@endforeach
+@empty
+
+<tr>
+<td colspan="3" class="text-center p-4 text-gray-500">
+No Work From Home records found
+</td>
+</tr>
+
+@endforelse
 
 </tbody>
 
