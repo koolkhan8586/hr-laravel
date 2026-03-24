@@ -12,12 +12,34 @@ class WorkFromHomeController extends Controller
 public function index()
 {
 
-$employees = User::where('role','employee')->get();
+// Optional: restrict to admin only
+if(auth()->user()->role != 'admin'){
+    abort(403);
+}
 
+/*
+|--------------------------------------------------------------------------
+| Employees List
+|--------------------------------------------------------------------------
+*/
+$employees = User::where('role','employee')
+    ->orderBy('name','asc')
+    ->get();
+
+/*
+|--------------------------------------------------------------------------
+| Work From Home Records
+|--------------------------------------------------------------------------
+*/
 $wfh = WorkFromHome::with('user')
-->orderBy('start_date','desc')
-->get();
+    ->orderBy('start_date','desc')
+    ->get();
 
+/*
+|--------------------------------------------------------------------------
+| Return View
+|--------------------------------------------------------------------------
+*/
 return view('wfh.index', compact('employees','wfh'));
 
 }
