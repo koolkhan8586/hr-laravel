@@ -71,82 +71,112 @@ class LeaveController extends Controller
 |--------------------------------------------------------------------------
 */
 
-    public function store(Request $request)
-    {
-        $request->validate([
-            'employee_id' => auth()->user()->role === 'admin'
-                ? 'required|exists:users,id'
-                : 'nullable',
-            'type'          => 'required|in:annual,without_pay',
-            'start_date'    => 'required|date',
-            'end_date'      => 'required|date|after_or_equal:start_date',
-            'duration_type' => 'required|in:full_day,half_day',
-            'reason'        => 'nullable|string'
-        ]);
+public function store(Request $request)
+{
+    $request->validate([
+        'employee_id' => auth()->user()->role === 'admin'
+            ? 'required|exists:users,id'
+            : 'nullable',
+        'type'          => 'required|in:annual,without_pay',
+        'start_date'    => 'required|date',
+        'end_date'      => 'required|date|after_or_equal:start_date',
+        'duration_type' => 'required|in:full_day,half_day',
+        'reason'        => 'nullable|string'
+    ]);
 
-        $userId = auth()->user()->role === 'admin'
-            ? $request->employee_id
-            : auth()->id();
+    $userId = auth()->user()->role === 'admin'
+        ? $request->employee_id
+        : auth()->id();
 
-        $start = Carbon::parse($request->start_date);
-        $end   = Carbon::parse($request->end_date);
+    $start = Carbon::parse($request->start_date);
+    $end   = Carbon::parse($request->end_date);
 
-        $days = $request->duration_type === 'half_day'
-            ? 0.5
-            : $start->diffInDays($end) + 1;
+    /*
+    |--------------------------------------------------------------------------
+    | PREVENT DUPLICATE / OVERLAPPING LEAVES  ✅ NEW
+    |--------------------------------------------------------------------------
+    */
 
-        $leave = Leave::create([
-            'user_id'        => $userId,
-            'type'           => $request->type,
-            'start_date'     => $request->start_date,
-            'end_date'       => $request->end_date,
-            'duration_type'  => $request->duration_type,
-            'half_day_type'  => $request->half_day_type ?? null,
-            'days'           => $days,
-            'calculated_days'=> $days,
-            'reason'         => $request->reason,
-            'status'         => auth()->user()->role === 'admin' ? 'approved' : 'pending',
-        ]);
+    $exists = Leave::where('user_id', $userId)
+        ->where(function($q) use ($request) {
 
-        /*
-        |--------------------------------------------------------------------------
-        | EMAIL LOGIC (UNCHANGED)
-        |--------------------------------------------------------------------------
-        */
+            $q->whereBetween('start_date', [$request->start_date, $request->end_date])
+              ->orWhereBetween('end_date', [$request->start_date, $request->end_date])
+              ->orWhere(function($q2) use ($request){
+                  $q2->where('start_date','<=',$request->start_date)
+                     ->where('end_date','>=',$request->end_date);
+              });
 
-        if(auth()->user()->role === 'employee'){
-            $admins = User::where('role','admin')->get();
+        })
+        ->whereIn('status', ['pending','approved']) // only active leaves
+        ->exists();
 
-            foreach($admins as $admin){
-                Mail::raw(
-                    "New Leave Request\n\nEmployee: ".auth()->user()->name.
-                    "\nFrom: ".$request->start_date.
-                    "\nTo: ".$request->end_date.
-                    "\nDays: ".$days,
-                    function ($message) use ($admin) {
-                        $message->to($admin->email)
-                            ->subject('New Leave Application Submitted');
-                    }
-                );
-            }
-        }
+    if($exists){
+        return back()->with('error','Leave already applied for selected dates');
+    }
 
-        if(auth()->user()->role === 'admin'){
-            $this->processApproval($leave);
+    /*
+    |--------------------------------------------------------------------------
+    | CALCULATE DAYS (UNCHANGED)
+    |--------------------------------------------------------------------------
+    */
 
+    $days = $request->duration_type === 'half_day'
+        ? 0.5
+        : $start->diffInDays($end) + 1;
+
+    $leave = Leave::create([
+        'user_id'        => $userId,
+        'type'           => $request->type,
+        'start_date'     => $request->start_date,
+        'end_date'       => $request->end_date,
+        'duration_type'  => $request->duration_type,
+        'half_day_type'  => $request->half_day_type ?? null,
+        'days'           => $days,
+        'calculated_days'=> $days,
+        'reason'         => $request->reason,
+        'status'         => auth()->user()->role === 'admin' ? 'approved' : 'pending',
+    ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | EMAIL LOGIC (UNCHANGED)
+    |--------------------------------------------------------------------------
+    */
+
+    if(auth()->user()->role === 'employee'){
+        $admins = User::where('role','admin')->get();
+
+        foreach($admins as $admin){
             Mail::raw(
-                "Leave Created By Admin\n\nFrom: ".$request->start_date.
+                "New Leave Request\n\nEmployee: ".auth()->user()->name.
+                "\nFrom: ".$request->start_date.
                 "\nTo: ".$request->end_date.
                 "\nDays: ".$days,
-                function ($message) use ($leave) {
-                    $message->to($leave->user->email)
-                        ->subject('Leave Created By Admin');
+                function ($message) use ($admin) {
+                    $message->to($admin->email)
+                        ->subject('New Leave Application Submitted');
                 }
             );
         }
-
-        return back()->with('success','Leave Created Successfully');
     }
+
+    if(auth()->user()->role === 'admin'){
+        $this->processApproval($leave);
+
+        Mail::raw(
+            "Leave Created By Admin\n\nFrom: ".$request->start_date.
+            "\nTo: ".$request->end_date.
+            "\nDays: ".$days,
+            function ($message) use ($leave) {
+                $message->to($leave->user->email)
+                    ->subject('Leave Created By Admin');
+            }
+        );
+    }
+
+    return back()->with('success','Leave Created Successfully');
+}
 
 /*
 |--------------------------------------------------------------------------
