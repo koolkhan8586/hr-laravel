@@ -88,6 +88,34 @@
                        required>
             </div>
 
+            <div class="mt-4">
+
+    <!-- 🔓 Allow Anywhere -->
+    <label class="flex items-center gap-2">
+        <input type="checkbox" name="allow_anywhere_attendance"
+        {{ $staff->allow_anywhere_attendance ? 'checked' : '' }}>
+        
+        <span class="font-semibold text-green-700">
+            Allow Attendance Anywhere
+        </span>
+    </label>
+
+</div>
+
+<div class="mt-3">
+
+    <!-- ⏱ Temporary Override -->
+    <label class="block mb-1 font-semibold">
+        Allow Until (Optional)
+    </label>
+
+    <input type="datetime-local"
+           name="attendance_override_until"
+           value="{{ $staff->attendance_override_until }}"
+           class="border p-2 w-full rounded">
+
+</div>
+
         </div>
 
         <div class="mt-8">
