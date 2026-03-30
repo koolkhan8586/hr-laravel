@@ -39,46 +39,44 @@ class AttendanceController extends Controller
     $lng = $request->longitude;
 
     /*
-    |--------------------------------------------------------------------------
-    | LOCATION VALIDATION (FINAL FIXED)
-    |--------------------------------------------------------------------------
-    */
+|--------------------------------------------------------------------------
+| LOCATION VALIDATION (FINAL FIX)
+|--------------------------------------------------------------------------
+*/
 
-    $locationStatus = 'inside';
+$locationStatus = 'inside';
 
-    // ✅ FINAL FIX: ONLY depend on allow_anywhere
-    if ($user->allow_anywhere == 1) {
+// ✅ FORCE BYPASS FIRST
+if ($user->allow_anywhere == 1) {
 
-        $locationStatus = 'override';
+    $locationStatus = 'override';
 
-    } else {
+} else {
 
-        if (!$user->officeLocation) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No office location assigned by admin.'
-            ], 403);
-        }
-
-        $office = $user->officeLocation;
-
-        $distance = $this->calculateDistance(
-            $lat,
-            $lng,
-            $office->latitude,
-            $office->longitude
-        );
-
-        if ($distance > $office->radius) {
-            return response()->json([
-                'success' => false,
-                'message' => 'You are outside allowed office location.'
-            ], 403);
-        }
-
-        $locationStatus = 'inside';
+    if (!$user->officeLocation) {
+        return response()->json([
+            'success' => false,
+            'message' => 'No office location assigned by admin.'
+        ], 403);
     }
 
+    $office = $user->officeLocation;
+
+    $distance = $this->calculateDistance(
+        $lat,
+        $lng,
+        $office->latitude,
+        $office->longitude
+    );
+
+    // ❌ ONLY check if NOT override
+    if ($distance > $office->radius) {
+        return response()->json([
+            'success' => false,
+            'message' => 'You are outside allowed office location.'
+        ], 403);
+    }
+}
     /*
     |--------------------------------------------------------------------------
     | Get Today's Schedule
