@@ -709,5 +709,14 @@ return view('admin.monthly-summary',compact(
 
 }
 
+    public function liveMap()
+{
+    $employees = \App\Models\Attendance::with('user')
+        ->whereDate('date', now()->toDateString())
+        ->whereNotNull('clock_in_latitude')
+        ->get();
+
+    return view('admin.attendance.live-map', compact('employees'));
+}
     
 }
