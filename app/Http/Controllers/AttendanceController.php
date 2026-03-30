@@ -89,13 +89,13 @@ class AttendanceController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | LOCATION VALIDATION (NEW - ADDED FEATURE)
+    | LOCATION VALIDATION (IMPROVED)
     |--------------------------------------------------------------------------
     */
 
     $locationStatus = 'inside';
 
-    // 🔓 Allow anywhere (admin override)
+    // 🔓 Allow anywhere (admin override OR temporary override)
     if (
         $user->allow_anywhere_attendance ||
         ($user->attendance_override_until && now()->lessThan($user->attendance_override_until))
@@ -103,6 +103,7 @@ class AttendanceController extends Controller
         $locationStatus = 'override';
     } else {
 
+        // ❌ No office assigned
         if (!$user->officeLocation) {
             return response()->json([
                 'success' => false,
@@ -112,19 +113,24 @@ class AttendanceController extends Controller
 
         $office = $user->officeLocation;
 
-        $distance = calculateDistance(
+        // 📏 Distance calculation (SAFE)
+        $distance = $this->calculateDistance(
             $lat,
             $lng,
             $office->latitude,
             $office->longitude
         );
 
+        // ❌ Outside allowed radius
         if ($distance > $office->radius) {
             return response()->json([
                 'success' => false,
                 'message' => 'You are outside allowed office location.'
             ], 403);
         }
+
+        // ✅ Inside office
+        $locationStatus = 'inside';
     }
 
     /*
@@ -133,7 +139,7 @@ class AttendanceController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    $day = $now->format('l'); // Monday, Tuesday etc
+    $day = $now->format('l');
 
     $schedule = \App\Models\WeeklySchedule::where('user_id', auth()->id())
         ->where('day_of_week', $day)
@@ -149,7 +155,6 @@ class AttendanceController extends Controller
     $shift = \App\Models\Shift::find($schedule->shift_id);
 
     $shiftStart = \Carbon\Carbon::parse($shift->start_time, 'Asia/Karachi');
-
     $lateAfter = $shiftStart->copy()->addMinutes($shift->grace_minutes);
 
     $attendance = Attendance::where('user_id', auth()->id())
@@ -158,7 +163,7 @@ class AttendanceController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | CASE 1: Employee was auto marked absent earlier
+    | CASE 1: Auto Absent → Convert to Late
     |--------------------------------------------------------------------------
     */
 
@@ -167,7 +172,7 @@ class AttendanceController extends Controller
         $attendance->clock_in = $now;
         $attendance->clock_in_latitude  = $lat;
         $attendance->clock_in_longitude = $lng;
-        $attendance->location_status = $locationStatus; // ✅ NEW
+        $attendance->location_status = $locationStatus;
         $attendance->status = 'late';
         $attendance->save();
 
@@ -192,7 +197,7 @@ class AttendanceController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Determine Attendance Status Based on Shift
+    | Determine Status
     |--------------------------------------------------------------------------
     */
 
@@ -204,13 +209,13 @@ class AttendanceController extends Controller
         'clock_in' => $now,
         'clock_in_latitude' => $lat,
         'clock_in_longitude' => $lng,
-        'location_status' => $locationStatus, // ✅ NEW
+        'location_status' => $locationStatus,
         'status' => $status,
     ]);
 
     /*
     |--------------------------------------------------------------------------
-    | Send Email Notification
+    | Send Email
     |--------------------------------------------------------------------------
     */
 
@@ -221,7 +226,7 @@ class AttendanceController extends Controller
             "Time: ".$attendance->clock_in."\n".
             "Location: ".$lat.", ".$lng."\n".
             "Status: ".$status."\n".
-            "Location Mode: ".$locationStatus, // ✅ NEW
+            "Location Mode: ".$locationStatus,
             function ($message) {
                 $message->to(auth()->user()->email)
                         ->subject('Clock In Confirmation');
@@ -232,7 +237,7 @@ class AttendanceController extends Controller
     }
 
     return redirect()->route('dashboard')
-    ->with('success', 'Clock-in successful! Attendance marked.');
+        ->with('success', 'Clock-in successful! Attendance marked.');
 }
     /*
     |--------------------------------------------------------------------------
@@ -601,18 +606,18 @@ return view('admin.partials.attendance-details',compact('attendance'));
 
 }
 
-private function distance($lat1, $lon1, $lat2, $lon2)
+private function calculateDistance($lat1, $lon1, $lat2, $lon2)
 {
-    $earthRadius = 6371000; // meters
+    $earthRadius = 6371000;
 
     $dLat = deg2rad($lat2 - $lat1);
     $dLon = deg2rad($lon2 - $lon1);
 
-    $a = sin($dLat/2) * sin($dLat/2) +
+    $a = sin($dLat / 2) * sin($dLat / 2) +
          cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
-         sin($dLon/2) * sin($dLon/2);
+         sin($dLon / 2) * sin($dLon / 2);
 
-    $c = 2 * atan2(sqrt($a), sqrt(1-$a));
+    $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
 
     return $earthRadius * $c;
 }
