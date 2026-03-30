@@ -182,6 +182,7 @@ class StaffController extends Controller
         'name'          => $request->name,
         'email'         => $request->email,
         'employee_code' => strtoupper($request->employee_code),
+        'office_location_id' => $request->office_location_id,
 
         // 🔓 Allow Anywhere Attendance
         'allow_anywhere_attendance' => $request->has('allow_anywhere_attendance'),
