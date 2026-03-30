@@ -16,8 +16,12 @@ let map;
 
 function initMap() {
 
-    const center = { lat: 31.5204, lng: 74.3587 };
-
+   let center = employees.length
+    ? {
+        lat: parseFloat(employees[0].clock_in_latitude),
+        lng: parseFloat(employees[0].clock_in_longitude)
+    }
+    : { lat: 31.5204, lng: 74.3587 };
     map = new google.maps.Map(document.getElementById("map"), {
         zoom: 12,
         center: center
@@ -27,33 +31,50 @@ function initMap() {
 
     employees.forEach(emp => {
 
-        let lat = parseFloat(emp.clock_in_latitude);
-        let lng = parseFloat(emp.clock_in_longitude);
+    let lat = parseFloat(emp.clock_in_latitude);
+    let lng = parseFloat(emp.clock_in_longitude);
 
-        if (!lat || !lng) return;
+    if (!lat || !lng) return;
 
-        let marker = new google.maps.Marker({
-            position: { lat: lat, lng: lng },
-            map: map,
-            title: emp.user.name
-        });
+    // 🔥 Decide marker color
+    let icon = "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
 
-        let info = new google.maps.InfoWindow({
-            content: `
-                <b>${emp.user.name}</b><br>
-                Status: ${emp.status}<br>
-                Time: ${emp.clock_in}
-            `
-        });
+    if (emp.location_status === 'inside') {
+        icon = "http://maps.google.com/mapfiles/ms/icons/green-dot.png";
+    }
 
-        marker.addListener("click", () => {
-            info.open(map, marker);
-        });
+    if (emp.location_status === 'override') {
+        icon = "http://maps.google.com/mapfiles/ms/icons/yellow-dot.png";
+    }
 
+    let marker = new google.maps.Marker({
+        position: { lat: lat, lng: lng },
+        map: map,
+        icon: icon,
+        title: emp.user.name
     });
+
+    let info = new google.maps.InfoWindow({
+        content: `
+            <b>${emp.user.name}</b><br>
+            Status: ${emp.status}<br>
+            Location: ${emp.location_status}<br>
+            Time: ${emp.clock_in}
+        `
+    });
+
+    marker.addListener("click", () => {
+        info.open(map, marker);
+    });
+
+});
 }
 
 window.onload = initMap;
+
+setInterval(() => {
+    location.reload();
+}, 10000); // refresh every 10 sec
 
 </script>
 
