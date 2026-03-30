@@ -343,4 +343,57 @@ maximumAge:0
 
 </script>
 
+<script>
+
+function checkLocationStatus() {
+
+    if (!navigator.geolocation) {
+        document.getElementById("locationStatus").innerHTML =
+            "<span class='text-red-600'>Geolocation not supported</span>";
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(function(position) {
+
+        let lat = position.coords.latitude;
+        let lng = position.coords.longitude;
+
+        fetch("{{ route('attendance.check.location') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                latitude: lat,
+                longitude: lng
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+
+            if (data.status === 'inside') {
+                document.getElementById("locationStatus").innerHTML =
+                    "<span class='text-green-600'>🟢 You are in office — Eligible to mark attendance</span>";
+            } 
+            else if (data.status === 'override') {
+                document.getElementById("locationStatus").innerHTML =
+                    "<span class='text-yellow-600'>🟡 Override active — You can mark attendance anywhere</span>";
+            } 
+            else {
+                document.getElementById("locationStatus").innerHTML =
+                    "<span class='text-red-600'>🔴 You are outside office — Not allowed</span>";
+            }
+
+        });
+
+    });
+
+}
+
+// Run on page load
+checkLocationStatus();
+
+</script>
+
 </x-app-layout>
