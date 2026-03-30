@@ -346,6 +346,8 @@ maximumAge:0
 
 <script>
 
+<script>
+
 function checkLocationStatus() {
 
     if (!navigator.geolocation) {
@@ -353,6 +355,9 @@ function checkLocationStatus() {
             "<span class='text-red-600'>Geolocation not supported</span>";
         return;
     }
+
+    // ✅ Get allow_anywhere from backend
+    let allowAnywhere = {{ auth()->user()->allow_anywhere ? 'true' : 'false' }};
 
     navigator.geolocation.getCurrentPosition(function(position) {
 
@@ -373,6 +378,14 @@ function checkLocationStatus() {
         .then(res => res.json())
         .then(data => {
 
+            // ✅ FORCE override if allow_anywhere is ON
+            if (allowAnywhere) {
+                document.getElementById("locationStatus").innerHTML =
+                    "<span class='text-yellow-600'>🟡 Override active — You can mark attendance anywhere</span>";
+                return;
+            }
+
+            // ✅ Normal backend logic
             if (data.status === 'inside') {
                 document.getElementById("locationStatus").innerHTML =
                     "<span class='text-green-600'>🟢 You are in office — Eligible to mark attendance</span>";
@@ -396,5 +409,4 @@ function checkLocationStatus() {
 checkLocationStatus();
 
 </script>
-
 </x-app-layout>
