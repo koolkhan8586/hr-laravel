@@ -391,4 +391,6 @@ alert("Please allow location access.");
 
 </script>
 
+
+
 </x-app-layout>
