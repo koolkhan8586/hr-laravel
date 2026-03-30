@@ -104,6 +104,14 @@ Monthly Summary
     </a>
 </li>
 
+<li>
+    <a href="{{ route('admin.office-locations.index') }}"
+       class="block py-2 px-3 hover:bg-gray-100 rounded">
+       
+       📍 Office Locations
+    </a>
+</li>
+
 </div>
 </div>
 
