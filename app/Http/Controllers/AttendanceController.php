@@ -24,7 +24,11 @@ class AttendanceController extends Controller
     */
     public function clockIn(Request $request)
 {
-    dd('CLOCK IN HIT');
+    if (auth()->user()->allow_anywhere == 1) {
+
+    return redirect()->route('dashboard')
+        ->with('success', 'Clock-in successful (Override Active)');
+}
     $now = \Carbon\Carbon::now('Asia/Karachi');
     $today = $now->toDateString();
 
