@@ -44,12 +44,19 @@
             </div>
 
             <div>
-                <label class="block font-semibold mb-1">Employee Code</label>
-                <input type="text"
-                       value="{{ old('employee_code', $staff->user->employee_code) }}"
-                       class="w-full border p-2 rounded uppercase"
-                       required>
-            </div>
+    <label class="block font-semibold mb-1">Employee Code</label>
+
+    <!-- SHOW (readonly) -->
+    <input type="text"
+           value="{{ old('employee_code', $staff->user->employee_code) }}"
+           class="w-full border p-2 rounded uppercase"
+           readonly>
+
+    <!-- SEND TO BACKEND -->
+    <input type="hidden"
+           name="employee_code"
+           value="{{ old('employee_code', $staff->user->employee_code) }}">
+</div>
 
             <div>
                 <label class="block font-semibold mb-1">Department</label>
