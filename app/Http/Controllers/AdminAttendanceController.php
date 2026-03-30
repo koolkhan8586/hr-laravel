@@ -716,7 +716,9 @@ return view('admin.monthly-summary',compact(
         ->whereNotNull('clock_in_latitude')
         ->get();
 
-    return view('admin.attendance.live-map', compact('employees'));
+    $locations = \App\Models\OfficeLocation::all(); // ✅ ADD THIS
+
+    return view('admin.attendance.live-map', compact('employees','locations'));
 }
     
 }
