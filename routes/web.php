@@ -228,7 +228,7 @@ Route::get('/attendance-list/{type}',[AdminAttendanceController::class,'attendan
 Route::get('/office-locations', [OfficeLocationController::class,'index'])->name('office-locations.index');
 Route::post('/office-locations', [OfficeLocationController::class,'store'])->name('office-locations.store');
 Route::delete('/office-locations/{id}', [OfficeLocationController::class,'destroy'])->name('office-locations.destroy');
-Route::get('/admin/live-map', [AdminAttendanceController::class, 'liveMap'])->name('admin.live.map');
+Route::get('/live-map', [AdminAttendanceController::class, 'liveMap'])->name('live.map');
 /*
 |--------------------------------------------------------------------------
 | Live Attendance
