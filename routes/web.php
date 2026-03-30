@@ -74,6 +74,7 @@ Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.
 Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
 Route::post('/attendance/clock-in', [AttendanceController::class, 'clockIn'])->name('attendance.clockin');
 Route::post('/attendance/clock-out', [AttendanceController::class, 'clockOut'])->name('attendance.clockout');
+Route::post('/check-location', [AttendanceController::class, 'checkLocation']) ->name('attendance.check.location');
 
 /* Leave (Employee) */
 Route::get('/leave', [LeaveController::class, 'index'])->name('leave.index');
@@ -205,6 +206,7 @@ Route::get('/attendance-details/{user}/{date}',
 [AdminAttendanceController::class,'attendanceDetails']);
 
 Route::get('/attendance/details',[AttendanceController::class,'details']);
+    
 
 
 /*
