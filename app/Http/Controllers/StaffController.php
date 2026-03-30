@@ -149,11 +149,15 @@ class StaffController extends Controller
     |--------------------------------------------------------------------------
     */
     public function edit($id)
-    {
-        $staff = Staff::with('user')->findOrFail($id);
-        $locations = OfficeLocation::all();
-        return view('staff.edit', compact('staff'));
-    }
+{
+    $staff = Staff::with('user')->findOrFail($id);
+
+    // 🔥 ADD THIS LINE
+    $locations = \App\Models\OfficeLocation::all();
+
+    // 🔥 ADD locations in compact
+    return view('staff.edit', compact('staff','locations'));
+}
 
     /*
     |--------------------------------------------------------------------------
