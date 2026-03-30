@@ -549,33 +549,58 @@ return response()->json($events);
 public function attendanceCalendar(Request $request)
 {
 
-$month = $request->month ?? now()->format('Y-m');
+    $month = $request->month ?? now()->format('Y-m');
 
-$start = \Carbon\Carbon::parse($month.'-01')->startOfMonth();
-$end   = \Carbon\Carbon::parse($month.'-01')->endOfMonth();
+    $start = \Carbon\Carbon::parse($month.'-01')->startOfMonth();
+    $end   = \Carbon\Carbon::parse($month.'-01')->endOfMonth();
 
-/*
-|--------------------------------------------------------------------------
-| Users
-|--------------------------------------------------------------------------
-*/
+    /*
+    |--------------------------------------------------------------------------
+    | Users
+    |--------------------------------------------------------------------------
+    */
 
-$users = \App\Models\User::where('role','employee')
-->orderBy('name','asc')
-->get();
+    $users = \App\Models\User::where('role','employee')
+        ->orderBy('name','asc')
+        ->get();
 
-/*
-|--------------------------------------------------------------------------
-| Attendance (Optimized)
-|--------------------------------------------------------------------------
-*/
+    /*
+    |--------------------------------------------------------------------------
+    | 🔥 NEW: All Employees (for toggle filter)
+    |--------------------------------------------------------------------------
+    */
 
-$attendances = \App\Models\Attendance::whereBetween('date',[$start,$end])
-->get()
-->groupBy(function($item){
-    return $item->user_id.'_'.$item->date;
-});
+    $allEmployees = \App\Models\User::where('role','employee')
+        ->orderBy('name','asc')
+        ->get();
 
+    /*
+    |--------------------------------------------------------------------------
+    | Attendance (Optimized)
+    |--------------------------------------------------------------------------
+    */
+
+    $attendances = \App\Models\Attendance::whereBetween('date',[$start,$end])
+        ->get()
+        ->groupBy(function($item){
+            return $item->user_id.'_'.$item->date;
+        });
+
+    /*
+    |--------------------------------------------------------------------------
+    | RETURN VIEW (UPDATED)
+    |--------------------------------------------------------------------------
+    */
+
+    return view('attendance.calendar', compact(
+        'users',
+        'allEmployees', // 🔥 NEW
+        'attendances',
+        'start',
+        'end',
+        'month'
+    ));
+}
 /*
 |--------------------------------------------------------------------------
 | Leaves
