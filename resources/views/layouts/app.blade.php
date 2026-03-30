@@ -98,19 +98,18 @@ Attendance Management
 Monthly Summary
 </a>
 
-<li>
-    <a href="{{ route('admin.live.map') }}">
+<a href="{{ route('admin.live.map') }}">
         Live Tracking Map
     </a>
-</li>
 
-<li>
+
+
     <a href="{{ route('admin.office-locations.index') }}"
        class="block py-2 px-3 hover:bg-gray-100 rounded">
        
        📍 Office Locations
     </a>
-</li>
+
 
 </div>
 </div>
