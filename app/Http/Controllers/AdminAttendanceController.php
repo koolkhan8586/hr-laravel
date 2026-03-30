@@ -625,7 +625,7 @@ public function attendanceCalendar(Request $request)
     |--------------------------------------------------------------------------
     */
 
-    return view('attendance-calendar', compact(
+    return view('admin.attendance-calendar', compact(
         'users',
         'allEmployees', // 🔥 NEW
         'attendances',
