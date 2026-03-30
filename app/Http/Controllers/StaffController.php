@@ -11,6 +11,7 @@ use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\StaffSampleExport;
 use App\Exports\StaffExport;
+use Carbon\Carbon;
 
 class StaffController extends Controller
 {
@@ -158,35 +159,51 @@ class StaffController extends Controller
     |--------------------------------------------------------------------------
     */
     public function update(Request $request, $id)
-    {
-        $staff = Staff::with('user')->findOrFail($id);
+{
+    $staff = Staff::with('user')->findOrFail($id);
 
-        $request->validate([
-            'name'          => 'required',
-            'email'         => 'required|email|unique:users,email,' . $staff->user->id,
-            'employee_code' => 'required|unique:users,employee_code,' . $staff->user->id,
-            'department'    => 'required',
-            'designation'   => 'required',
-            'salary'        => 'required|numeric'
-        ]);
+    $request->validate([
+        'name'          => 'required',
+        'email'         => 'required|email|unique:users,email,' . $staff->user->id,
+        'employee_code' => 'required|unique:users,employee_code,' . $staff->user->id,
+        'department'    => 'required',
+        'designation'   => 'required',
+        'salary'        => 'required|numeric'
+    ]);
 
-        // Update User Table
-        $staff->user->update([
-            'name'          => $request->name,
-            'email'         => $request->email,
-            'employee_code' => strtoupper($request->employee_code),
-        ]);
+    /*
+    |--------------------------------------------------------------------------
+    | Update User Table
+    |--------------------------------------------------------------------------
+    */
+    $staff->user->update([
+        'name'          => $request->name,
+        'email'         => $request->email,
+        'employee_code' => strtoupper($request->employee_code),
 
-        // Update Staff Table
-        $staff->update([
-            'department'  => $request->department,
-            'designation' => $request->designation,
-            'salary'      => $request->salary
-        ]);
+        // 🔓 Allow Anywhere Attendance
+        'allow_anywhere_attendance' => $request->has('allow_anywhere_attendance'),
 
-        return redirect()->route('admin.staff.index')
-            ->with('success', 'Staff Updated Successfully');
-    }
+        // ⏱ Temporary Override
+        'attendance_override_until' => $request->attendance_override_until
+            ? Carbon::parse($request->attendance_override_until)
+            : null,
+    ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Update Staff Table
+    |--------------------------------------------------------------------------
+    */
+    $staff->update([
+        'department'  => $request->department,
+        'designation' => $request->designation,
+        'salary'      => $request->salary
+    ]);
+
+    return redirect()->route('admin.staff.index')
+        ->with('success', 'Staff Updated Successfully');
+}
 
     /*
     |--------------------------------------------------------------------------
