@@ -40,13 +40,34 @@ Print / Export
 
 </div>
 
+<!-- 🔥 Employee Filter (NEW) -->
+<div class="mb-4 p-3 bg-white rounded shadow">
+
+<strong>👁️ Show / Hide Employees:</strong>
+
+<div class="flex flex-wrap gap-3 mt-2">
+
+@foreach($users as $user)
+<label class="flex items-center gap-1 text-sm">
+<input type="checkbox"
+class="employee-toggle"
+value="{{ $user->id }}"
+checked>
+{{ $user->name }}
+</label>
+@endforeach
+
+</div>
+
+</div>
+    
 <div class="overflow-x-auto" id="calendarArea">
 
 <table class="w-full border text-sm">
 
 <thead class="bg-gray-200">
 
-<tr>
+<tr class="employee-row" data-id="{{ $user->id }}">
 
 <th class="border p-2 sticky left-0 bg-gray-200 z-10">
 Employee
@@ -84,7 +105,7 @@ $isToday = $dayDate->toDateString() == now()->toDateString();
 
 @foreach($users as $user)
 
-<tr>
+<tr class="employee-row" data-id="{{ $user->id }}">
 
 <td class="border p-2 font-medium sticky left-0 bg-white z-10">
 {{ $user->name }}
@@ -366,6 +387,30 @@ document.getElementById('modalContent').innerHTML = html;
 function closeModal(){
 document.getElementById('attendanceModal').classList.add('hidden');
 }
+
+</script>
+
+<script>
+
+// 🔥 Employee Show/Hide Toggle
+document.querySelectorAll('.employee-toggle').forEach(toggle => {
+
+toggle.addEventListener('change', function () {
+
+let empId = this.value;
+let row = document.querySelector(`tr[data-id="${empId}"]`);
+
+if (!row) return;
+
+if (this.checked) {
+row.style.display = '';
+} else {
+row.style.display = 'none';
+}
+
+});
+
+});
 
 </script>
 
