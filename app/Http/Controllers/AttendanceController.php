@@ -83,6 +83,50 @@ class AttendanceController extends Controller
         ], 400);
     }
 
+    $user = auth()->user();
+    $lat = $request->latitude;
+    $lng = $request->longitude;
+
+    /*
+    |--------------------------------------------------------------------------
+    | LOCATION VALIDATION (NEW - ADDED FEATURE)
+    |--------------------------------------------------------------------------
+    */
+
+    $locationStatus = 'inside';
+
+    // 🔓 Allow anywhere (admin override)
+    if (
+        $user->allow_anywhere_attendance ||
+        ($user->attendance_override_until && now()->lessThan($user->attendance_override_until))
+    ) {
+        $locationStatus = 'override';
+    } else {
+
+        if (!$user->officeLocation) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No office location assigned by admin.'
+            ], 403);
+        }
+
+        $office = $user->officeLocation;
+
+        $distance = calculateDistance(
+            $lat,
+            $lng,
+            $office->latitude,
+            $office->longitude
+        );
+
+        if ($distance > $office->radius) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You are outside allowed office location.'
+            ], 403);
+        }
+    }
+
     /*
     |--------------------------------------------------------------------------
     | Get Today's Schedule
@@ -115,15 +159,15 @@ class AttendanceController extends Controller
     /*
     |--------------------------------------------------------------------------
     | CASE 1: Employee was auto marked absent earlier
-    | Convert it to LATE when they clock in
     |--------------------------------------------------------------------------
     */
 
     if ($attendance && $attendance->status === 'absent') {
 
         $attendance->clock_in = $now;
-        $attendance->clock_in_latitude  = $request->latitude;
-        $attendance->clock_in_longitude = $request->longitude;
+        $attendance->clock_in_latitude  = $lat;
+        $attendance->clock_in_longitude = $lng;
+        $attendance->location_status = $locationStatus; // ✅ NEW
         $attendance->status = 'late';
         $attendance->save();
 
@@ -158,8 +202,9 @@ class AttendanceController extends Controller
         'user_id' => auth()->id(),
         'date' => $today,
         'clock_in' => $now,
-        'clock_in_latitude' => $request->latitude,
-        'clock_in_longitude' => $request->longitude,
+        'clock_in_latitude' => $lat,
+        'clock_in_longitude' => $lng,
+        'location_status' => $locationStatus, // ✅ NEW
         'status' => $status,
     ]);
 
@@ -174,8 +219,9 @@ class AttendanceController extends Controller
             "Clock In Successful\n\n".
             "Date: ".$now->toDateString()."\n".
             "Time: ".$attendance->clock_in."\n".
-            "Location: ".$request->latitude.", ".$request->longitude."\n".
-            "Status: ".$status,
+            "Location: ".$lat.", ".$lng."\n".
+            "Status: ".$status."\n".
+            "Location Mode: ".$locationStatus, // ✅ NEW
             function ($message) {
                 $message->to(auth()->user()->email)
                         ->subject('Clock In Confirmation');
@@ -187,7 +233,8 @@ class AttendanceController extends Controller
 
     return redirect()->route('dashboard')
     ->with('success', 'Clock-in successful! Attendance marked.');
-} /*
+}
+    /*
     |--------------------------------------------------------------------------
     | Clock Out
     |--------------------------------------------------------------------------
