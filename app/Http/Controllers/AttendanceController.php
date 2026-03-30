@@ -24,64 +24,23 @@ class AttendanceController extends Controller
     */
     public function clockIn(Request $request)
 {
-    if (auth()->user()->allow_anywhere == 1) {
-
-    return redirect()->route('dashboard')
-        ->with('success', 'Clock-in successful (Override Active)');
-}
     $now = \Carbon\Carbon::now('Asia/Karachi');
     $today = $now->toDateString();
 
-    if (!$request->latitude || !$request->longitude) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Location not detected. Please enable GPS.'
-        ], 400);
-    }
-
     $user = auth()->user();
-    $lat = $request->latitude;
-    $lng = $request->longitude;
+
+    // ✅ OPTIONAL: If GPS not provided, still allow
+    $lat = $request->latitude ?? null;
+    $lng = $request->longitude ?? null;
 
     /*
-|--------------------------------------------------------------------------
-| LOCATION VALIDATION (FINAL FIX)
-|--------------------------------------------------------------------------
-*/
+    |--------------------------------------------------------------------------
+    | LOCATION VALIDATION (REMOVED COMPLETELY)
+    |--------------------------------------------------------------------------
+    */
 
-$locationStatus = 'inside';
+    $locationStatus = 'anywhere';
 
-// ✅ FORCE BYPASS FIRST
-if ($user->allow_anywhere == 1) {
-
-    $locationStatus = 'override';
-
-} else {
-
-    if (!$user->officeLocation) {
-        return response()->json([
-            'success' => false,
-            'message' => 'No office location assigned by admin.'
-        ], 403);
-    }
-
-    $office = $user->officeLocation;
-
-    $distance = $this->calculateDistance(
-        $lat,
-        $lng,
-        $office->latitude,
-        $office->longitude
-    );
-
-    // ❌ ONLY check if NOT override
-    if ($distance > $office->radius) {
-        return response()->json([
-            'success' => false,
-            'message' => 'You are outside allowed office location.'
-        ], 403);
-    }
-}
     /*
     |--------------------------------------------------------------------------
     | Get Today's Schedule
@@ -90,7 +49,7 @@ if ($user->allow_anywhere == 1) {
 
     $day = $now->format('l');
 
-    $schedule = \App\Models\WeeklySchedule::where('user_id', auth()->id())
+    $schedule = \App\Models\WeeklySchedule::where('user_id', $user->id)
         ->where('day_of_week', $day)
         ->first();
 
@@ -106,7 +65,7 @@ if ($user->allow_anywhere == 1) {
     $shiftStart = \Carbon\Carbon::parse($shift->start_time, 'Asia/Karachi');
     $lateAfter = $shiftStart->copy()->addMinutes($shift->grace_minutes);
 
-    $attendance = Attendance::where('user_id', auth()->id())
+    $attendance = Attendance::where('user_id', $user->id)
         ->whereDate('date', $today)
         ->first();
 
@@ -153,7 +112,7 @@ if ($user->allow_anywhere == 1) {
     $status = $now->gt($lateAfter) ? 'late' : 'present';
 
     $attendance = Attendance::create([
-        'user_id' => auth()->id(),
+        'user_id' => $user->id,
         'date' => $today,
         'clock_in' => $now,
         'clock_in_latitude' => $lat,
@@ -173,7 +132,7 @@ if ($user->allow_anywhere == 1) {
             "Clock In Successful\n\n".
             "Date: ".$now->toDateString()."\n".
             "Time: ".$attendance->clock_in."\n".
-            "Location: ".$lat.", ".$lng."\n".
+            "Location: ".($lat ?? 'N/A').", ".($lng ?? 'N/A')."\n".
             "Status: ".$status."\n".
             "Location Mode: ".$locationStatus,
             function ($message) {
