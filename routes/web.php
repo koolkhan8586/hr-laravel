@@ -256,9 +256,9 @@ Route::post('/allow-overtime',
 |--------------------------------------------------------------------------
 */
 
-Route::get('/dashboard',
-    [DashboardController::class,'index']
-)->name('dashboard');
+//Route::get('/dashboard',
+  //  [DashboardController::class,'index']
+//)->name('dashboard');
 
 /*
 |--------------------------------------------------------------------------
