@@ -12,6 +12,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\StaffSampleExport;
 use App\Exports\StaffExport;
 use Carbon\Carbon;
+use App\Models\OfficeLocation;
 
 class StaffController extends Controller
 {
@@ -150,6 +151,7 @@ class StaffController extends Controller
     public function edit($id)
     {
         $staff = Staff::with('user')->findOrFail($id);
+        $locations = OfficeLocation::all();
         return view('staff.edit', compact('staff'));
     }
 
