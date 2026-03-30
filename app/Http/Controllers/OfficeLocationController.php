@@ -3,12 +3,13 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\OfficeLocation;
 
 class OfficeLocationController extends Controller
 {
     public function index()
     {
-        $locations = OfficeLocation::all();
+        $locations = OfficeLocation::latest()->get();
         return view('admin.locations.index', compact('locations'));
     }
 
@@ -23,20 +24,12 @@ class OfficeLocationController extends Controller
 
         OfficeLocation::create($request->all());
 
-        return back()->with('success', 'Location added');
-    }
-
-    public function update(Request $request, $id)
-    {
-        $location = OfficeLocation::findOrFail($id);
-        $location->update($request->all());
-
-        return back()->with('success', 'Location updated');
+        return back()->with('success','Location added');
     }
 
     public function destroy($id)
     {
-        OfficeLocation::destroy($id);
-        return back()->with('success', 'Deleted');
+        OfficeLocation::findOrFail($id)->delete();
+        return back()->with('success','Deleted');
     }
 }
