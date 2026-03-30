@@ -53,7 +53,7 @@ $todayAttendance = \App\Models\Attendance::where('user_id', auth()->id())
 
 <h3 class="text-lg font-bold">Today's Attendance</h3>
 
-{{-- ✅ NEW: LOCATION STATUS --}}
+{{-- ✅ LOCATION STATUS --}}
 @if($todayAttendance && $todayAttendance->location_status)
     <p class="mt-1 text-sm font-semibold
         {{ $todayAttendance->location_status == 'inside' ? 'text-green-600' : 'text-yellow-600' }}">
