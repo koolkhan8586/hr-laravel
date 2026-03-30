@@ -88,6 +88,8 @@ Route::get('/loan/{id}/ledger', [LoanController::class,'employeeLedger'])->name(
 
 /* Employees Directory */
 Route::get('/employees', [EmployeeController::class, 'index'])->name('employees.index');
+Route::get('/employees/{id}/edit', [EmployeeController::class, 'edit'])->name('employees.edit');
+Route::post('/employees/{id}/update', [EmployeeController::class, 'update'])->name('employees.update');
 
 /* Salary (Employee) */
 Route::get('/salary', [SalaryController::class,'employeeIndex'])->name('salary.index');
