@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\HolidayController;
 use App\Http\Controllers\WorkFromHomeController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\OfficeLocationController;
 
 
 /*
@@ -222,10 +223,11 @@ Route::get('/attendance-dashboard',
 |--------------------------------------------------------------------------
 */
 
-Route::get('/attendance-list/{type}',
-    [AdminAttendanceController::class,'attendanceList']
-)->name('attendance.list');
+Route::get('/attendance-list/{type}',[AdminAttendanceController::class,'attendanceList'])->name('attendance.list');
 
+Route::get('/office-locations', [OfficeLocationController::class,'index'])->name('office-locations.index');
+Route::post('/office-locations', [OfficeLocationController::class,'store'])->name('office-locations.store');
+Route::delete('/office-locations/{id}', [OfficeLocationController::class,'destroy'])->name('office-locations.destroy');
 /*
 |--------------------------------------------------------------------------
 | Live Attendance
