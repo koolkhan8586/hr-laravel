@@ -24,6 +24,7 @@ class AttendanceController extends Controller
     */
     public function clockIn(Request $request)
 {
+    dd('CLOCK IN HIT');
     $now = \Carbon\Carbon::now('Asia/Karachi');
     $today = $now->toDateString();
 
