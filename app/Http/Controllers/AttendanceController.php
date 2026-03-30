@@ -89,21 +89,20 @@ class AttendanceController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | LOCATION VALIDATION (IMPROVED)
+    | LOCATION VALIDATION (FIXED)
     |--------------------------------------------------------------------------
     */
 
     $locationStatus = 'inside';
 
-    // 🔓 Allow anywhere (admin override OR temporary override)
+    // 🔥 FIXED HERE (column name corrected)
     if (
-        $user->allow_anywhere_attendance ||
+        $user->allow_anywhere == 1 || // ✅ FIXED
         ($user->attendance_override_until && now()->lessThan($user->attendance_override_until))
     ) {
         $locationStatus = 'override';
     } else {
 
-        // ❌ No office assigned
         if (!$user->officeLocation) {
             return response()->json([
                 'success' => false,
@@ -113,7 +112,6 @@ class AttendanceController extends Controller
 
         $office = $user->officeLocation;
 
-        // 📏 Distance calculation (SAFE)
         $distance = $this->calculateDistance(
             $lat,
             $lng,
@@ -121,7 +119,6 @@ class AttendanceController extends Controller
             $office->longitude
         );
 
-        // ❌ Outside allowed radius
         if ($distance > $office->radius) {
             return response()->json([
                 'success' => false,
@@ -129,7 +126,6 @@ class AttendanceController extends Controller
             ], 403);
         }
 
-        // ✅ Inside office
         $locationStatus = 'inside';
     }
 
