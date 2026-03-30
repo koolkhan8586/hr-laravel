@@ -600,7 +600,7 @@ public function attendanceCalendar(Request $request)
         'end',
         'month'
     ));
-}
+
 /*
 |--------------------------------------------------------------------------
 | Leaves
