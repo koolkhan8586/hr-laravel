@@ -621,4 +621,39 @@ private function calculateDistance($lat1, $lon1, $lat2, $lon2)
 
     return $earthRadius * $c;
 }
+
+    public function checkLocation(Request $request)
+{
+    $user = auth()->user();
+
+    $lat = $request->latitude;
+    $lng = $request->longitude;
+
+    // 🔓 Override
+    if (
+        $user->allow_anywhere_attendance ||
+        ($user->attendance_override_until && now()->lessThan($user->attendance_override_until))
+    ) {
+        return response()->json(['status' => 'override']);
+    }
+
+    if (!$user->officeLocation) {
+        return response()->json(['status' => 'outside']);
+    }
+
+    $office = $user->officeLocation;
+
+    $distance = $this->calculateDistance(
+        $lat,
+        $lng,
+        $office->latitude,
+        $office->longitude
+    );
+
+    if ($distance <= $office->radius) {
+        return response()->json(['status' => 'inside']);
+    }
+
+    return response()->json(['status' => 'outside']);
+}
 }
