@@ -98,6 +98,12 @@ Attendance Management
 Monthly Summary
 </a>
 
+<li>
+    <a href="{{ route('admin.live.map') }}">
+        Live Tracking Map
+    </a>
+</li>
+
 </div>
 </div>
 
