@@ -95,6 +95,21 @@
                        required>
             </div>
 
+            <div class="mt-3">
+    <label class="block font-semibold mb-1">Office Location</label>
+
+    <select name="office_location_id" class="w-full border p-2 rounded">
+        <option value="">Select Office</option>
+
+        @foreach($locations as $location)
+            <option value="{{ $location->id }}"
+                {{ $staff->user->office_location_id == $location->id ? 'selected' : '' }}>
+                {{ $location->name }}
+            </option>
+        @endforeach
+    </select>
+</div>
+
             <div class="mt-4">
 
     <!-- 🔓 Allow Anywhere -->
