@@ -6,7 +6,7 @@
 
 {{-- ADD LOCATION --}}
 <div class="bg-white p-4 rounded shadow mb-6">
-<form method="POST" action="{{ route('office-locations.store') }}">
+<form method="POST" action="{{ route('admin.office-locations.store') }}">
 @csrf
 
 <div class="grid grid-cols-4 gap-4">
@@ -56,7 +56,7 @@ Add Location
 
 <td class="p-3 flex gap-2">
 
-<form method="POST" action="{{ route('office-locations.destroy',$loc->id) }}">
+<form method="POST" action="{{ route('admin.office-locations.destroy',$loc->id) }}">
 @csrf
 @method('DELETE')
 <button class="bg-red-500 text-white px-3 py-1 rounded">
