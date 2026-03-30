@@ -22,55 +22,6 @@ class AttendanceController extends Controller
     | Employee Attendance View
     |--------------------------------------------------------------------------
     */
-    public function index(Request $request)
-{
-    $month = $request->month ?? now('Asia/Karachi')->format('Y-m');
-
-    $monthCarbon = Carbon::parse($month);
-
-    $records = Attendance::where('user_id', auth()->id())
-        ->whereMonth('clock_in', $monthCarbon->month)
-        ->whereYear('clock_in', $monthCarbon->year)
-        ->orderByDesc('clock_in')
-        ->get();
-
-    $active = Attendance::where('user_id', auth()->id())
-        ->whereNull('clock_out')
-        ->latest()
-        ->first();
-
-    /*
-    |--------------------------------------------------------------------------
-    | Get Today's Shift
-    |--------------------------------------------------------------------------
-    */
-
-    $today = \Carbon\Carbon::now('Asia/Karachi');
-    $day = $today->format('l');
-
-    $todaySchedule = \App\Models\WeeklySchedule::where('user_id', auth()->id())
-        ->where('day_of_week', $day)
-        ->first();
-
-    $todayShift = null;
-
-    if ($todaySchedule && $todaySchedule->shift_id) {
-        $todayShift = \App\Models\Shift::find($todaySchedule->shift_id);
-    }
-
-    return view('attendance.index', compact(
-        'records',
-        'month',
-        'active',
-        'todayShift'
-    ));
-}
-
-    /*
-    |--------------------------------------------------------------------------
-    | Clock In
-    |--------------------------------------------------------------------------
-    */
     public function clockIn(Request $request)
 {
     $now = \Carbon\Carbon::now('Asia/Karachi');
@@ -89,18 +40,17 @@ class AttendanceController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | LOCATION VALIDATION (FIXED)
+    | LOCATION VALIDATION (FINAL FIXED)
     |--------------------------------------------------------------------------
     */
 
     $locationStatus = 'inside';
 
-    // 🔥 FIXED HERE (column name corrected)
-    if (
-        $user->allow_anywhere == 1 || // ✅ FIXED
-        ($user->attendance_override_until && now()->lessThan($user->attendance_override_until))
-    ) {
+    // ✅ FINAL FIX: ONLY depend on allow_anywhere
+    if ($user->allow_anywhere == 1) {
+
         $locationStatus = 'override';
+
     } else {
 
         if (!$user->officeLocation) {
