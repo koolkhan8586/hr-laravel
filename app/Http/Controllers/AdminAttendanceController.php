@@ -588,69 +588,54 @@ public function attendanceCalendar(Request $request)
 
     /*
     |--------------------------------------------------------------------------
-    | RETURN VIEW (UPDATED)
+    | Leaves
     |--------------------------------------------------------------------------
     */
 
-    return view('attendance.calendar', compact(
+    $leaves = \App\Models\Leave::where('status','approved')
+        ->where(function($q) use ($start,$end){
+
+            $q->whereBetween('start_date',[$start,$end])
+              ->orWhereBetween('end_date',[$start,$end]);
+
+        })
+        ->get()
+        ->groupBy('user_id');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Holidays
+    |--------------------------------------------------------------------------
+    */
+
+    $holidays = \App\Models\Holiday::with('users')->get();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Work From Home
+    |--------------------------------------------------------------------------
+    */
+
+    $wfhData = \App\Models\WorkFromHome::all()
+        ->groupBy('user_id');
+
+    /*
+    |--------------------------------------------------------------------------
+    | FINAL RETURN (ONLY ONE)
+    |--------------------------------------------------------------------------
+    */
+
+    return view('attendance-calendar', compact(
         'users',
         'allEmployees', // 🔥 NEW
         'attendances',
+        'leaves',
+        'holidays',
+        'wfhData',
         'start',
         'end',
         'month'
     ));
-
-/*
-|--------------------------------------------------------------------------
-| Leaves
-|--------------------------------------------------------------------------
-*/
-
-$leaves = \App\Models\Leave::where('status','approved')
-->where(function($q) use ($start,$end){
-
-$q->whereBetween('start_date',[$start,$end])
-  ->orWhereBetween('end_date',[$start,$end]);
-
-})
-->get()
-->groupBy('user_id');
-
-/*
-|--------------------------------------------------------------------------
-| Holidays
-|--------------------------------------------------------------------------
-*/
-
-$holidays = \App\Models\Holiday::with('users')->get();
-
-/*
-|--------------------------------------------------------------------------
-| Work From Home
-|--------------------------------------------------------------------------
-*/
-
-$wfhData = \App\Models\WorkFromHome::all()
-->groupBy('user_id');
-
-/*
-|--------------------------------------------------------------------------
-| Return View
-|--------------------------------------------------------------------------
-*/
-
-return view('admin.attendance-calendar',compact(
-'users',
-'attendances',
-'leaves',
-'holidays',
-'wfhData',
-'start',
-'end',
-'month'
-));
-
 }
 
 
