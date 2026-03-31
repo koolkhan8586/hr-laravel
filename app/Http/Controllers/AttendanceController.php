@@ -17,6 +17,43 @@ use App\Models\Shift;
 class AttendanceController extends Controller
 {
 
+    public function index(Request $request)
+{
+    $month = $request->month ?? now('Asia/Karachi')->format('Y-m');
+
+    $monthCarbon = \Carbon\Carbon::parse($month);
+
+    $records = \App\Models\Attendance::where('user_id', auth()->id())
+        ->whereMonth('clock_in', $monthCarbon->month)
+        ->whereYear('clock_in', $monthCarbon->year)
+        ->orderByDesc('clock_in')
+        ->get();
+
+    $active = \App\Models\Attendance::where('user_id', auth()->id())
+        ->whereNull('clock_out')
+        ->latest()
+        ->first();
+
+    $today = \Carbon\Carbon::now('Asia/Karachi');
+    $day = $today->format('l');
+
+    $todaySchedule = \App\Models\WeeklySchedule::where('user_id', auth()->id())
+        ->where('day_of_week', $day)
+        ->first();
+
+    $todayShift = null;
+
+    if ($todaySchedule && $todaySchedule->shift_id) {
+        $todayShift = \App\Models\Shift::find($todaySchedule->shift_id);
+    }
+
+    return view('attendance.index', compact(
+        'records',
+        'month',
+        'active',
+        'todayShift'
+    ));
+}
     /*
     |--------------------------------------------------------------------------
     | Employee Attendance View
