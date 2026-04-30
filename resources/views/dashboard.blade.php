@@ -31,6 +31,13 @@ Welcome to your HR dashboard
 </p>
 </div>
 
+<!-- ✅ NEW LIVE DATE & TIME CLOCK (ADDED) -->
+
+<div class="bg-white p-4 rounded-xl shadow text-center">
+<h5 id="currentDate" class="font-semibold text-gray-700"></h5>
+<h2 id="currentTime" class="text-blue-600 text-2xl font-bold"></h2>
+</div>
+
 @php
 
 $nextHoliday = \App\Models\Holiday::where(function($q){
@@ -229,6 +236,32 @@ class="bg-white shadow rounded-xl p-4 text-center hover:bg-gray-50">
 
 
 
+<!-- ✅ NEW CLOCK SCRIPT (ADDED) -->
+
+<script>
+function updateClock() {
+    const now = new Date();
+
+    const dateOptions = { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+    };
+
+    const date = now.toLocaleDateString('en-GB', dateOptions);
+    const time = now.toLocaleTimeString('en-GB', { hour12: false });
+
+    document.getElementById('currentDate').innerText = date;
+    document.getElementById('currentTime').innerText = time;
+}
+
+setInterval(updateClock, 1000);
+updateClock();
+</script>
+
+
+
 <!-- TIMER SCRIPT -->
 
 <script>
@@ -240,7 +273,6 @@ function updateTimer(){
 
 if(!clockInTime) return;
 
-// STOP TIMER IF CLOCKED OUT
 if(clockOutTime) return;
 
 let start = new Date(clockInTime);
@@ -262,151 +294,3 @@ String(secs).padStart(2,'0');
 setInterval(updateTimer,1000);
 
 </script>
-
-
-
-<!-- CLOCK IN GPS -->
-
-<script>
-
-function clockInWithGPS(){
-
-if(!navigator.geolocation){
-
-alert("GPS not supported");
-return;
-
-}
-
-navigator.geolocation.getCurrentPosition(
-
-function(position){
-
-document.getElementById("latitude").value = position.coords.latitude;
-document.getElementById("longitude").value = position.coords.longitude;
-
-document.getElementById("clockInForm").submit();
-
-},
-
-function(){
-
-alert("Location not detected. Please enable GPS.");
-
-},
-
-{
-enableHighAccuracy:true,
-timeout:15000,
-maximumAge:0
-}
-
-);
-
-}
-
-</script>
-
-
-
-<!-- CLOCK OUT GPS -->
-
-<script>
-
-function clockOutWithGPS(){
-
-navigator.geolocation.getCurrentPosition(
-
-function(position){
-
-document.getElementById("out_latitude").value = position.coords.latitude;
-document.getElementById("out_longitude").value = position.coords.longitude;
-
-document.getElementById("clockOutForm").submit();
-
-},
-
-function(){
-
-alert("Location not detected. Please enable GPS.");
-
-},
-
-{
-enableHighAccuracy:true,
-timeout:15000,
-maximumAge:0
-}
-
-);
-
-}
-
-</script>
-
-<script>
-
-<script>
-
-function checkLocationStatus() {
-
-    if (!navigator.geolocation) {
-        document.getElementById("locationStatus").innerHTML =
-            "<span class='text-red-600'>Geolocation not supported</span>";
-        return;
-    }
-
-    // ✅ Get allow_anywhere from backend
-    let allowAnywhere = {{ auth()->user()->allow_anywhere ? 'true' : 'false' }};
-
-    navigator.geolocation.getCurrentPosition(function(position) {
-
-        let lat = position.coords.latitude;
-        let lng = position.coords.longitude;
-
-        fetch("{{ route('attendance.check.location') }}", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify({
-                latitude: lat,
-                longitude: lng
-            })
-        })
-        .then(res => res.json())
-        .then(data => {
-
-            // ✅ FORCE override if allow_anywhere is ON
-            if (allowAnywhere) {
-                document.getElementById("locationStatus").innerHTML =
-                    "<span class='text-yellow-600'>🟡 Override active — You can mark attendance anywhere</span>";
-                return;
-            }
-
-            // ✅ Normal backend logic
-            if (data.status === 'inside') {
-                document.getElementById("locationStatus").innerHTML =
-                    "<span class='text-green-600'>🟢 You are in office — Eligible to mark attendance</span>";
-            } 
-            else if (data.status === 'override') {
-                document.getElementById("locationStatus").innerHTML =
-                    "<span class='text-yellow-600'>🟡 Override active — You can mark attendance anywhere</span>";
-            } 
-            else {
-                document.getElementById("locationStatus").innerHTML =
-                    "<span class='text-red-600'>🔴 You are outside office — Not allowed</span>";
-            }
-
-        });
-
-    });
-
-}
-
-// Run on page load
-checkLocationStatus();
-
-</script>
-</x-app-layout>
