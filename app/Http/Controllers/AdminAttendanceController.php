@@ -530,16 +530,18 @@ $events[] = [
 
 /* Attendance */
 
-$attendance = \App\Models\Attendance::with('user')->get();
+$attendance = \App\Models\Attendance::with('user')
+    ->whereDate('date', now()->toDateString())
+    ->orderBy('clock_in', 'asc')
+    ->get();
 
 foreach($attendance as $att){
 
-$events[] = [
-'title' => $att->user->name.' Present',
-'start' => $att->clock_in,
-'color' => 'green'
-];
-
+    $events[] = [
+        'title' => $att->user->name.' Present',
+        'start' => $att->clock_in,
+        'color' => 'green'
+    ];
 }
 
 return response()->json($events);
