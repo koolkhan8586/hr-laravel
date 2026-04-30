@@ -69,7 +69,7 @@ $working = Attendance::whereDate('date',$date)
     ->whereNotNull('clock_in')
     ->whereNull('clock_out')
     ->with('user')
-    ->get();
+    ->get()
     ->unique('user_id');
 
 
@@ -269,7 +269,7 @@ public function liveAttendance()
         ->whereNotNull('clock_in')
         ->whereNull('clock_out')
         ->with('user')
-        ->get();
+        ->get()
         ->unique('user_id');
 
     return view('admin.partials.live-attendance-table', compact('working'));
@@ -332,7 +332,7 @@ $records = Attendance::whereDate('date',$today)
 ->whereNotNull('clock_in')
 ->whereNull('clock_out')
 ->with('user')
-->get();
+->get()
 ->unique('user_id');
 
 return view('admin.attendance-list', compact('records','type'));
@@ -536,7 +536,7 @@ $events[] = [
 $attendance = \App\Models\Attendance::with('user')
     ->whereDate('date', now()->toDateString())
     ->orderBy('clock_in', 'asc')
-    ->get();
+    ->get()
     ->unique('user_id');
 
 foreach($attendance as $att){
