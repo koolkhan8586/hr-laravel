@@ -373,9 +373,9 @@ foreach ($attendances as $attendance) {
         $attendance = Attendance::findOrFail($id);
 
         $request->validate([
-            'clock_in'  => 'required|date',
-            'clock_out' => 'nullable|date|after_or_equal:clock_in',
-        ]);
+    'clock_in'  => 'required|string',
+    'clock_out' => 'nullable|string',
+]);
 
        $clockIn = Carbon::parse($request->clock_in)
     ->setTimezone('Asia/Karachi');
