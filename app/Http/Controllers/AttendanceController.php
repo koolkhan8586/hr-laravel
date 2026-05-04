@@ -377,10 +377,13 @@ foreach ($attendances as $attendance) {
             'clock_out' => 'nullable|date|after_or_equal:clock_in',
         ]);
 
-        $clockIn  = Carbon::parse($request->clock_in, 'Asia/Karachi');
-        $clockOut = $request->clock_out
-            ? Carbon::parse($request->clock_out, 'Asia/Karachi')
-            : null;
+        $clockIn = Carbon::createFromFormat('m/d/Y h:i A', $request->clock_in)
+    ->setTimezone('Asia/Karachi');
+
+$clockOut = $request->clock_out
+    ? Carbon::createFromFormat('m/d/Y h:i A', $request->clock_out)
+        ->setTimezone('Asia/Karachi')
+    : null;
 
         $totalHours = null;
         $status = 'present';
