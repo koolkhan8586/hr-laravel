@@ -209,11 +209,11 @@ public function manualMarkAttendance(Request $request)
 
     $date = $request->date;
 
-   $clockIn = Carbon::createFromFormat('m/d/Y h:i A', $request->clock_in)
+$clockIn = Carbon::parse($date . ' ' . $request->clock_in)
     ->setTimezone('Asia/Karachi');
 
 $clockOut = $request->clock_out
-    ? Carbon::createFromFormat('m/d/Y h:i A', $request->clock_out)
+    ? Carbon::parse($date . ' ' . $request->clock_out)
         ->setTimezone('Asia/Karachi')
     : null;
 
