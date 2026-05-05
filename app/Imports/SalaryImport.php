@@ -12,6 +12,18 @@ class SalaryImport implements ToCollection
     public $rows = [];
     public $errors = [];
 
+    /**
+     * ✅ Clean numeric values (handles commas, empty, NaN)
+     */
+    private function cleanNumber($value)
+    {
+        if (is_null($value) || $value === '' || strtolower($value) === 'nan') {
+            return 0;
+        }
+
+        return (float) str_replace(',', '', $value);
+    }
+
     public function collection(Collection $rows)
     {
         $header = true;
@@ -25,10 +37,10 @@ class SalaryImport implements ToCollection
             }
 
             /*
-            Excel Format Should Be:
+            Excel Format:
 
-            0 = employee_code (EMP008)
-            1 = month (1-12)
+            0 = employee_code
+            1 = month
             2 = year
             3 = basic_salary
             4 = invigilation
@@ -43,7 +55,12 @@ class SalaryImport implements ToCollection
             13 = other_deductions
             */
 
-            $employeeCode = trim($row[0]);
+            $employeeCode = trim($row[0] ?? '');
+
+            if (!$employeeCode) {
+                $this->errors[] = "Row ".($index+1)." - Empty Employee Code";
+                continue;
+            }
 
             $user = User::where('employee_code', $employeeCode)->first();
 
@@ -52,8 +69,13 @@ class SalaryImport implements ToCollection
                 continue;
             }
 
-            $month = (int) $row[1];
-            $year  = (int) $row[2];
+            $month = (int) ($row[1] ?? 0);
+            $year  = (int) ($row[2] ?? 0);
+
+            if (!$month || !$year) {
+                $this->errors[] = "Row ".($index+1)." - Invalid Month/Year";
+                continue;
+            }
 
             // Prevent duplicate salary
             $exists = Salary::where('user_id', $user->id)
@@ -66,24 +88,22 @@ class SalaryImport implements ToCollection
                 continue;
             }
 
-            // Earnings
-            $basic          = $row[3] ?? 0;
-            $invigilation   = $row[4] ?? 0;
-            $t_payment      = $row[5] ?? 0;
-            $eidi           = $row[6] ?? 0;
-            $increment      = $row[7] ?? 0;
-            $other_earnings = $row[8] ?? 0;
+            // ✅ Earnings (FIXED)
+            $basic          = $this->cleanNumber($row[3] ?? 0);
+            $invigilation   = $this->cleanNumber($row[4] ?? 0);
+            $t_payment      = $this->cleanNumber($row[5] ?? 0);
+            $eidi           = $this->cleanNumber($row[6] ?? 0);
+            $increment      = $this->cleanNumber($row[7] ?? 0);
+            $other_earnings = $this->cleanNumber($row[8] ?? 0);
 
-            // Deductions
-            $extra_leaves   = $row[9] ?? 0;
-            $income_tax     = $row[10] ?? 0;
+            // ✅ Deductions (FIXED)
+            $extra_leaves     = $this->cleanNumber($row[9] ?? 0);
+            $income_tax       = $this->cleanNumber($row[10] ?? 0);
+            $loan_deduction   = $this->cleanNumber($row[11] ?? 0);
+            $insurance        = $this->cleanNumber($row[12] ?? 0);
+            $other_deductions = $this->cleanNumber($row[13] ?? 0);
 
-            // IMPORTANT: ensure loan deduction is numeric
-            $loan_deduction = isset($row[11]) ? (float) $row[11] : 0;
-
-            $insurance      = $row[12] ?? 0;
-            $other_deductions = $row[13] ?? 0;
-
+            // ✅ Calculations (SAFE NOW)
             $gross_total =
                 $basic +
                 $invigilation +
