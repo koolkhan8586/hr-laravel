@@ -335,6 +335,7 @@ Route::get('/payroll-summary', [LeaveController::class, 'payrollSummary'])->name
 
 Route::post('/leave/store', [LeaveController::class, 'store'])->name('leave.store');
     Route::get('/leave/{id}/edit', [LeaveController::class, 'adminEdit'])->name('leave.edit');
+        Route::post('/leave/{id}/update', [LeaveController::class, 'adminUpdate'])->name('leave.update');
 Route::post('/leave/bulk-allocation',[LeaveController::class, 'bulkAllocate'])->name('leave.bulk.allocate');
 
     /*
