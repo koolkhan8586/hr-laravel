@@ -559,8 +559,11 @@ public function adminEdit($id)
 {
     $leave = Leave::with('user')->findOrFail($id);
 
-    // same view you already use
-    return view('leave.edit', compact('leave'));
+    $employees = User::where('role', 'employee')
+        ->orderBy('name', 'asc')
+        ->get();
+
+    return view('leave.admin-edit', compact('leave', 'employees'));
 }
 
 public function adminUpdate(Request $request, $id)
