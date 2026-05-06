@@ -547,7 +547,7 @@ public function destroy($id)
             'year'
         ));
     }
-}
+
 
 /*
 |--------------------------------------------------------------------------
@@ -594,4 +594,5 @@ public function adminUpdate(Request $request, $id)
     ]);
 
     return redirect()->back()->with('success', 'Leave updated successfully');
+  }
 }
