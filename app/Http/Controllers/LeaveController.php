@@ -548,3 +548,50 @@ public function destroy($id)
         ));
     }
 }
+
+/*
+|--------------------------------------------------------------------------
+| ADMIN EDIT + UPDATE (NEW - DO NOT REMOVE ANYTHING)
+|--------------------------------------------------------------------------
+*/
+
+public function adminEdit($id)
+{
+    $leave = Leave::with('user')->findOrFail($id);
+
+    // same view you already use
+    return view('leave.edit', compact('leave'));
+}
+
+public function adminUpdate(Request $request, $id)
+{
+    $request->validate([
+        'type'          => 'required|in:annual,without_pay',
+        'start_date'    => 'required|date',
+        'end_date'      => 'required|date|after_or_equal:start_date',
+        'duration_type' => 'required|in:full_day,half_day',
+        'reason'        => 'nullable|string'
+    ]);
+
+    $leave = Leave::findOrFail($id);
+
+    $start = Carbon::parse($request->start_date);
+    $end   = Carbon::parse($request->end_date);
+
+    $days = $request->duration_type === 'half_day'
+        ? 0.5
+        : $start->diffInDays($end) + 1;
+
+    $leave->update([
+        'type'            => $request->type,
+        'start_date'      => $request->start_date,
+        'end_date'        => $request->end_date,
+        'duration_type'   => $request->duration_type,
+        'half_day_type'   => $request->half_day_type ?? null,
+        'days'            => $days,
+        'calculated_days' => $days,
+        'reason'          => $request->reason,
+    ]);
+
+    return redirect()->back()->with('success', 'Leave updated successfully');
+}
