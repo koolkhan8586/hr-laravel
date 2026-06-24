@@ -93,13 +93,13 @@ class StaffController extends Controller
     ]);
 
     Staff::create([
-        'user_id' => $user->id,
-        'department' => $request->department,
-        'designation' => $request->designation,
-        'salary' => $request->salary,
-        'joining_date' => $request->joining_date,
-        'status' => 'active'
-    ]);
+    'user_id' => $user->id,
+    'employee_id' => $employeeCode,
+    'department' => $request->department,
+    'designation' => $request->designation,
+    'salary' => $request->salary,
+    'joining_date' => $request->joining_date
+]);
     
     // Send Welcome Email
         Mail::raw(
