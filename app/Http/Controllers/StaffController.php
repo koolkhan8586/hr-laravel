@@ -194,10 +194,11 @@ class StaffController extends Controller
     |--------------------------------------------------------------------------
     */
     $staff->update([
-        'department'  => $request->department,
-        'designation' => $request->designation,
-        'salary'      => $request->salary
-    ]);
+    'employee_id' => strtoupper($request->employee_code),
+    'department'  => $request->department,
+    'designation' => $request->designation,
+    'salary'      => $request->salary
+]);
 
     return redirect()->route('admin.staff.index')
         ->with('success', 'Staff Updated Successfully');
