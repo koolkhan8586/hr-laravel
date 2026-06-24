@@ -48,14 +48,9 @@
 
     <!-- SHOW (readonly) -->
     <input type="text"
-           value="{{ old('employee_code', $staff->user->employee_code) }}"
-           class="w-full border p-2 rounded uppercase"
-           readonly>
-
-    <!-- SEND TO BACKEND -->
-    <input type="hidden"
-           name="employee_code"
-           value="{{ old('employee_code', $staff->user->employee_code) }}">
+       name="employee_code"
+       value="{{ old('employee_code', $staff->employee_id) }}"
+       class="w-full border p-2 rounded uppercase">
 </div>
 
             <div>
