@@ -60,26 +60,17 @@ class StaffController extends Controller
     public function store(Request $request)
 {
     $request->validate([
-        'name' => 'required',
-        'email' => 'required|email|unique:users,email',
-        'department' => 'required',
-        'designation' => 'required',
-        'salary' => 'required|numeric',
-        'joining_date' => 'required|date'
-    ]);
+    'name' => 'required',
+    'email' => 'required|email|unique:users,email',
+    'employee_code' => 'required|unique:staff,employee_id',
+    'department' => 'required',
+    'designation' => 'required',
+    'salary' => 'required|numeric',
+    'joining_date' => 'required|date'
+]);
 
     // AUTO GENERATE EMPLOYEE CODE
-    $lastUser = User::whereNotNull('employee_code')
-        ->orderByDesc('id')
-        ->first();
-
-    if ($lastUser && preg_match('/EMP(\d+)/', $lastUser->employee_code, $matches)) {
-        $nextNumber = (int)$matches[1] + 1;
-    } else {
-        $nextNumber = 1;
-    }
-
-    $employeeCode = 'EMP' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+   $employeeCode = strtoupper(trim($request->employee_code));
 
     $password = \Str::random(8);
 
