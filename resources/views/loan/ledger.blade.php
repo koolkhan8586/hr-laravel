@@ -26,14 +26,21 @@
 
 /* Printing styles */
 @media print {
-    /* Hide sidebar, top navigation, buttons, actions, and manual form */
-    aside, nav, header, .no-print, .no-print-col {
+    /* Hide sidebar, top navigation, bottom mobile navigation bar, buttons, actions, and manual form */
+    aside, nav, header, .fixed.bottom-0, .no-print, .no-print-col {
         display: none !important;
     }
+    
+    /* Display the print-only header */
+    .print-header {
+        display: block !important;
+    }
+    
     body, main {
         background: white !important;
         color: black !important;
     }
+    
     .max-w-6xl {
         max-width: 100% !important;
         width: 100% !important;
@@ -52,12 +59,34 @@
         </div>
     @endif
 
+    {{-- Print-Only Header (Hidden on screen) --}}
+    <div class="print-header hidden" style="display: none;">
+        <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #1b4332; padding-bottom: 12px; margin-bottom: 24px;">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <img src="{{ asset('uol-logo.png') }}" alt="University Logo" style="height: 70px; width: auto;">
+                <div>
+                    <h1 style="font-size: 22px; font-weight: bold; color: #1b4332; margin: 0; line-height: 1.2;">
+                        Lahore School of Accountancy and Finance
+                    </h1>
+                    <h2 style="font-size: 16px; font-weight: 600; color: #4a5568; margin: 4px 0 0 0;">
+                        Employee Loan Ledger
+                    </h2>
+                </div>
+            </div>
+            <div style="text-align: right; font-size: 14px; color: #2d3748; line-height: 1.5;">
+                <p style="margin: 0;"><strong>Employee Name:</strong> {{ $loan->user->name }}</p>
+                <p style="margin: 4px 0 0 0;"><strong>Employee ID:</strong> {{ $loan->user->employee_id ?? 'N/A' }}</p>
+                <p style="margin: 4px 0 0 0;"><strong>Date:</strong> {{ date('d-m-Y') }}</p>
+            </div>
+        </div>
+    </div>
+
     {{-- Title and Print Button --}}
-    <div class="flex justify-between items-center mb-6">
+    <div class="flex justify-between items-center mb-6 no-print">
         <h2 class="text-2xl font-bold text-gray-800">
             Loan Ledger - {{ $loan->user->name }}
         </h2>
-        <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow text-sm no-print">
+        <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow text-sm">
             Print Ledger
         </button>
     </div>
