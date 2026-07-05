@@ -215,8 +215,8 @@
     </div>
 
     {{-- Individual Loan Records section --}}
-    <h3 class="text-xl font-bold mt-10 mb-4">Individual Loan Records</h3>
-    <div class="bg-white shadow rounded overflow-x-auto mb-8">
+    <h3 class="text-xl font-bold mt-10 mb-4 no-print">Individual Loan Records</h3>
+    <div class="bg-white shadow rounded overflow-x-auto mb-8 no-print">
         <table class="w-full text-sm">
             <thead class="bg-gray-100 border-b">
                 <tr>
