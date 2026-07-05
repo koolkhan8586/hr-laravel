@@ -174,21 +174,7 @@ public function employeeIndex()
         'status'     => 'draft'
     ]);
 
-    // ==========================
-    // UPDATE LOAN BALANCE
-    // ==========================
-    if ($loan && $loanDeduction > 0) {
 
-        $loan->remaining_balance -= $loanDeduction;
-        $loan->save();
-
-        LoanLedger::create([
-            'loan_id' => $loan->id,
-            'amount' => $loanDeduction,
-            'type'   => 'deduction',
-            'remarks' => 'Salary deduction for '.$request->month.'/'.$request->year
-        ]);
-    }
 
     return redirect()->route('admin.salary.index')
         ->with('success','Salary Created Successfully');
@@ -208,55 +194,7 @@ public function employeeIndex()
         return back()->with('error','Salary already posted');
     }
 
-    // ==========================
-    // LOAN DEDUCTION AFTER POST
-    // ==========================
-
-    $loan = \App\Models\Loan::where('user_id',$salary->user_id)
-        ->where('remaining_balance','>',0)
-        ->first();
-
-    if($loan && $salary->loan_deduction > 0){
-
-        // prevent duplicate ledger entry
-        $ledgerExists = \App\Models\LoanLedger::where('salary_id',$salary->id)->exists();
-
-        if(!$ledgerExists){
-
-            $deduction = $salary->loan_deduction;
-
-            // prevent over deduction
-            if($loan->remaining_balance < $deduction){
-                $deduction = $loan->remaining_balance;
-            }
-
-            // update loan balance
-            $loan->remaining_balance -= $deduction;
-
-            // auto close loan
-            if($loan->remaining_balance <= 0){
-                $loan->status = 'closed';
-            }
-
-            $loan->save();
-
-            // insert ledger entry
-            \App\Models\LoanLedger::create([
-                'loan_id' => $loan->id,
-                'salary_id' => $salary->id,
-                'amount' => $deduction,
-                'type' => 'deduction',
-                'remarks' => 'Salary deduction '.$salary->month.'/'.$salary->year
-            ]);
-        }
-    }
-
-    // mark salary posted
-    $salary->update([
-        'is_posted' => 1,
-        'status' => 'posted',
-        'posted_at' => now()
-    ]);
+    $this->processLoanDeductionAndPost($salary);
 
     // send email to employee
     try {
@@ -349,50 +287,7 @@ public function show($id)
             continue;
         }
 
-        // ==========================
-        // LOAN DEDUCTION
-        // ==========================
-
-        $loan = \App\Models\Loan::where('user_id',$salary->user_id)
-            ->where('remaining_balance','>',0)
-            ->first();
-
-        if($loan && $salary->loan_deduction > 0){
-
-            $ledgerExists = \App\Models\LoanLedger::where('salary_id',$salary->id)->exists();
-
-            if(!$ledgerExists){
-
-                $deduction = $salary->loan_deduction;
-
-                if($loan->remaining_balance < $deduction){
-                    $deduction = $loan->remaining_balance;
-                }
-
-                $loan->remaining_balance -= $deduction;
-
-                if($loan->remaining_balance <= 0){
-                    $loan->status = 'closed';
-                }
-
-                $loan->save();
-
-                \App\Models\LoanLedger::create([
-                    'loan_id' => $loan->id,
-                    'salary_id' => $salary->id,
-                    'amount' => $deduction,
-                    'type' => 'deduction',
-                    'remarks' => 'Salary deduction '.$salary->month.'/'.$salary->year
-                ]);
-            }
-        }
-
-        // mark salary posted
-        $salary->update([
-            'is_posted' => 1,
-            'status' => 'posted',
-            'posted_at' => now()
-        ]);
+        $this->processLoanDeductionAndPost($salary);
 
         // send email
         try {
@@ -506,10 +401,14 @@ public function show($id)
         $drafts = Salary::where('is_posted', false)->get();
 
         foreach ($drafts as $salary) {
-            $salary->update(['is_posted' => true]);
+            $this->processLoanDeductionAndPost($salary);
 
-            Mail::to($salary->user->email)
-                ->queue(new SalaryPostedMail($salary));
+            try {
+                Mail::to($salary->user->email)
+                    ->queue(new SalaryPostedMail($salary));
+            } catch (\Exception $e) {
+                Log::error($e->getMessage());
+            }
         }
 
         return back()->with('success','All draft salaries posted.');
@@ -708,5 +607,55 @@ public function destroy($id)
         return $pdf->download(
             'Salary_Slip_'.$salary->month.'_'.$salary->year.'.pdf'
         );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Reusable helper method to process loan deductions and post a salary
+    |--------------------------------------------------------------------------
+    */
+    private function processLoanDeductionAndPost(Salary $salary)
+    {
+        $loan = \App\Models\Loan::where('user_id', $salary->user_id)
+            ->where('remaining_balance', '>', 0)
+            ->first();
+
+        if ($loan && $salary->loan_deduction > 0) {
+            $ledgerExists = \App\Models\LoanLedger::where('salary_id', $salary->id)->exists();
+
+            if (!$ledgerExists) {
+                $deduction = $salary->loan_deduction;
+
+                // prevent over deduction
+                if ($loan->remaining_balance < $deduction) {
+                    $deduction = $loan->remaining_balance;
+                }
+
+                // update loan balance
+                $loan->remaining_balance -= $deduction;
+
+                // auto close loan
+                if ($loan->remaining_balance <= 0) {
+                    $loan->status = 'closed';
+                }
+
+                $loan->save();
+
+                // insert ledger entry
+                \App\Models\LoanLedger::create([
+                    'loan_id' => $loan->id,
+                    'salary_id' => $salary->id,
+                    'amount' => $deduction,
+                    'type' => 'deduction',
+                    'remarks' => 'Salary deduction '.$salary->month.'/'.$salary->year
+                ]);
+            }
+        }
+
+        $salary->update([
+            'is_posted' => 1,
+            'status' => 'posted',
+            'posted_at' => now()
+        ]);
     }
 }

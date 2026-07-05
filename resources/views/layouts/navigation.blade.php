@@ -44,7 +44,7 @@
                     Employee Directory
                     </a>
                     <!-- Loans Section -->
-                    @if(auth()->user()->role === 'admin')
+                    @if(auth()->user()->role === 'admin' || auth()->user()->role === 'manager')
 
                         <a href="{{ route('admin.loan.index') }}"
                            class="hover:text-green-700 transition">

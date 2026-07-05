@@ -238,12 +238,27 @@ class LoanController extends Controller
 
     $monthly = round($totalLoan / $request->installments, 2);
 
+    // Calculate deductions already paid to avoid overwriting them
+    $paid = \App\Models\LoanLedger::where('loan_id', $loan->id)
+        ->where('type', 'deduction')
+        ->sum('amount');
+
+    $remaining = max(0, $totalLoan - $paid);
+
+    $status = $loan->status;
+    if ($status === 'approved' && $remaining <= 0) {
+        $status = 'closed';
+    } elseif ($status === 'closed' && $remaining > 0) {
+        $status = 'approved';
+    }
+
     $loan->update([
         'opening_balance' => $opening,
         'amount' => $amount,
         'installments' => $request->installments,
         'monthly_deduction' => $monthly,
-        'remaining_balance' => $totalLoan,
+        'remaining_balance' => $remaining,
+        'status' => $status,
     ]);
 
     return redirect()->route('admin.loan.index')

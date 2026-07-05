@@ -8,6 +8,7 @@ class LoanLedger extends Model
 {
     protected $fillable = [
         'loan_id',
+        'salary_id',
         'amount',
         'type',
         'remarks'

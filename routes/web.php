@@ -338,23 +338,7 @@ Route::post('/leave/store', [LeaveController::class, 'store'])->name('leave.stor
         Route::put('/leave/{id}', [LeaveController::class, 'adminUpdate'])->name('leave.update');
 Route::post('/leave/bulk-allocation',[LeaveController::class, 'bulkAllocate'])->name('leave.bulk.allocate');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Loan Management (Admin) (UNCHANGED)
-    |--------------------------------------------------------------------------
-    */
-    Route::get('/loans', [LoanController::class, 'index'])->name('loan.index');
-    Route::get('/loans/create', [LoanController::class, 'create'])->name('loan.create');
-    Route::post('/loans/store', [LoanController::class, 'store'])->name('loan.store');
-    Route::post('/loans/approve/{id}', [LoanController::class, 'approve'])->name('loan.approve');
-    Route::post('/loans/reject/{id}', [LoanController::class, 'reject'])->name('loan.reject');
-    Route::get('/loans/{id}/edit', [LoanController::class, 'edit'])->name('loan.edit');
-    Route::put('/loans/{id}', [LoanController::class, 'update'])->name('loan.update');
-    Route::delete('/loans/{id}', [LoanController::class, 'destroy'])->name('loan.delete');
-    Route::get('/loans/export', [LoanController::class,'export'])->name('loan.export');
-    Route::get('/loans/import-form', [LoanController::class,'importForm'])->name('loan.import.form');
-    Route::post('/loans/import', [LoanController::class,'import'])->name('loan.import');
-    Route::get('/loans/{id}/ledger',[LoanController::class,'ledger'])->name('loan.ledger');
+    // Loan Management moved to separate role group below
 
 
     /*
@@ -381,3 +365,26 @@ Route::post('/leave/bulk-allocation',[LeaveController::class, 'bulkAllocate'])->
     Route::get('/salary/{id}', [SalaryController::class,'show'])->name('salary.show');
     Route::post('/salary/import-confirm', [SalaryController::class,'confirmImport'])->name('salary.import.confirm');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Loan Management (Admin & Manager Accounts)
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'role:admin,manager'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::get('/loans', [LoanController::class, 'index'])->name('loan.index');
+        Route::get('/loans/create', [LoanController::class, 'create'])->name('loan.create');
+        Route::post('/loans/store', [LoanController::class, 'store'])->name('loan.store');
+        Route::post('/loans/approve/{id}', [LoanController::class, 'approve'])->name('loan.approve');
+        Route::post('/loans/reject/{id}', [LoanController::class, 'reject'])->name('loan.reject');
+        Route::get('/loans/{id}/edit', [LoanController::class, 'edit'])->name('loan.edit');
+        Route::put('/loans/{id}', [LoanController::class, 'update'])->name('loan.update');
+        Route::delete('/loans/{id}', [LoanController::class, 'destroy'])->name('loan.delete');
+        Route::get('/loans/export', [LoanController::class,'export'])->name('loan.export');
+        Route::get('/loans/import-form', [LoanController::class,'importForm'])->name('loan.import.form');
+        Route::post('/loans/import', [LoanController::class,'import'])->name('loan.import');
+        Route::get('/loans/{id}/ledger',[LoanController::class,'ledger'])->name('loan.ledger');
+    });

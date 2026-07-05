@@ -55,8 +55,9 @@ Dashboard
 </a>
 
 {{-- ================= ADMIN MENUS ================= --}}
-@if(Auth::user()->role === 'admin')
+@if(Auth::user()->role === 'admin' || Auth::user()->role === 'manager')
 
+@if(Auth::user()->role === 'admin')
 <!-- STAFF -->
 
 <div x-data="{open:false}">
@@ -208,7 +209,8 @@ Manage WFH
 </a>
 
 </div>
-</div>
+@endif
+
 
 <!-- LOANS -->
 

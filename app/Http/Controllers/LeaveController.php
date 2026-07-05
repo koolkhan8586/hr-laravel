@@ -162,7 +162,12 @@ public function store(Request $request)
     }
 
     if(auth()->user()->role === 'admin'){
-        $this->processApproval($leave);
+        $approved = $this->processApproval($leave);
+
+        if (!$approved) {
+            $leave->delete();
+            return back()->with('error','Insufficient leave balance.');
+        }
 
         Mail::raw(
             "Leave Created By Admin\n\nFrom: ".$request->start_date.
@@ -222,7 +227,11 @@ public function store(Request $request)
             return back()->with('error','Already Approved');
         }
 
-        $this->processApproval($leave);
+        $approved = $this->processApproval($leave);
+
+        if (!$approved) {
+            return back()->with('error', 'Insufficient leave balance.');
+        }
 
         $leave->update(['status'=>'approved']);
 
@@ -247,7 +256,7 @@ public function store(Request $request)
 
     private function processApproval($leave)
     {
-        if ($leave->type !== 'annual') return;
+        if ($leave->type !== 'annual') return true;
 
         $balance = LeaveBalance::firstOrCreate(
             ['user_id' => $leave->user_id],
@@ -259,7 +268,7 @@ public function store(Request $request)
         );
 
         if ($balance->remaining_leaves < $leave->calculated_days) {
-            return;
+            return false;
         }
 
         $before = $balance->remaining_leaves;
@@ -279,6 +288,8 @@ public function store(Request $request)
             'action'         => 'approved',
             'processed_by'   => auth()->id(),
         ]);
+
+        return true;
     }
 
 /*
@@ -437,21 +448,7 @@ public function destroy($id)
         $employees = User::where('role','employee')->get();
 
         foreach ($employees as $employee) {
-
-            $approved = Leave::where('user_id',$employee->id)
-                ->where('type','annual')
-                ->where('status','approved')
-                ->sum('calculated_days');
-
-            $balance = LeaveBalance::firstOrCreate(
-                ['user_id'=>$employee->id],
-                ['opening_balance'=>0,'used_leaves'=>0,'remaining_leaves'=>0]
-            );
-
-            $balance->update([
-                'used_leaves'=>$approved,
-                'remaining_leaves'=>$balance->opening_balance - $approved
-            ]);
+            $this->recalculateUserLeaveBalance($employee->id);
         }
 
         return back()->with('success','All Leave Balances Recalculated Successfully');
@@ -596,6 +593,32 @@ public function adminUpdate(Request $request, $id)
         'reason'          => $request->reason,
     ]);
 
+    // Recalculate Leave Balance for this specific user
+    $this->recalculateUserLeaveBalance($leave->user_id);
+
     return redirect()->back()->with('success', 'Leave updated successfully');
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Helper to recalculate a user's leave balance
+  |--------------------------------------------------------------------------
+  */
+  private function recalculateUserLeaveBalance($userId)
+  {
+      $approved = Leave::where('user_id', $userId)
+          ->where('type', 'annual')
+          ->where('status', 'approved')
+          ->sum('calculated_days');
+
+      $balance = LeaveBalance::firstOrCreate(
+          ['user_id' => $userId],
+          ['opening_balance' => 0, 'used_leaves' => 0, 'remaining_leaves' => 0]
+      );
+
+      $balance->update([
+          'used_leaves' => $approved,
+          'remaining_leaves' => $balance->opening_balance - $approved
+      ]);
   }
 }
