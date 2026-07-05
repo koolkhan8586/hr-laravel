@@ -35,6 +35,11 @@
 <input type="number" name="installments" class="border w-full p-2">
 </div>
 
+<div class="mb-4">
+<label>Monthly Deduction (Optional - will auto-calculate if left empty)</label>
+<input type="number" name="monthly_deduction" step="0.01" class="border w-full p-2">
+</div>
+
 <button class="bg-blue-600 text-white px-4 py-2 rounded">
 Save Loan
 </button>
