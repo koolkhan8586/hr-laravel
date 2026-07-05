@@ -1,73 +1,101 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\AttendanceController;
-use App\Http\Controllers\AdminAttendanceController;
-use App\Http\Controllers\ScheduleManagementController;
+use App\Http\Controllers\LoanController;
 use App\Http\Controllers\LeaveController;
 use App\Http\Controllers\SalaryController;
-use App\Http\Controllers\OfficeLocationController;
+use App\Http\Controllers\AdminAttendanceController;
+use App\Http\Controllers\ShiftController;
+use App\Http\Controllers\EmployeeScheduleController;
+use App\Http\Controllers\WeeklyScheduleController;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\HolidayController;
 use App\Http\Controllers\WorkFromHomeController;
-use App\Http\Controllers\EmployeeScheduleController;
-use App\Http\Controllers\ShiftController;
-use App\Http\Controllers\WeeklyScheduleController;
-use App\Http\Controllers\LoanController;
+use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\OfficeLocationController;
+
 
 /*
 |--------------------------------------------------------------------------
-| Web Routes
+| Public Route
 |--------------------------------------------------------------------------
 */
-
 Route::get('/', function () {
+
+    if (Auth::check()) {
+        return redirect()->route('dashboard');
+    }
+
     return redirect()->route('login');
-});
-
-Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-
-/*
-|--------------------------------------------------------------------------
-| Authenticated User Routes (Base/Common)
-|--------------------------------------------------------------------------
-*/
-Route::middleware(['auth'])->group(function () {
-
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-
-    /* Attendance (Common / Employee Panel) */
-    Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
-    Route::post('/attendance/clock-in', [AttendanceController::class, 'clockIn'])->name('attendance.clock-in');
-    Route::post('/attendance/clock-out', [AttendanceController::class, 'clockOut'])->name('attendance.clock-out');
-
-    /* Leave Request (Employee Panel) */
-    Route::get('/leave/my-requests', [LeaveController::class, 'employeeIndex'])->name('leave.my');
-    Route::get('/leave/apply', [LeaveController::class, 'applyForm'])->name('leave.apply');
-    Route::post('/leave/apply', [LeaveController::class, 'storeRequest'])->name('leave.apply.store');
-
-    /* Salary (Employee Panel) */
-    Route::get('/my-salary', [SalaryController::class, 'employeePayslips'])->name('salary.my');
-    Route::get('/my-salary/payslip/{id}', [SalaryController::class, 'employeeShowPayslip'])->name('salary.my.show');
-
-    /* Loans (Employee Panel) */
-    Route::get('/my-loan', [LoanController::class, 'myLoan'])->name('loan.my');
-    Route::get('/loan/apply', [LoanController::class, 'apply'])->name('loan.apply');
-    Route::post('/loan/apply', [LoanController::class, 'storeRequest'])->name('loan.apply.store');
-    Route::get('/my-loan/{id}/ledger', [LoanController::class, 'employeeLedger'])->name('loan.my.ledger');
 
 });
 
-/*
-|--------------------------------------------------------------------------
-| ADMIN / MANAGER ROUTES (Shared Context)
-|--------------------------------------------------------------------------
-*/
-Route::middleware(['auth', 'role:admin,manager'])->group(function () {
+/*|                                                                          |
+| -------------------------------------------------------------------------- |
+| Dashboard                                                                  |
+| -------------------------------------------------------------------------- |
+| */                                                                         
+Route::middleware(['auth', 'verified'])->group(function () {               
+
+
+Route::get('/dashboard', function () {
+
+$nextHoliday = \App\Models\Holiday::whereDate('start_date','>=',now())
+->orderBy('start_date','asc')
+->first();
+
+return view('dashboard', compact('nextHoliday'));
+
+})->name('dashboard');
+
+
+
+});
+
+require __DIR__.'/auth.php';
+
+ /* |                                                                        |
+| -------------------------------------------------------------------------- |
+| AUTHENTICATED USER ROUTES                                                  |
+| -------------------------------------------------------------------------- |
+| */                                                                         
+ Route::middleware(['auth'])->group(function () {                           
+
+
+/* Profile */
+Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+/* Attendance (Employee) */
+Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
+Route::post('/attendance/clock-in', [AttendanceController::class, 'clockIn'])->name('attendance.clockin');
+Route::post('/attendance/clock-out', [AttendanceController::class, 'clockOut'])->name('attendance.clockout');
+Route::post('/check-location', [AttendanceController::class, 'checkLocation']) ->name('attendance.check.location');
+
+/* Leave (Employee) */
+Route::get('/leave', [LeaveController::class, 'index'])->name('leave.index');
+Route::get('/leave/apply', [LeaveController::class, 'create'])->name('leave.create');
+Route::post('/leave/store', [LeaveController::class, 'store'])->name('leave.store');
+Route::get('/leave/history', [LeaveController::class, 'history'])->name('leave.history');
+
+/* Loans (Employee) */
+Route::get('/my-loans', [LoanController::class, 'myLoan'])->name('loan.my');
+Route::get('/loan/apply', [LoanController::class, 'apply'])->name('loan.apply');
+Route::post('/loan/store-request', [LoanController::class, 'storeRequest'])->name('loan.store.request');
+Route::get('/loan/{id}/ledger', [LoanController::class,'employeeLedger'])->name('loan.ledger');
+
+/* Employees Directory */
+Route::get('/employees', [EmployeeController::class, 'index'])->name('employees.index');
+Route::get('/employees/{id}/edit', [EmployeeController::class, 'edit'])->name('employees.edit');
+Route::post('/employees/{id}/update', [EmployeeController::class, 'update'])->name('employees.update');
+
+/* Salary (Employee) */
+Route::get('/salary', [SalaryController::class,'employeeIndex'])->name('salary.index');
+Route::get('/salary/download/{id}', [SalaryController::class,'download'])->name('salary.download');
 
 /* Shift & Schedule */
 Route::resource('shifts', ShiftController::class);
@@ -120,6 +148,56 @@ Route::middleware(['auth', 'admin'])
     Route::get('/staff/sample', [StaffController::class,'downloadSample'])->name('staff.sample');
     Route::post('/staff/bulk-delete',[StaffController::class,'bulkDelete'])->name('staff.bulk.delete');
     Route::post('/staff/bulk-email',[StaffController::class,'bulkEmail'])->name('staff.bulk.email');
+    Route::post('/staff/toggle/{id}',[StaffController::class,'toggleStatus'])->name('staff.toggle');
+    Route::get('/staff/{id}/view',[StaffController::class,'view'])->name('staff.view');
+    Route::get('/staff/export',[StaffController::class, 'export'])->name('staff.export');
+
+  /*
+|--------------------------------------------------------------------------
+| Admin Attendance Management
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/attendance',
+    [AttendanceController::class,'adminIndex']
+)->name('attendance.index');
+
+Route::get('/attendance/export',
+    [AttendanceController::class,'export']
+)->name('attendance.export');
+
+Route::get('/attendance/analytics/{month}',
+    [AttendanceController::class,'analytics']
+)->name('attendance.analytics');
+
+Route::get('/attendance/create',
+    [AttendanceController::class,'create']
+)->name('attendance.create');
+
+Route::post('/attendance/store',
+    [AttendanceController::class,'store']
+)->name('attendance.store');
+
+Route::get('/attendance/{id}/edit',
+    [AttendanceController::class,'edit']
+)->name('attendance.edit');
+
+Route::put('/attendance/{id}',
+    [AttendanceController::class,'update']
+)->name('attendance.update');
+
+Route::delete('/attendance/{id}',
+    [AttendanceController::class,'destroy']
+)->name('attendance.destroy');
+
+Route::get('/hr-calendar-events',
+    [AdminAttendanceController::class,'calendarEvents']
+)->name('calendar.events');
+
+Route::get('/attendance/monthly/{user}/{month}',
+    [AttendanceController::class,'downloadMonthlyAttendance']
+)->name('attendance.monthly.download');
+
 
 Route::get('/attendance-summary',
 [AdminAttendanceController::class,'monthlySummary'])
