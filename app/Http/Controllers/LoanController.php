@@ -99,7 +99,25 @@ class LoanController extends Controller
 {
     $loans = Loan::with('user')
         ->latest()
-        ->get();
+        ->get()
+        ->groupBy('user_id')
+        ->map(function ($userLoans) {
+            $baseLoan = $userLoans->first();
+
+            $baseLoan->amount = $userLoans->sum('amount');
+            $baseLoan->opening_balance = $userLoans->sum('opening_balance');
+            $baseLoan->remaining_balance = $userLoans->sum('remaining_balance');
+            $baseLoan->monthly_deduction = $userLoans->sum('monthly_deduction');
+
+            $activeLoan = $userLoans->first(function($l) { return $l->remaining_balance > 0; }) ?? $baseLoan;
+            $baseLoan->installments = $activeLoan->installments;
+
+            $hasActive = $userLoans->contains(function($l){ return in_array($l->status, ['approved', 'pending']); });
+            $baseLoan->status = $hasActive ? 'approved' : 'closed';
+
+            return $baseLoan;
+        })
+        ->values();
 
     return view('loan.admin-index', [
         'loans' => $loans
@@ -193,7 +211,7 @@ class LoanController extends Controller
     $user = $loan->user;
 
     // Fetch all loans of this user
-    $allLoans = Loan::where('user_id', $user->id)->get();
+    $allLoans = Loan::where('user_id', $user->id)->latest()->get();
     $loanIds = $allLoans->pluck('id');
 
     // Consolidated attributes
@@ -209,7 +227,7 @@ class LoanController extends Controller
         ->orderBy('created_at', 'asc')
         ->get();
 
-    return view('loan.ledger', compact('loan'));
+    return view('loan.ledger', compact('loan', 'allLoans'));
 }
 
     public function approve($id)

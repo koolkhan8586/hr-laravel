@@ -80,5 +80,71 @@
         </tbody>
     </table>
 
+    {{-- Individual Loan Records section --}}
+    <h3 class="text-xl font-bold mt-10 mb-4">Individual Loan Records</h3>
+    <div class="bg-white shadow rounded overflow-x-auto mb-8">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-100">
+                <tr>
+                    <th class="p-3 text-left">Date</th>
+                    <th class="p-3 text-left">New Loan Amount</th>
+                    <th class="p-3 text-left">Opening Balance</th>
+                    <th class="p-3 text-left">Installments</th>
+                    <th class="p-3 text-left">Monthly Deduction</th>
+                    <th class="p-3 text-left">Remaining Balance</th>
+                    <th class="p-3 text-left">Status</th>
+                    <th class="p-3 text-left">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($allLoans as $item)
+                    <tr class="border-t hover:bg-gray-50">
+                        <td class="p-3">
+                            {{ $item->loan_date ? \Carbon\Carbon::parse($item->loan_date)->format('d-m-Y') : '-' }}
+                        </td>
+                        <td class="p-3">
+                            Rs {{ number_format($item->amount, 2) }}
+                        </td>
+                        <td class="p-3">
+                            Rs {{ number_format($item->opening_balance, 2) }}
+                        </td>
+                        <td class="p-3">
+                            {{ $item->installments ?? '-' }}
+                        </td>
+                        <td class="p-3">
+                            Rs {{ number_format($item->monthly_deduction, 2) }}
+                        </td>
+                        <td class="p-3">
+                            Rs {{ number_format($item->remaining_balance, 2) }}
+                        </td>
+                        <td class="p-3">
+                            @if($item->status == 'approved')
+                                <span class="px-2 py-1 rounded text-xs bg-green-100 text-green-700">
+                                    Approved
+                                </span>
+                            @elseif($item->status == 'rejected')
+                                <span class="px-2 py-1 rounded text-xs bg-red-100 text-red-700">
+                                    Rejected
+                                </span>
+                            @else
+                                <span class="px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-700">
+                                    Pending
+                                </span>
+                            @endif
+                        </td>
+                        <td class="p-3 space-x-2">
+                            <a href="{{ route('admin.loan.edit', $item->id) }}" class="text-blue-600 hover:underline font-semibold">Edit</a>
+                            <form action="{{ route('admin.loan.delete', $item->id) }}" method="POST" class="inline" onsubmit="return confirm('Delete this specific loan record?')">
+                                @csrf
+                                @method('DELETE')
+                                <button class="text-red-600 hover:underline font-semibold">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+
 </div>
 </x-app-layout>
