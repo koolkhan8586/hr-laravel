@@ -138,26 +138,30 @@ class LoanController extends Controller
 
     // Opening loan balance (previous system)
     if ($opening > 0) {
-        LoanLedger::create([
+        $ledger = LoanLedger::create([
             'loan_id' => $loan->id,
             'amount' => $opening,
             'type' => 'opening',
             'remarks' => 'Opening balance from previous records',
-            'created_at' => $request->loan_date . ' 00:00:00',
-            'updated_at' => $request->loan_date . ' 00:00:00'
         ]);
+        $ledger->timestamps = false;
+        $ledger->created_at = $request->loan_date . ' 00:00:00';
+        $ledger->updated_at = $request->loan_date . ' 00:00:00';
+        $ledger->save();
     }
 
     // New loan issued
     if ($newLoan > 0) {
-        LoanLedger::create([
+        $ledger = LoanLedger::create([
             'loan_id' => $loan->id,
             'amount' => $newLoan,
             'type' => 'loan',
             'remarks' => 'New loan issued',
-            'created_at' => $request->loan_date . ' 00:00:00',
-            'updated_at' => $request->loan_date . ' 00:00:00'
         ]);
+        $ledger->timestamps = false;
+        $ledger->created_at = $request->loan_date . ' 00:00:00';
+        $ledger->updated_at = $request->loan_date . ' 00:00:00';
+        $ledger->save();
     }
 
     return redirect()->route('admin.loan.index')
@@ -283,29 +287,33 @@ class LoanController extends Controller
 
     // Sync ledger entries
     if ($opening > 0) {
-        \App\Models\LoanLedger::updateOrCreate(
+        $ledger = \App\Models\LoanLedger::updateOrCreate(
             ['loan_id' => $loan->id, 'type' => 'opening'],
             [
                 'amount' => $opening,
                 'remarks' => 'Opening balance from previous records',
-                'created_at' => $request->loan_date . ' 00:00:00',
-                'updated_at' => $request->loan_date . ' 00:00:00'
             ]
         );
+        $ledger->timestamps = false;
+        $ledger->created_at = $request->loan_date . ' 00:00:00';
+        $ledger->updated_at = $request->loan_date . ' 00:00:00';
+        $ledger->save();
     } else {
         \App\Models\LoanLedger::where('loan_id', $loan->id)->where('type', 'opening')->delete();
     }
 
     if ($amount > 0) {
-        \App\Models\LoanLedger::updateOrCreate(
+        $ledger = \App\Models\LoanLedger::updateOrCreate(
             ['loan_id' => $loan->id, 'type' => 'loan'],
             [
                 'amount' => $amount,
                 'remarks' => 'New loan issued',
-                'created_at' => $request->loan_date . ' 00:00:00',
-                'updated_at' => $request->loan_date . ' 00:00:00'
             ]
         );
+        $ledger->timestamps = false;
+        $ledger->created_at = $request->loan_date . ' 00:00:00';
+        $ledger->updated_at = $request->loan_date . ' 00:00:00';
+        $ledger->save();
     } else {
         \App\Models\LoanLedger::where('loan_id', $loan->id)->where('type', 'loan')->delete();
     }
