@@ -76,11 +76,14 @@ class Attendance extends Model
                 'trigger' => app()->runningInConsole() ? 'CLI / Scheduler' : request()->fullUrl(),
             ]);
 
-            // 🔒 PREVENT clock_in CHANGE AFTER FIRST SAVE
+            // 🔒 PREVENT clock_in CHANGE AFTER FIRST SAVE (unless updated by admin or console/seeder)
             if ($attendance->isDirty('clock_in')) {
-
-                // restore original value
-                $attendance->clock_in = $attendance->getOriginal('clock_in');
+                $isConsole = app()->runningInConsole();
+                $isAdmin = auth()->check() && auth()->user()->isAdmin();
+                if (!$isConsole && !$isAdmin) {
+                    // restore original value
+                    $attendance->clock_in = $attendance->getOriginal('clock_in');
+                }
             }
 
         });
