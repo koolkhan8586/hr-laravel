@@ -1,5 +1,30 @@
 <x-app-layout>
 <style>
+/* CSS Grid fallback for servers without compiled Tailwind */
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+@media (min-width: 768px) {
+    .summary-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.ledger-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+@media (min-width: 1024px) {
+    .ledger-grid {
+        display: grid;
+        grid-template-columns: 2.2fr 1fr;
+    }
+}
+
+/* Printing styles */
 @media print {
     /* Hide sidebar, top navigation, buttons, actions, and manual form */
     aside, nav, header, .no-print, .no-print-col {
@@ -39,7 +64,7 @@
 
     {{-- Loan Consolidated Details Card --}}
     <div class="bg-white shadow rounded p-4 mb-6">
-        <div class="grid grid-cols-4 gap-4 text-center md:text-left">
+        <div class="summary-grid text-center md:text-left">
             <div>
                 <p class="text-gray-500 text-sm">Loan Amount</p>
                 <p class="font-bold text-lg text-gray-800">
@@ -68,9 +93,9 @@
     </div>
 
     {{-- Ledger History Table and Manual Add Form --}}
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    <div class="ledger-grid mb-8">
         {{-- Ledger History Table --}}
-        <div class="lg:col-span-2">
+        <div>
             <h3 class="text-xl font-semibold mb-4">Ledger History</h3>
             <div class="bg-white shadow rounded overflow-x-auto">
                 <table class="w-full text-sm">
@@ -86,7 +111,7 @@
                     <tbody>
                     @forelse($loan->ledgers as $entry)
                         <tr class="border-b hover:bg-gray-50">
-                            <td class="p-3">
+                            <td class="p-3 whitespace-nowrap">
                                 {{ $entry->created_at->format('d-m-Y') }}
                             </td>
                             <td class="p-3">
@@ -100,13 +125,13 @@
                                     <span class="text-green-600 font-semibold">New Loan</span>
                                 @endif
                             </td>
-                            <td class="p-3 font-semibold">
+                            <td class="p-3 font-semibold whitespace-nowrap">
                                 Rs {{ number_format($entry->amount,2) }}
                             </td>
                             <td class="p-3 text-gray-600">
                                 {{ $entry->remarks }}
                             </td>
-                            <td class="p-3 space-x-2 no-print-col">
+                            <td class="p-3 space-x-2 no-print-col whitespace-nowrap">
                                 <a href="{{ route('admin.loan.ledger-entry.edit', $entry->id) }}" class="text-blue-600 hover:underline font-semibold">Edit</a>
                                 <form action="{{ route('admin.loan.ledger-entry.delete', $entry->id) }}" method="POST" class="inline" onsubmit="return confirm('Delete this ledger entry? This will update the remaining balance.')">
                                     @csrf
@@ -179,22 +204,22 @@
             <tbody>
                 @foreach($allLoans as $item)
                     <tr class="border-b hover:bg-gray-50">
-                        <td class="p-3">
+                        <td class="p-3 whitespace-nowrap">
                             {{ $item->loan_date ? \Carbon\Carbon::parse($item->loan_date)->format('d-m-Y') : '-' }}
                         </td>
-                        <td class="p-3">
+                        <td class="p-3 whitespace-nowrap">
                             Rs {{ number_format($item->amount, 2) }}
                         </td>
-                        <td class="p-3">
+                        <td class="p-3 whitespace-nowrap">
                             Rs {{ number_format($item->opening_balance, 2) }}
                         </td>
                         <td class="p-3">
                             {{ $item->installments ?? '-' }}
                         </td>
-                        <td class="p-3">
+                        <td class="p-3 whitespace-nowrap">
                             Rs {{ number_format($item->monthly_deduction, 2) }}
                         </td>
-                        <td class="p-3">
+                        <td class="p-3 whitespace-nowrap">
                             Rs {{ number_format($item->remaining_balance, 2) }}
                         </td>
                         <td class="p-3">
@@ -212,7 +237,7 @@
                                 </span>
                             @endif
                         </td>
-                        <td class="p-3 space-x-2 no-print-col">
+                        <td class="p-3 space-x-2 no-print-col whitespace-nowrap">
                             <a href="{{ route('admin.loan.edit', $item->id) }}" class="text-blue-600 hover:underline font-semibold">Edit</a>
                             <form action="{{ route('admin.loan.delete', $item->id) }}" method="POST" class="inline" onsubmit="return confirm('Delete this specific loan record?')">
                                 @csrf
