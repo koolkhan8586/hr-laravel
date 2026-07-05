@@ -142,7 +142,9 @@ class LoanController extends Controller
             'loan_id' => $loan->id,
             'amount' => $opening,
             'type' => 'opening',
-            'remarks' => 'Opening balance from previous records'
+            'remarks' => 'Opening balance from previous records',
+            'created_at' => $request->loan_date . ' 00:00:00',
+            'updated_at' => $request->loan_date . ' 00:00:00'
         ]);
     }
 
@@ -152,7 +154,9 @@ class LoanController extends Controller
             'loan_id' => $loan->id,
             'amount' => $newLoan,
             'type' => 'loan',
-            'remarks' => 'New loan issued'
+            'remarks' => 'New loan issued',
+            'created_at' => $request->loan_date . ' 00:00:00',
+            'updated_at' => $request->loan_date . ' 00:00:00'
         ]);
     }
 
@@ -276,6 +280,35 @@ class LoanController extends Controller
         'status' => $status,
         'loan_date' => $request->loan_date,
     ]);
+
+    // Sync ledger entries
+    if ($opening > 0) {
+        \App\Models\LoanLedger::updateOrCreate(
+            ['loan_id' => $loan->id, 'type' => 'opening'],
+            [
+                'amount' => $opening,
+                'remarks' => 'Opening balance from previous records',
+                'created_at' => $request->loan_date . ' 00:00:00',
+                'updated_at' => $request->loan_date . ' 00:00:00'
+            ]
+        );
+    } else {
+        \App\Models\LoanLedger::where('loan_id', $loan->id)->where('type', 'opening')->delete();
+    }
+
+    if ($amount > 0) {
+        \App\Models\LoanLedger::updateOrCreate(
+            ['loan_id' => $loan->id, 'type' => 'loan'],
+            [
+                'amount' => $amount,
+                'remarks' => 'New loan issued',
+                'created_at' => $request->loan_date . ' 00:00:00',
+                'updated_at' => $request->loan_date . ' 00:00:00'
+            ]
+        );
+    } else {
+        \App\Models\LoanLedger::where('loan_id', $loan->id)->where('type', 'loan')->delete();
+    }
 
     return redirect()->route('admin.loan.index')
         ->with('success','Loan updated successfully');
