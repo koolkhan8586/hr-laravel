@@ -105,6 +105,12 @@
                         {{-- Actions --}}
                         <td class="p-3 space-x-2">
 
+                            {{-- Add New Loan --}}
+                            <a href="{{ route('admin.loan.create', ['user_id' => $loan->user_id]) }}"
+                               class="text-green-600 hover:underline font-semibold">
+                                Add Loan
+                            </a>
+
                             {{-- Edit --}}
                             <a href="{{ route('admin.loan.edit', $loan->id) }}"
                                class="text-blue-600 hover:underline">

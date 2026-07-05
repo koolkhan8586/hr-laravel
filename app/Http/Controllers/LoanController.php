@@ -87,10 +87,11 @@ class LoanController extends Controller
     ]);
 }
 
-    public function create()
+    public function create(Request $request)
 {
+    $selectedUserId = $request->user_id;
     $employees = \App\Models\User::where('role','employee')->get();
-    return view('loan.create',compact('employees'));
+    return view('loan.create',compact('employees', 'selectedUserId'));
 }
 
     public function store(Request $request)

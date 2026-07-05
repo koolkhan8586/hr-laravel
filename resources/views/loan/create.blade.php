@@ -10,7 +10,7 @@
 <label>Employee</label>
 <select name="user_id" class="border w-full p-2">
 @foreach($employees as $emp)
-<option value="{{ $emp->id }}">{{ $emp->name }}</option>
+<option value="{{ $emp->id }}" {{ (isset($selectedUserId) && $selectedUserId == $emp->id) ? 'selected' : '' }}>{{ $emp->name }}</option>
 @endforeach
 </select>
 </div>
