@@ -59,10 +59,29 @@ class LoanController extends Controller
 
     public function myLoan()
 {
-    $loan = Loan::with('ledgers')
-                ->where('user_id', auth()->id())
-                ->where('status', 'approved')
+    $loan = Loan::where('user_id', auth()->id())
+                ->latest()
                 ->first();
+
+    if (!$loan) {
+        return view('loan.my', ['loan' => null]);
+    }
+
+    $allLoans = Loan::where('user_id', auth()->id())->get();
+    $loanIds = $allLoans->pluck('id');
+
+    // Consolidated attributes
+    $loan->amount = $allLoans->sum('amount');
+    $loan->opening_balance = $allLoans->sum('opening_balance');
+    $loan->remaining_balance = $allLoans->sum('remaining_balance');
+
+    $hasActive = $allLoans->contains(function($l){ return in_array($l->status, ['approved', 'pending']); });
+    $loan->status = $hasActive ? 'approved' : 'closed';
+
+    // Merge and sort all ledger history
+    $loan->ledgers = LoanLedger::whereIn('loan_id', $loanIds)
+        ->orderBy('created_at', 'asc')
+        ->get();
 
     return view('loan.my', compact('loan'));
 }
@@ -170,7 +189,25 @@ class LoanController extends Controller
 }
     public function ledger($id)
 {
-    $loan = Loan::with('ledgers','user')->findOrFail($id);
+    $loan = Loan::with('user')->findOrFail($id);
+    $user = $loan->user;
+
+    // Fetch all loans of this user
+    $allLoans = Loan::where('user_id', $user->id)->get();
+    $loanIds = $allLoans->pluck('id');
+
+    // Consolidated attributes
+    $loan->amount = $allLoans->sum('amount');
+    $loan->opening_balance = $allLoans->sum('opening_balance');
+    $loan->remaining_balance = $allLoans->sum('remaining_balance');
+
+    $hasActive = $allLoans->contains(function($l){ return in_array($l->status, ['approved', 'pending']); });
+    $loan->status = $hasActive ? 'approved' : 'closed';
+
+    // Merge and sort all ledger history
+    $loan->ledgers = LoanLedger::whereIn('loan_id', $loanIds)
+        ->orderBy('created_at', 'asc')
+        ->get();
 
     return view('loan.ledger', compact('loan'));
 }
