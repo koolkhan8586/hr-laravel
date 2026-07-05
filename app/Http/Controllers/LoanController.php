@@ -207,12 +207,21 @@ class LoanController extends Controller
 }
     public function ledger($id)
 {
-    $loan = Loan::with('user')->findOrFail($id);
+    $loan = Loan::findOrFail($id);
     $user = $loan->user;
 
-    // Fetch all loans of this user
+    // Auto-recalculate all loans of this user to guarantee data integrity
+    $allLoans = Loan::where('user_id', $user->id)->get();
+    foreach ($allLoans as $l) {
+        $this->recalculateLoanBalance($l->id);
+    }
+
+    // Reload the updated loans
     $allLoans = Loan::where('user_id', $user->id)->latest()->get();
     $loanIds = $allLoans->pluck('id');
+
+    // Reload primary loan
+    $loan = Loan::with('user')->findOrFail($id);
 
     // Consolidated attributes
     $loan->amount = $allLoans->sum('amount');
