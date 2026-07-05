@@ -26,7 +26,12 @@
 </div>
 
 <div class="mb-4">
-<label>Installments</label>
+<label>Loan Date</label>
+<input type="date" name="loan_date" class="border w-full p-2" value="{{ date('Y-m-d') }}" required>
+</div>
+
+<div class="mb-4">
+<label>Installments (Optional)</label>
 <input type="number" name="installments" class="border w-full p-2">
 </div>
 

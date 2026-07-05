@@ -41,13 +41,23 @@
 
             <div class="mb-4">
                 <label class="block text-sm font-medium mb-1">
-                    Installments
+                    Loan Date
+                </label>
+                <input type="date"
+                       name="loan_date"
+                       value="{{ old('loan_date', $loan->loan_date ?? date('Y-m-d')) }}"
+                       class="w-full border rounded px-3 py-2"
+                       required>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-1">
+                    Installments (Optional)
                 </label>
                 <input type="number"
                        name="installments"
                        value="{{ $loan->installments }}"
-                       class="w-full border rounded px-3 py-2"
-                       required>
+                       class="w-full border rounded px-3 py-2">
             </div>
 
             <div class="mt-6">

@@ -15,7 +15,8 @@ class Loan extends Model
         'installments',
         'monthly_deduction',
         'remaining_balance',
-        'status'
+        'status',
+        'loan_date'
     ];
 
     public function user()

@@ -98,8 +98,9 @@ class LoanController extends Controller
     $request->validate([
         'user_id' => 'required|exists:users,id',
         'amount' => 'required|numeric|min:0',
-        'installments' => 'required|integer|min:1',
+        'installments' => 'nullable|integer|min:1',
         'opening_balance' => 'nullable|numeric|min:0',
+        'loan_date' => 'required|date',
     ]);
 
     // Opening balance (old loan from previous system)
@@ -112,7 +113,10 @@ class LoanController extends Controller
     $totalLoan = $opening + $newLoan;
 
     // Monthly deduction based on total loan
-    $monthly = $totalLoan / $request->installments;
+    $monthly = 0;
+    if ($request->installments && $request->installments > 0) {
+        $monthly = $totalLoan / $request->installments;
+    }
 
     // Create loan record
     $loan = Loan::create([
@@ -122,7 +126,8 @@ class LoanController extends Controller
         'installments' => $request->installments,
         'monthly_deduction' => $monthly,
         'remaining_balance' => $totalLoan,
-        'status' => 'approved'
+        'status' => 'approved',
+        'loan_date' => $request->loan_date
     ]);
 
     /*
@@ -165,10 +170,16 @@ class LoanController extends Controller
     {
         $loan = Loan::findOrFail($id);
 
+        $monthly = 0;
+        if ($loan->installments && $loan->installments > 0) {
+            $monthly = $loan->amount / $loan->installments;
+        }
+
         $loan->update([
             'status' => 'approved',
-            'monthly_deduction' => $loan->amount / $loan->installments,
-            'remaining_balance' => $loan->amount
+            'monthly_deduction' => $monthly,
+            'remaining_balance' => $loan->amount,
+            'loan_date' => $loan->loan_date ?? today()->format('Y-m-d')
         ]);
 
         return back()->with('success', 'Loan Approved');
@@ -228,7 +239,8 @@ class LoanController extends Controller
     $request->validate([
         'opening_balance' => 'nullable|numeric|min:0',
         'amount' => 'required|numeric|min:0',
-        'installments' => 'required|integer|min:1',
+        'installments' => 'nullable|integer|min:1',
+        'loan_date' => 'required|date',
     ]);
 
     $opening = $request->opening_balance ?? 0;
@@ -236,7 +248,10 @@ class LoanController extends Controller
 
     $totalLoan = $opening + $amount;
 
-    $monthly = round($totalLoan / $request->installments, 2);
+    $monthly = 0;
+    if ($request->installments && $request->installments > 0) {
+        $monthly = round($totalLoan / $request->installments, 2);
+    }
 
     // Calculate deductions already paid to avoid overwriting them
     $paid = \App\Models\LoanLedger::where('loan_id', $loan->id)
@@ -259,6 +274,7 @@ class LoanController extends Controller
         'monthly_deduction' => $monthly,
         'remaining_balance' => $remaining,
         'status' => $status,
+        'loan_date' => $request->loan_date,
     ]);
 
     return redirect()->route('admin.loan.index')
