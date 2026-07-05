@@ -419,4 +419,113 @@ class LoanController extends Controller
             'status' => $newBalance <= 0 ? 'completed' : 'approved'
         ]);
     }
+
+    public function storeLedgerEntry(Request $request, $loanId)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+            'type' => 'required|in:deduction,adjustment,opening,loan',
+            'remarks' => 'nullable|string|max:255',
+            'created_at' => 'required|date',
+        ]);
+
+        $ledger = LoanLedger::create([
+            'loan_id' => $loanId,
+            'amount' => $request->amount,
+            'type' => $request->type,
+            'remarks' => $request->remarks,
+        ]);
+
+        $ledger->timestamps = false;
+        $ledger->created_at = $request->created_at . ' 00:00:00';
+        $ledger->updated_at = $request->created_at . ' 00:00:00';
+        $ledger->save();
+
+        $this->recalculateLoanBalance($loanId);
+
+        return back()->with('success', 'Ledger entry added successfully');
+    }
+
+    public function editLedgerEntry($id)
+    {
+        $entry = LoanLedger::findOrFail($id);
+        return view('loan.edit-ledger-entry', compact('entry'));
+    }
+
+    public function updateLedgerEntry(Request $request, $id)
+    {
+        $entry = LoanLedger::findOrFail($id);
+
+        $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+            'type' => 'required|in:deduction,adjustment,opening,loan',
+            'remarks' => 'nullable|string|max:255',
+            'created_at' => 'required|date',
+        ]);
+
+        $entry->update([
+            'amount' => $request->amount,
+            'type' => $request->type,
+            'remarks' => $request->remarks,
+        ]);
+
+        $entry->timestamps = false;
+        $entry->created_at = $request->created_at . ' 00:00:00';
+        $entry->updated_at = $request->created_at . ' 00:00:00';
+        $entry->save();
+
+        $this->recalculateLoanBalance($entry->loan_id);
+
+        return redirect()->route('admin.loan.ledger', $entry->loan_id)
+            ->with('success', 'Ledger entry updated successfully');
+    }
+
+    public function destroyLedgerEntry($id)
+    {
+        $entry = LoanLedger::findOrFail($id);
+        $loanId = $entry->loan_id;
+
+        $entry->delete();
+
+        $this->recalculateLoanBalance($loanId);
+
+        return back()->with('success', 'Ledger entry deleted successfully');
+    }
+
+    private function recalculateLoanBalance($loanId)
+    {
+        $loan = Loan::findOrFail($loanId);
+
+        $totalIssued = LoanLedger::where('loan_id', $loan->id)
+            ->whereIn('type', ['opening', 'loan'])
+            ->sum('amount');
+
+        $totalPaid = LoanLedger::where('loan_id', $loan->id)
+            ->whereIn('type', ['deduction', 'adjustment'])
+            ->sum('amount');
+
+        $remaining = max(0, $totalIssued - $totalPaid);
+
+        $status = $loan->status;
+        if ($remaining <= 0) {
+            $status = 'closed';
+        } else {
+            $status = 'approved';
+        }
+
+        $openingSum = LoanLedger::where('loan_id', $loan->id)
+            ->where('type', 'opening')
+            ->sum('amount');
+
+        $loanSum = LoanLedger::where('loan_id', $loan->id)
+            ->where('type', 'loan')
+            ->sum('amount');
+
+        $loan->update([
+            'opening_balance' => $openingSum,
+            'amount' => $loanSum,
+            'remaining_balance' => $remaining,
+            'status' => $status
+        ]);
+    }
 }
