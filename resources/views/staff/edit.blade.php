@@ -90,6 +90,15 @@
                        required>
             </div>
 
+            <div>
+                <label class="block font-semibold mb-1">Role</label>
+                <select name="role" class="w-full border p-2 rounded" required>
+                    <option value="employee" {{ old('role', $staff->user->role) === 'employee' ? 'selected' : '' }}>Employee</option>
+                    <option value="manager" {{ old('role', $staff->user->role) === 'manager' ? 'selected' : '' }}>Manager/Accounts</option>
+                    <option value="admin" {{ old('role', $staff->user->role) === 'admin' ? 'selected' : '' }}>Admin</option>
+                </select>
+            </div>
+
             <div class="mt-3">
     <label class="block font-semibold mb-1">Office Location</label>
 

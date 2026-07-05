@@ -66,7 +66,8 @@ class StaffController extends Controller
     'department' => 'required',
     'designation' => 'required',
     'salary' => 'required|numeric',
-    'joining_date' => 'required|date'
+    'joining_date' => 'required|date',
+    'role' => 'required|in:employee,manager,admin',
 ]);
 
     // AUTO GENERATE EMPLOYEE CODE
@@ -79,9 +80,11 @@ class StaffController extends Controller
         'email' => $request->email,
         'employee_code' => $employeeCode,
         'password' => \Hash::make($password),
-        'role' => 'employee',
         'force_password_change' => true
     ]);
+
+    $user->role = $request->role;
+    $user->save();
 
     Staff::create([
     'user_id' => $user->id,
@@ -165,7 +168,8 @@ class StaffController extends Controller
         'employee_code' => 'required|unique:users,employee_code,' . $staff->user->id,
         'department'    => 'required',
         'designation'   => 'required',
-        'salary'        => 'required|numeric'
+        'salary'        => 'required|numeric',
+        'role'          => 'required|in:employee,manager,admin'
     ]);
 
     /*
@@ -187,6 +191,9 @@ class StaffController extends Controller
             ? Carbon::parse($request->attendance_override_until)
             : null,
     ]);
+
+    $staff->user->role = $request->role;
+    $staff->user->save();
 
     /*
     |--------------------------------------------------------------------------
