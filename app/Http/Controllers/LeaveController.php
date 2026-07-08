@@ -6,6 +6,7 @@ use App\Models\Leave;
 use App\Models\User;
 use App\Models\LeaveTransaction;
 use App\Models\LeaveBalance;
+use App\Models\LeaveApprovalEmail;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
@@ -145,16 +146,22 @@ public function store(Request $request)
     */
 
     if(auth()->user()->role === 'employee'){
-        $admins = User::where('role','admin')->get();
+        $adminEmails = User::where('role','admin')->pluck('email');
+        $approvalEmails = LeaveApprovalEmail::pluck('email');
 
-        foreach($admins as $admin){
+        $recipients = $adminEmails->merge($approvalEmails)
+            ->filter()
+            ->unique()
+            ->values();
+
+        foreach($recipients as $recipientEmail){
             Mail::raw(
                 "New Leave Request\n\nEmployee: ".auth()->user()->name.
                 "\nFrom: ".$request->start_date.
                 "\nTo: ".$request->end_date.
                 "\nDays: ".$days,
-                function ($message) use ($admin) {
-                    $message->to($admin->email)
+                function ($message) use ($recipientEmail) {
+                    $message->to($recipientEmail)
                         ->subject('New Leave Application Submitted');
                 }
             );

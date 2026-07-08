@@ -16,6 +16,7 @@ use App\Http\Controllers\HolidayController;
 use App\Http\Controllers\WorkFromHomeController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\OfficeLocationController;
+use App\Http\Controllers\LeaveApprovalEmailController;
 
 
 /*
@@ -338,6 +339,10 @@ Route::post('/leave/store', [LeaveController::class, 'store'])->name('leave.stor
     Route::get('/leave/{id}/edit', [LeaveController::class, 'adminEdit'])->name('leave.edit');
         Route::put('/leave/{id}', [LeaveController::class, 'adminUpdate'])->name('leave.update');
 Route::post('/leave/bulk-allocation',[LeaveController::class, 'bulkAllocate'])->name('leave.bulk.allocate');
+
+Route::get('/leave-approval-emails', [LeaveApprovalEmailController::class, 'index'])->name('leave.approval.emails.index');
+Route::post('/leave-approval-emails', [LeaveApprovalEmailController::class, 'store'])->name('leave.approval.emails.store');
+Route::delete('/leave-approval-emails/{id}', [LeaveApprovalEmailController::class, 'destroy'])->name('leave.approval.emails.destroy');
 
     // Loan Management moved to separate role group below
 
