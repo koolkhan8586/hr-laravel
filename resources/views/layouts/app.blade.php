@@ -174,6 +174,10 @@ Leave Allocation
 Leave Transactions
 </a>
 
+<a href="{{ route('admin.leave.approval.emails.index') }}" class="block py-1 hover:text-blue-600">
+Approval Notification Emails
+</a>
+
 </div>
 </div>
 
