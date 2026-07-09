@@ -18,6 +18,8 @@ class Leave extends Model
         'calculated_days',
         'reason',
         'status',
+        'decided_via',
+        'decided_by_email',
     ];
 
     protected $casts = [

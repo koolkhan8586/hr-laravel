@@ -34,6 +34,15 @@ Route::get('/', function () {
 
 });
 
+/*
+|--------------------------------------------------------------------------
+| Leave Approve/Reject via Email Link (no login required)
+|--------------------------------------------------------------------------
+*/
+Route::get('/leave/email-decision/{id}/{decision}', [LeaveController::class, 'emailDecision'])
+    ->name('leave.email.decision')
+    ->middleware('signed');
+
 /*|                                                                          |
 | -------------------------------------------------------------------------- |
 | Dashboard                                                                  |

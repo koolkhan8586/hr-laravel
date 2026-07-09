@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\LeaveTransaction;
 use App\Models\LeaveBalance;
 use App\Models\LeaveApprovalEmail;
+use App\Mail\LeaveApplicationSubmitted;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
@@ -155,16 +156,7 @@ public function store(Request $request)
             ->values();
 
         foreach($recipients as $recipientEmail){
-            Mail::raw(
-                "New Leave Request\n\nEmployee: ".auth()->user()->name.
-                "\nFrom: ".$request->start_date.
-                "\nTo: ".$request->end_date.
-                "\nDays: ".$days,
-                function ($message) use ($recipientEmail) {
-                    $message->to($recipientEmail)
-                        ->subject('New Leave Application Submitted');
-                }
-            );
+            Mail::to($recipientEmail)->send(new LeaveApplicationSubmitted($leave, $recipientEmail));
         }
     }
 
@@ -240,19 +232,96 @@ public function store(Request $request)
             return back()->with('error', 'Insufficient leave balance.');
         }
 
-        $leave->update(['status'=>'approved']);
+        $leave->update([
+            'status' => 'approved',
+            'decided_via' => 'dashboard',
+            'decided_by_email' => auth()->user()->email,
+        ]);
 
-        Mail::raw(
-            "Your Leave Has Been Approved\n\nFrom: ".$leave->start_date.
-            "\nTo: ".$leave->end_date.
-            "\nDays: ".$leave->calculated_days,
-            function ($message) use ($leave) {
-                $message->to($leave->user->email)
-                    ->subject('Leave Approved');
-            }
-        );
+        $this->notifyLeaveOwner($leave, 'approved');
 
         return back()->with('success','Leave Approved');
+    }
+
+/*
+|--------------------------------------------------------------------------
+| APPROVE / REJECT VIA EMAIL LINK (NO LOGIN REQUIRED)
+|--------------------------------------------------------------------------
+*/
+
+    public function emailDecision(Request $request, $id, $decision)
+    {
+        abort_unless(in_array($decision, ['approve', 'reject']), 404);
+
+        $leave = Leave::with('user')->findOrFail($id);
+        $approverEmail = $request->query('email');
+
+        if ($leave->status !== 'pending') {
+            return view('leave.email-decision-result', [
+                'status' => 'already',
+                'leave' => $leave,
+            ]);
+        }
+
+        if ($decision === 'approve') {
+            $approved = $this->processApproval($leave);
+
+            if (!$approved) {
+                return view('leave.email-decision-result', [
+                    'status' => 'insufficient',
+                    'leave' => $leave,
+                ]);
+            }
+
+            $leave->update([
+                'status' => 'approved',
+                'decided_via' => 'email',
+                'decided_by_email' => $approverEmail,
+            ]);
+
+            $this->notifyLeaveOwner($leave, 'approved');
+
+            return view('leave.email-decision-result', [
+                'status' => 'approved',
+                'leave' => $leave,
+            ]);
+        }
+
+        $leave->update([
+            'status' => 'rejected',
+            'decided_via' => 'email',
+            'decided_by_email' => $approverEmail,
+        ]);
+
+        $this->notifyLeaveOwner($leave, 'rejected');
+
+        return view('leave.email-decision-result', [
+            'status' => 'rejected',
+            'leave' => $leave,
+        ]);
+    }
+
+/*
+|--------------------------------------------------------------------------
+| NOTIFY LEAVE OWNER OF DECISION
+|--------------------------------------------------------------------------
+*/
+
+    private function notifyLeaveOwner($leave, string $status)
+    {
+        $subject = $status === 'approved' ? 'Leave Approved' : 'Leave Rejected';
+
+        $body = $status === 'approved'
+            ? "Your Leave Has Been Approved\n\nFrom: ".$leave->start_date.
+              "\nTo: ".$leave->end_date.
+              "\nDays: ".$leave->calculated_days
+            : "Your Leave Has Been Rejected\n\nFrom: ".$leave->start_date.
+              "\nTo: ".$leave->end_date;
+
+        Mail::raw($body, function ($message) use ($leave, $subject) {
+            $message->to($leave->user->email)
+                ->subject($subject);
+        });
     }
 
 /*
@@ -309,16 +378,13 @@ public function store(Request $request)
     {
         $leave = Leave::findOrFail($id);
 
-        $leave->update(['status'=>'rejected']);
+        $leave->update([
+            'status' => 'rejected',
+            'decided_via' => 'dashboard',
+            'decided_by_email' => auth()->user()->email,
+        ]);
 
-        Mail::raw(
-            "Your Leave Has Been Rejected\n\nFrom: ".$leave->start_date.
-            "\nTo: ".$leave->end_date,
-            function ($message) use ($leave) {
-                $message->to($leave->user->email)
-                    ->subject('Leave Rejected');
-            }
-        );
+        $this->notifyLeaveOwner($leave, 'rejected');
 
         return back()->with('success','Leave Rejected');
     }
