@@ -42,6 +42,12 @@
 <td style="padding:6px 0;">{{ $leave->reason }}</td>
 </tr>
 @endif
+@if(!is_null($remainingBalance))
+<tr>
+<td style="padding:6px 0; color:#6b7280;">Remaining Balance</td>
+<td style="padding:6px 0;">{{ $remainingBalance }} days (before this request)</td>
+</tr>
+@endif
 </table>
 
 <div>
