@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\Attendance;
 use App\Models\User;
 use App\Models\Leave;
+use App\Exports\StaffMonthlyReportExport;
+use Maatwebsite\Excel\Facades\Excel;
 use Carbon\Carbon;
 
 class AdminAttendanceController extends Controller
@@ -735,7 +737,141 @@ return view('admin.monthly-summary',compact(
 */
 public function staffLateReport(Request $request)
 {
-    $month = $request->month ?? now()->format('Y-m');
+    $report = $this->buildStaffLateReport($request->month ?? now()->format('Y-m'));
+
+    return view('admin.reports.staff-late', $report);
+}
+
+public function exportStaffLateReport(Request $request)
+{
+    $report = $this->buildStaffLateReport($request->month ?? now()->format('Y-m'));
+
+    $rows = [];
+    foreach ($report['data'] as $index => $row) {
+        $details = $row['records']->map(function ($record) {
+            $date = Carbon::parse($record->date)->format('d M Y');
+            $time = $record->clock_in
+                ? Carbon::parse($record->clock_in)->format('h:i A')
+                : '-';
+
+            return $date.' '.$time;
+        })->implode('; ');
+
+        $rows[] = [
+            $index + 1,
+            $row['user']->name,
+            $row['user']->staff->employee_id ?? '-',
+            $row['user']->staff->department ?? '-',
+            $row['count'],
+            $details ?: 'No late arrivals',
+        ];
+    }
+
+    $filename = 'staff_late_'.$report['month'].'.xlsx';
+
+    return Excel::download(
+        new StaffMonthlyReportExport(
+            ['#', 'Employee', 'Employee ID', 'Department', 'Late Count', 'Late Dates / Clock In'],
+            $rows
+        ),
+        $filename
+    );
+}
+
+/*
+|--------------------------------------------------------------------------
+| Staff-wise Absences (Month)
+|--------------------------------------------------------------------------
+*/
+public function staffAbsentReport(Request $request)
+{
+    $report = $this->buildStaffAbsentReport($request->month ?? now()->format('Y-m'));
+
+    return view('admin.reports.staff-absent', $report);
+}
+
+public function exportStaffAbsentReport(Request $request)
+{
+    $report = $this->buildStaffAbsentReport($request->month ?? now()->format('Y-m'));
+
+    $rows = [];
+    foreach ($report['data'] as $index => $row) {
+        $details = collect($row['dates'])
+            ->map(fn ($d) => Carbon::parse($d)->format('d M Y'))
+            ->implode('; ');
+
+        $rows[] = [
+            $index + 1,
+            $row['user']->name,
+            $row['user']->staff->employee_id ?? '-',
+            $row['user']->staff->department ?? '-',
+            $row['count'],
+            $details ?: 'No absences',
+        ];
+    }
+
+    $filename = 'staff_absence_'.$report['month'].'.xlsx';
+
+    return Excel::download(
+        new StaffMonthlyReportExport(
+            ['#', 'Employee', 'Employee ID', 'Department', 'Absent Days', 'Absent Dates'],
+            $rows
+        ),
+        $filename
+    );
+}
+
+/*
+|--------------------------------------------------------------------------
+| Staff-wise Leave (Month)
+|--------------------------------------------------------------------------
+*/
+public function staffLeaveReport(Request $request)
+{
+    $report = $this->buildStaffLeaveReport($request->month ?? now()->format('Y-m'));
+
+    return view('admin.reports.staff-leave', $report);
+}
+
+public function exportStaffLeaveReport(Request $request)
+{
+    $report = $this->buildStaffLeaveReport($request->month ?? now()->format('Y-m'));
+
+    $rows = [];
+    foreach ($report['data'] as $index => $row) {
+        $details = collect($row['leaves'])->map(function ($item) {
+            $leave = $item['leave'];
+
+            return ucfirst(str_replace('_', ' ', $leave->type)).' '.
+                Carbon::parse($leave->start_date)->format('d M Y').' to '.
+                Carbon::parse($leave->end_date)->format('d M Y').
+                ' ('.$item['days_in_month'].' days)';
+        })->implode('; ');
+
+        $rows[] = [
+            $index + 1,
+            $row['user']->name,
+            $row['user']->staff->employee_id ?? '-',
+            $row['user']->staff->department ?? '-',
+            $row['count'],
+            $row['days'],
+            $details ?: 'No leave',
+        ];
+    }
+
+    $filename = 'staff_leave_'.$report['month'].'.xlsx';
+
+    return Excel::download(
+        new StaffMonthlyReportExport(
+            ['#', 'Employee', 'Employee ID', 'Department', 'Applications', 'Days in Month', 'Leave Details'],
+            $rows
+        ),
+        $filename
+    );
+}
+
+protected function buildStaffLateReport(string $month): array
+{
     $start = Carbon::parse($month.'-01')->startOfMonth();
     $end   = Carbon::parse($month.'-01')->endOfMonth();
 
@@ -768,24 +904,16 @@ public function staffLateReport(Request $request)
 
     usort($data, fn ($a, $b) => $b['count'] <=> $a['count']);
 
-    $staffWithLate = collect($data)->where('count', '>', 0)->count();
-
-    return view('admin.reports.staff-late', compact(
-        'data',
-        'month',
-        'totalLate',
-        'staffWithLate'
-    ));
+    return [
+        'data' => $data,
+        'month' => $month,
+        'totalLate' => $totalLate,
+        'staffWithLate' => collect($data)->where('count', '>', 0)->count(),
+    ];
 }
 
-/*
-|--------------------------------------------------------------------------
-| Staff-wise Absences (Month)
-|--------------------------------------------------------------------------
-*/
-public function staffAbsentReport(Request $request)
+protected function buildStaffAbsentReport(string $month): array
 {
-    $month = $request->month ?? now()->format('Y-m');
     $start = Carbon::parse($month.'-01')->startOfMonth();
     $end   = Carbon::parse($month.'-01')->endOfMonth();
 
@@ -918,24 +1046,16 @@ public function staffAbsentReport(Request $request)
 
     usort($data, fn ($a, $b) => $b['count'] <=> $a['count']);
 
-    $staffWithAbsent = collect($data)->where('count', '>', 0)->count();
-
-    return view('admin.reports.staff-absent', compact(
-        'data',
-        'month',
-        'totalAbsent',
-        'staffWithAbsent'
-    ));
+    return [
+        'data' => $data,
+        'month' => $month,
+        'totalAbsent' => $totalAbsent,
+        'staffWithAbsent' => collect($data)->where('count', '>', 0)->count(),
+    ];
 }
 
-/*
-|--------------------------------------------------------------------------
-| Staff-wise Leave (Month)
-|--------------------------------------------------------------------------
-*/
-public function staffLeaveReport(Request $request)
+protected function buildStaffLeaveReport(string $month): array
 {
-    $month = $request->month ?? now()->format('Y-m');
     $start = Carbon::parse($month.'-01')->startOfMonth();
     $end   = Carbon::parse($month.'-01')->endOfMonth();
 
@@ -994,15 +1114,13 @@ public function staffLeaveReport(Request $request)
 
     usort($data, fn ($a, $b) => $b['days'] <=> $a['days']);
 
-    $staffOnLeave = collect($data)->where('count', '>', 0)->count();
-
-    return view('admin.reports.staff-leave', compact(
-        'data',
-        'month',
-        'totalDays',
-        'totalApplications',
-        'staffOnLeave'
-    ));
+    return [
+        'data' => $data,
+        'month' => $month,
+        'totalDays' => $totalDays,
+        'totalApplications' => $totalApplications,
+        'staffOnLeave' => collect($data)->where('count', '>', 0)->count(),
+    ];
 }
 
     public function liveMap()

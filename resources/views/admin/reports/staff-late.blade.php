@@ -1,19 +1,66 @@
 <x-app-layout>
 
+<style>
+@media print {
+    aside, nav, header, .fixed.bottom-0, .no-print {
+        display: none !important;
+    }
+
+    .print-header {
+        display: block !important;
+    }
+
+    body, main {
+        background: white !important;
+        color: black !important;
+    }
+
+    .max-w-7xl {
+        max-width: 100% !important;
+        width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .shadow, .rounded-xl {
+        box-shadow: none !important;
+    }
+}
+</style>
+
 <div class="max-w-7xl mx-auto py-6 px-4">
 
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+    <div class="print-header hidden mb-4" style="display: none;">
+        <h1 class="text-xl font-bold">LSAF HR — Staff-wise Late Arrival Report</h1>
+        <p>{{ \Carbon\Carbon::parse($month.'-01')->format('F Y') }}</p>
+        <p>Printed on {{ now()->format('d M Y h:i A') }}</p>
+    </div>
+
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 no-print">
         <h2 class="text-2xl font-bold">Staff-wise Late Arrival (Month)</h2>
 
-        <form method="GET" class="flex flex-wrap items-center gap-2">
-            <input type="month"
-                   name="month"
-                   value="{{ $month }}"
-                   class="border rounded px-3 py-2">
-            <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
-                Filter
+        <div class="flex flex-wrap items-center gap-2">
+            <form method="GET" class="flex flex-wrap items-center gap-2">
+                <input type="month"
+                       name="month"
+                       value="{{ $month }}"
+                       class="border rounded px-3 py-2">
+                <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                    Filter
+                </button>
+            </form>
+
+            <button type="button"
+                    onclick="window.print()"
+                    class="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded">
+                Print
             </button>
-        </form>
+
+            <a href="{{ route('admin.reports.late.export', ['month' => $month]) }}"
+               class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+                Export Excel
+            </a>
+        </div>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
