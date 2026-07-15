@@ -213,6 +213,18 @@ Route::get('/attendance-summary',
 [AdminAttendanceController::class,'monthlySummary'])
 ->name('attendance.summary');
 
+Route::get('/reports/late-arrivals',
+    [AdminAttendanceController::class, 'staffLateReport']
+)->name('reports.late');
+
+Route::get('/reports/absences',
+    [AdminAttendanceController::class, 'staffAbsentReport']
+)->name('reports.absent');
+
+Route::get('/reports/leaves',
+    [AdminAttendanceController::class, 'staffLeaveReport']
+)->name('reports.leave');
+
 Route::get('/attendance-details/{user}/{date}',
 [AdminAttendanceController::class,'attendanceDetails']);
 
