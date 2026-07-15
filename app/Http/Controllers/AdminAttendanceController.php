@@ -728,6 +728,283 @@ return view('admin.monthly-summary',compact(
 
 }
 
+/*
+|--------------------------------------------------------------------------
+| Staff-wise Late Arrivals (Month)
+|--------------------------------------------------------------------------
+*/
+public function staffLateReport(Request $request)
+{
+    $month = $request->month ?? now()->format('Y-m');
+    $start = Carbon::parse($month.'-01')->startOfMonth();
+    $end   = Carbon::parse($month.'-01')->endOfMonth();
+
+    $users = User::where('role', 'employee')
+        ->with('staff')
+        ->orderBy('name')
+        ->get();
+
+    $lateRecords = Attendance::with('user')
+        ->whereBetween('date', [$start, $end])
+        ->where('status', 'late')
+        ->orderBy('date')
+        ->get()
+        ->groupBy('user_id');
+
+    $data = [];
+    $totalLate = 0;
+
+    foreach ($users as $user) {
+        $records = $lateRecords->get($user->id, collect());
+        $count = $records->count();
+        $totalLate += $count;
+
+        $data[] = [
+            'user' => $user,
+            'count' => $count,
+            'records' => $records,
+        ];
+    }
+
+    usort($data, fn ($a, $b) => $b['count'] <=> $a['count']);
+
+    $staffWithLate = collect($data)->where('count', '>', 0)->count();
+
+    return view('admin.reports.staff-late', compact(
+        'data',
+        'month',
+        'totalLate',
+        'staffWithLate'
+    ));
+}
+
+/*
+|--------------------------------------------------------------------------
+| Staff-wise Absences (Month)
+|--------------------------------------------------------------------------
+*/
+public function staffAbsentReport(Request $request)
+{
+    $month = $request->month ?? now()->format('Y-m');
+    $start = Carbon::parse($month.'-01')->startOfMonth();
+    $end   = Carbon::parse($month.'-01')->endOfMonth();
+
+    // Do not count future weekdays in the current month
+    $rangeEnd = $end->copy();
+    if ($end->isFuture()) {
+        $rangeEnd = now()->copy()->startOfDay();
+    }
+
+    $users = User::where('role', 'employee')
+        ->with('staff')
+        ->orderBy('name')
+        ->get();
+
+    $employeeIds = $users->pluck('id');
+
+    $attendanceByUserDate = Attendance::whereBetween('date', [$start, $rangeEnd])
+        ->whereIn('user_id', $employeeIds)
+        ->get()
+        ->groupBy(fn ($row) => $row->user_id.'_'.Carbon::parse($row->date)->toDateString());
+
+    $leaves = Leave::where('status', 'approved')
+        ->whereDate('start_date', '<=', $rangeEnd)
+        ->whereDate('end_date', '>=', $start)
+        ->whereIn('user_id', $employeeIds)
+        ->get();
+
+    $wfhList = \App\Models\WorkFromHome::whereDate('start_date', '<=', $rangeEnd)
+        ->whereDate('end_date', '>=', $start)
+        ->whereIn('user_id', $employeeIds)
+        ->get();
+
+    $holidays = \App\Models\Holiday::with('users')
+        ->whereDate('start_date', '<=', $rangeEnd)
+        ->whereDate('end_date', '>=', $start)
+        ->get();
+
+    $absencesByUser = [];
+    foreach ($users as $user) {
+        $absencesByUser[$user->id] = [];
+    }
+
+    $day = $start->copy();
+    while ($day->lte($rangeEnd)) {
+        if ($day->isWeekend()) {
+            $day->addDay();
+            continue;
+        }
+
+        $dateStr = $day->toDateString();
+
+        $holidayUsers = [];
+        foreach ($holidays as $holiday) {
+            $hStart = Carbon::parse($holiday->start_date)->startOfDay();
+            $hEnd = Carbon::parse($holiday->end_date)->startOfDay();
+            if ($day->lt($hStart) || $day->gt($hEnd)) {
+                continue;
+            }
+
+            if ((int) $holiday->for_all === 1) {
+                $holidayUsers = $employeeIds->all();
+                break;
+            }
+
+            foreach ($holiday->users as $u) {
+                $holidayUsers[] = $u->id;
+            }
+        }
+        $holidayUsers = array_unique($holidayUsers);
+
+        $leaveUsers = $leaves
+            ->filter(fn ($leave) =>
+                Carbon::parse($leave->start_date)->lte($day) &&
+                Carbon::parse($leave->end_date)->gte($day)
+            )
+            ->pluck('user_id')
+            ->all();
+
+        $wfhUsers = $wfhList
+            ->filter(fn ($wfh) =>
+                Carbon::parse($wfh->start_date)->lte($day) &&
+                Carbon::parse($wfh->end_date)->gte($day)
+            )
+            ->pluck('user_id')
+            ->all();
+
+        foreach ($users as $user) {
+            if (in_array($user->id, $holidayUsers, true)) {
+                continue;
+            }
+            if (in_array($user->id, $leaveUsers, true)) {
+                continue;
+            }
+            if (in_array($user->id, $wfhUsers, true)) {
+                continue;
+            }
+
+            $key = $user->id.'_'.$dateStr;
+            $attendance = $attendanceByUserDate->get($key);
+
+            if ($attendance && $attendance->isNotEmpty()) {
+                $status = $attendance->first()->status;
+                // Explicit absent rows count; present/late/half_day do not
+                if ($status === 'absent') {
+                    $absencesByUser[$user->id][] = $dateStr;
+                }
+                continue;
+            }
+
+            $absencesByUser[$user->id][] = $dateStr;
+        }
+
+        $day->addDay();
+    }
+
+    $data = [];
+    $totalAbsent = 0;
+
+    foreach ($users as $user) {
+        $dates = $absencesByUser[$user->id] ?? [];
+        $count = count($dates);
+        $totalAbsent += $count;
+
+        $data[] = [
+            'user' => $user,
+            'count' => $count,
+            'dates' => $dates,
+        ];
+    }
+
+    usort($data, fn ($a, $b) => $b['count'] <=> $a['count']);
+
+    $staffWithAbsent = collect($data)->where('count', '>', 0)->count();
+
+    return view('admin.reports.staff-absent', compact(
+        'data',
+        'month',
+        'totalAbsent',
+        'staffWithAbsent'
+    ));
+}
+
+/*
+|--------------------------------------------------------------------------
+| Staff-wise Leave (Month)
+|--------------------------------------------------------------------------
+*/
+public function staffLeaveReport(Request $request)
+{
+    $month = $request->month ?? now()->format('Y-m');
+    $start = Carbon::parse($month.'-01')->startOfMonth();
+    $end   = Carbon::parse($month.'-01')->endOfMonth();
+
+    $users = User::where('role', 'employee')
+        ->with('staff')
+        ->orderBy('name')
+        ->get();
+
+    $leaves = Leave::with('user')
+        ->where('status', 'approved')
+        ->whereDate('start_date', '<=', $end)
+        ->whereDate('end_date', '>=', $start)
+        ->orderBy('start_date')
+        ->get()
+        ->groupBy('user_id');
+
+    $data = [];
+    $totalDays = 0;
+    $totalApplications = 0;
+
+    foreach ($users as $user) {
+        $userLeaves = $leaves->get($user->id, collect());
+        $leaveRows = [];
+        $daysInMonth = 0;
+
+        foreach ($userLeaves as $leave) {
+            $leaveStart = Carbon::parse($leave->start_date)->startOfDay();
+            $leaveEnd = Carbon::parse($leave->end_date)->startOfDay();
+
+            $overlapStart = $leaveStart->greaterThan($start) ? $leaveStart->copy() : $start->copy();
+            $overlapEnd = $leaveEnd->lessThan($end) ? $leaveEnd->copy() : $end->copy();
+
+            if ($leave->duration_type === 'half_day') {
+                $days = 0.5;
+            } else {
+                $days = $overlapStart->diffInDays($overlapEnd) + 1;
+            }
+
+            $daysInMonth += $days;
+            $leaveRows[] = [
+                'leave' => $leave,
+                'days_in_month' => $days,
+            ];
+        }
+
+        $totalDays += $daysInMonth;
+        $totalApplications += count($leaveRows);
+
+        $data[] = [
+            'user' => $user,
+            'count' => count($leaveRows),
+            'days' => $daysInMonth,
+            'leaves' => $leaveRows,
+        ];
+    }
+
+    usort($data, fn ($a, $b) => $b['days'] <=> $a['days']);
+
+    $staffOnLeave = collect($data)->where('count', '>', 0)->count();
+
+    return view('admin.reports.staff-leave', compact(
+        'data',
+        'month',
+        'totalDays',
+        'totalApplications',
+        'staffOnLeave'
+    ));
+}
+
     public function liveMap()
 {
     $employees = \App\Models\Attendance::with('user')

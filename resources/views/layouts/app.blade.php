@@ -99,6 +99,18 @@ Attendance Management
 Monthly Summary
 </a>
 
+<a href="{{ route('admin.reports.late') }}" class="block py-1 hover:text-blue-600">
+Staff Late (Month)
+</a>
+
+<a href="{{ route('admin.reports.absent') }}" class="block py-1 hover:text-blue-600">
+Staff Absence (Month)
+</a>
+
+<a href="{{ route('admin.reports.leave') }}" class="block py-1 hover:text-blue-600">
+Staff Leave (Month)
+</a>
+
 <a href="{{ route('admin.live.map') }}">
         Live Tracking Map
     </a>
