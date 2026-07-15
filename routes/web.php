@@ -217,13 +217,25 @@ Route::get('/reports/late-arrivals',
     [AdminAttendanceController::class, 'staffLateReport']
 )->name('reports.late');
 
+Route::get('/reports/late-arrivals/export',
+    [AdminAttendanceController::class, 'exportStaffLateReport']
+)->name('reports.late.export');
+
 Route::get('/reports/absences',
     [AdminAttendanceController::class, 'staffAbsentReport']
 )->name('reports.absent');
 
+Route::get('/reports/absences/export',
+    [AdminAttendanceController::class, 'exportStaffAbsentReport']
+)->name('reports.absent.export');
+
 Route::get('/reports/leaves',
     [AdminAttendanceController::class, 'staffLeaveReport']
 )->name('reports.leave');
+
+Route::get('/reports/leaves/export',
+    [AdminAttendanceController::class, 'exportStaffLeaveReport']
+)->name('reports.leave.export');
 
 Route::get('/attendance-details/{user}/{date}',
 [AdminAttendanceController::class,'attendanceDetails']);
