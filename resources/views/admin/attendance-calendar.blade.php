@@ -31,6 +31,7 @@ Print / Export
 <span class="text-yellow-600 font-bold">⏰ Late</span>
 <span class="text-purple-600 font-bold">🕒 Half Day</span>
 <span class="text-blue-600 font-bold">🌴 Leave</span>
+<span class="text-blue-600 font-bold">🌓 Half Day Leave</span>
 <span class="text-blue-600 font-bold">🌅 Morning Leave</span>
 <span class="text-blue-600 font-bold">🌇 Afternoon Leave</span>
 <span class="text-indigo-600 font-bold">🏠 Work From Home</span>
@@ -232,6 +233,11 @@ title="Half Day Leave (Morning)">🌅</span>
 <span class="text-blue-600 font-bold"
 title="Half Day Leave (Afternoon)">🌇</span>
 
+@else
+
+<span class="text-blue-600 font-bold"
+title="Half Day Leave">🌓</span>
+
 @endif
 
 @else
@@ -253,7 +259,11 @@ title="Full Day Leave">🌴</span>
 
 @elseif($record->status == 'half_day')
 
-<span class="text-purple-600 font-bold">🕒</span>
+<span class="text-purple-600 font-bold" title="Half Day">🕒</span>
+
+@else
+
+<span class="text-red-500 font-bold" title="Absent">✖</span>
 
 @endif
 

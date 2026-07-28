@@ -83,7 +83,10 @@ public function store(Request $request)
         'start_date'    => 'required|date',
         'end_date'      => 'required|date|after_or_equal:start_date',
         'duration_type' => 'required|in:full_day,half_day',
+        'half_day_type' => 'nullable|required_if:duration_type,half_day|in:morning,afternoon',
         'reason'        => 'nullable|string'
+    ], [
+        'half_day_type.required_if' => 'Please select whether the half day is morning or afternoon.',
     ]);
 
     $userId = auth()->user()->role === 'admin'
@@ -133,7 +136,9 @@ public function store(Request $request)
         'start_date'     => $request->start_date,
         'end_date'       => $request->end_date,
         'duration_type'  => $request->duration_type,
-        'half_day_type'  => $request->half_day_type ?? null,
+        'half_day_type'  => $request->duration_type === 'half_day'
+            ? $request->half_day_type
+            : null,
         'days'           => $days,
         'calculated_days'=> $days,
         'reason'         => $request->reason,
@@ -643,7 +648,10 @@ public function adminUpdate(Request $request, $id)
         'start_date'    => 'required|date',
         'end_date'      => 'required|date|after_or_equal:start_date',
         'duration_type' => 'required|in:full_day,half_day',
+        'half_day_type' => 'nullable|required_if:duration_type,half_day|in:morning,afternoon',
         'reason'        => 'nullable|string'
+    ], [
+        'half_day_type.required_if' => 'Please select whether the half day is morning or afternoon.',
     ]);
 
     $leave = Leave::findOrFail($id);
@@ -660,7 +668,9 @@ public function adminUpdate(Request $request, $id)
         'start_date'      => $request->start_date,
         'end_date'        => $request->end_date,
         'duration_type'   => $request->duration_type,
-        'half_day_type'   => $request->half_day_type ?? null,
+        'half_day_type'   => $request->duration_type === 'half_day'
+            ? $request->half_day_type
+            : null,
         'days'            => $days,
         'calculated_days' => $days,
         'reason'          => $request->reason,
