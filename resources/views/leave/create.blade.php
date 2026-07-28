@@ -68,10 +68,24 @@
         <div class="mb-4">
             <label class="block font-semibold mb-2">Leave Duration</label>
             <select name="duration_type"
+                    id="duration_type"
                     class="w-full border rounded px-3 py-2"
                     required>
-                <option value="full_day">Full Day</option>
-                <option value="half_day">Half Day</option>
+                <option value="full_day" {{ old('duration_type') == 'full_day' ? 'selected' : '' }}>Full Day</option>
+                <option value="half_day" {{ old('duration_type') == 'half_day' ? 'selected' : '' }}>Half Day</option>
+            </select>
+        </div>
+
+
+        {{-- HALF DAY TYPE --}}
+        <div class="mb-4" id="half_day_section" style="display:none;">
+            <label class="block font-semibold mb-2">Half Day Type</label>
+            <select name="half_day_type"
+                    id="half_day_type"
+                    class="w-full border rounded px-3 py-2">
+                <option value="">Select</option>
+                <option value="morning" {{ old('half_day_type') == 'morning' ? 'selected' : '' }}>Morning</option>
+                <option value="afternoon" {{ old('half_day_type') == 'afternoon' ? 'selected' : '' }}>Afternoon</option>
             </select>
         </div>
 
@@ -94,5 +108,27 @@
     </form>
 
 </div>
+
+{{-- Half Day JS --}}
+<script>
+(function () {
+    const duration = document.getElementById('duration_type');
+    const section  = document.getElementById('half_day_section');
+    const type     = document.getElementById('half_day_type');
+
+    function toggleHalfDay() {
+        const isHalfDay = duration.value === 'half_day';
+        section.style.display = isHalfDay ? 'block' : 'none';
+        type.required = isHalfDay;
+
+        if (!isHalfDay) {
+            type.value = '';
+        }
+    }
+
+    duration.addEventListener('change', toggleHalfDay);
+    toggleHalfDay();
+})();
+</script>
 
 </x-app-layout>
