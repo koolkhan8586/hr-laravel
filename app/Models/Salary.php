@@ -14,6 +14,7 @@ class Salary extends Model
 
         // Earnings
         'basic_salary',
+        'extra_load',
         'invigilation',
         't_payment',
         'eidi',
@@ -33,6 +34,7 @@ class Salary extends Model
 
         // Final
         'net_salary',
+        'cheque_amount',
 
         // Status
         'is_posted',
@@ -53,6 +55,7 @@ class Salary extends Model
 
             $totalEarnings =
                 ($salary->basic_salary ?? 0) +
+                ($salary->extra_load ?? 0) +
                 ($salary->invigilation ?? 0) +
                 ($salary->t_payment ?? 0) +
                 ($salary->eidi ?? 0) +
@@ -98,6 +101,15 @@ class Salary extends Model
             'is_posted' => false,
             'posted_at' => null,
         ]);
+    }
+
+    /**
+     * Amount actually transferred through the bank sheet: whatever is left
+     * of the net salary once the cheque-paid portion is taken out.
+     */
+    public function getBankAmountAttribute()
+    {
+        return max(0, ($this->net_salary ?? 0) - ($this->cheque_amount ?? 0));
     }
 
     public function isDraft()

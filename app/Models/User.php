@@ -26,6 +26,11 @@ class User extends Authenticatable
         'email',
         'mobile',
         'password',
+
+        // Payroll / salary sheet details
+        'salary_category',
+        'bank_account_no',
+        'new_account_no',
     ];
 
     /*

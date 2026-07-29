@@ -99,6 +99,32 @@
                 </select>
             </div>
 
+            <div>
+                <label class="block font-semibold mb-1">Salary Sheet</label>
+                <select name="salary_category" class="w-full border p-2 rounded">
+                    <option value="staff" {{ old('salary_category', $staff->user->salary_category) === 'staff' ? 'selected' : '' }}>Staff</option>
+                    <option value="teacher" {{ old('salary_category', $staff->user->salary_category) === 'teacher' ? 'selected' : '' }}>Teachers</option>
+                </select>
+                <p class="text-xs text-gray-500 mt-1">Which monthly salary sheet this employee appears on.</p>
+            </div>
+
+            <div>
+                <label class="block font-semibold mb-1">Account No.</label>
+                <input type="text"
+                       name="bank_account_no"
+                       value="{{ old('bank_account_no', $staff->user->bank_account_no) }}"
+                       class="w-full border p-2 rounded">
+            </div>
+
+            <div>
+                <label class="block font-semibold mb-1">New Account #</label>
+                <input type="text"
+                       name="new_account_no"
+                       value="{{ old('new_account_no', $staff->user->new_account_no) }}"
+                       class="w-full border p-2 rounded">
+                <p class="text-xs text-gray-500 mt-1">Used as the credit account on the bank sheet.</p>
+            </div>
+
             <div class="mt-3">
     <label class="block font-semibold mb-1">Office Location</label>
 

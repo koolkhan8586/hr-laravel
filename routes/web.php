@@ -362,6 +362,13 @@ Route::delete('/leave-approval-emails/{id}', [LeaveApprovalEmailController::clas
     |--------------------------------------------------------------------------
     */
     Route::get('/salary', [SalaryController::class,'index'])->name('salary.index');
+
+    // Salary sheet (grid entry) + bank sheet.
+    // Kept off the /salary/{id} prefix so they can't be swallowed by it.
+    Route::get('/salary-sheet', [SalaryController::class,'sheet'])->name('salary.sheet');
+    Route::post('/salary-sheet', [SalaryController::class,'sheetStore'])->name('salary.sheet.store');
+    Route::get('/bank-sheet', [SalaryController::class,'bankSheet'])->name('salary.bank.sheet');
+
     Route::get('/salary/create', [SalaryController::class,'create'])->name('salary.create');
     Route::post('/salary/store', [SalaryController::class,'store'])->name('salary.store');
     Route::get('/salary/export', [SalaryController::class,'export'])->name('salary.export');
