@@ -182,6 +182,171 @@ public function employeeIndex()
 
     /*
     |--------------------------------------------------------------------------
+    | SALARY SHEET (grid entry for a whole month, like the Excel sheet)
+    |--------------------------------------------------------------------------
+    */
+    public function sheet(Request $request)
+    {
+        $month    = (int) ($request->month ?? now()->month);
+        $year     = (int) ($request->year ?? now()->year);
+        $category = $request->category === 'teacher' ? 'teacher' : 'staff';
+
+        $users = User::with('staff')
+            ->where('role', 'employee')
+            ->where('salary_category', $category)
+            ->orderBy('name')
+            ->get();
+
+        // Existing rows for this period, keyed by user so the sheet reopens
+        // with whatever was last saved.
+        $existing = Salary::where('month', $month)
+            ->where('year', $year)
+            ->get()
+            ->keyBy('user_id');
+
+        return view('salary.sheet', compact(
+            'users',
+            'existing',
+            'month',
+            'year',
+            'category'
+        ));
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Save Salary Sheet (bulk create / update)
+    |--------------------------------------------------------------------------
+    */
+    public function sheetStore(Request $request)
+    {
+        $request->validate([
+            'month'          => 'required|integer|min:1|max:12',
+            'year'           => 'required|integer|min:2000|max:2100',
+            'category'       => 'required|in:teacher,staff',
+            'rows'           => 'required|array',
+            'rows.*.user_id' => 'required|exists:users,id',
+        ]);
+
+        $month = (int) $request->month;
+        $year  = (int) $request->year;
+
+        $saved   = 0;
+        $skipped = 0;
+
+        foreach ($request->rows as $row) {
+
+            $amount = fn ($key) => round((float) str_replace(',', '', $row[$key] ?? 0), 2);
+
+            $existing = Salary::where('user_id', $row['user_id'])
+                ->where('month', $month)
+                ->where('year', $year)
+                ->first();
+
+            // Never silently overwrite a salary that has already been posted.
+            if ($existing && $existing->isPosted()) {
+                $skipped++;
+                continue;
+            }
+
+            $values = [
+                'basic_salary'     => $amount('basic_salary'),
+                'extra_load'       => $amount('extra_load'),
+                'invigilation'     => $amount('invigilation'),
+                't_payment'        => $amount('t_payment'),
+                'eidi'             => $amount('eidi'),
+                'increment'        => $amount('increment'),
+                'other_earnings'   => $amount('other_earnings'),
+
+                'extra_leaves'     => $amount('extra_leaves'),
+                'income_tax'       => $amount('income_tax'),
+                'loan_deduction'   => $amount('loan_deduction'),
+                'insurance'        => $amount('insurance'),
+                'other_deductions' => $amount('other_deductions'),
+
+                'cheque_amount'    => $amount('cheque_amount'),
+            ];
+
+            // Skip untouched rows so blank employees don't create empty records.
+            if (!$existing && collect($values)->every(fn ($v) => $v == 0)) {
+                continue;
+            }
+
+            if ($existing) {
+                $existing->update($values);
+            } else {
+                Salary::create($values + [
+                    'user_id' => $row['user_id'],
+                    'month'   => $month,
+                    'year'    => $year,
+                    'status'  => 'draft',
+                ]);
+            }
+
+            $saved++;
+        }
+
+        $message = "Salary sheet saved ({$saved} employees).";
+
+        if ($skipped) {
+            $message .= " {$skipped} already-posted row(s) were left unchanged.";
+        }
+
+        return redirect()->route('admin.salary.sheet', [
+            'month'    => $month,
+            'year'     => $year,
+            'category' => $request->category,
+        ])->with('success', $message);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | BANK SHEET (ANNEXURE-A)
+    |--------------------------------------------------------------------------
+    */
+    public function bankSheet(Request $request)
+    {
+        $month = (int) ($request->month ?? now()->month);
+        $year  = (int) ($request->year ?? now()->year);
+
+        $salaries = Salary::with('user')
+            ->where('month', $month)
+            ->where('year', $year)
+            ->get()
+            // Only employees actually receiving money through the bank.
+            ->filter(fn ($s) => $s->user && $s->bank_amount > 0)
+            ->sortBy(fn ($s) => $s->user->name)
+            ->values();
+
+        $grandTotal = $salaries->sum(fn ($s) => $s->bank_amount);
+
+        // Reconciliation figures matching the footer of the Excel sheets.
+        $allForPeriod = Salary::with('user')
+            ->where('month', $month)
+            ->where('year', $year)
+            ->get();
+
+        $summary = [
+            'teacher_net' => $allForPeriod
+                ->filter(fn ($s) => $s->user && $s->user->salary_category === 'teacher')
+                ->sum('net_salary'),
+            'staff_net' => $allForPeriod
+                ->filter(fn ($s) => $s->user && $s->user->salary_category === 'staff')
+                ->sum('net_salary'),
+            'cheque_total' => $allForPeriod->sum('cheque_amount'),
+        ];
+
+        return view('salary.bank-sheet', compact(
+            'salaries',
+            'grandTotal',
+            'summary',
+            'month',
+            'year'
+        ));
+    }
+
+    /*
+    |--------------------------------------------------------------------------
     | Single Post
     |--------------------------------------------------------------------------
     */

@@ -207,6 +207,14 @@ Salary Management
 Salary Management
 </a>
 
+<a href="{{ route('admin.salary.sheet') }}" class="block py-1 hover:text-blue-600">
+Salary Sheet
+</a>
+
+<a href="{{ route('admin.salary.bank.sheet') }}" class="block py-1 hover:text-blue-600">
+Bank Sheet
+</a>
+
 </div>
 </div>
 

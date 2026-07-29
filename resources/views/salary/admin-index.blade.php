@@ -47,7 +47,17 @@
         </div>
 
         {{-- ACTION BUTTONS --}}
-        <div class="flex gap-3">
+        <div class="flex gap-3 flex-wrap">
+            <a href="{{ route('admin.salary.sheet') }}"
+               class="bg-indigo-600 text-white px-4 py-2 rounded text-sm">
+                Salary Sheet
+            </a>
+
+            <a href="{{ route('admin.salary.bank.sheet') }}"
+               class="bg-gray-700 text-white px-4 py-2 rounded text-sm">
+                Bank Sheet
+            </a>
+
             <a href="{{ route('admin.salary.sample') }}"
                class="bg-gray-700 text-white px-4 py-2 rounded text-sm">
                 Download Sample

@@ -168,8 +168,11 @@ class StaffController extends Controller
         'employee_code' => 'required|unique:users,employee_code,' . $staff->user->id,
         'department'    => 'required',
         'designation'   => 'required',
-        'salary'        => 'required|numeric',
-        'role'          => 'required|in:employee,manager,admin'
+        'salary'          => 'required|numeric',
+        'role'            => 'required|in:employee,manager,admin',
+        'salary_category' => 'nullable|in:teacher,staff',
+        'bank_account_no' => 'nullable|string|max:50',
+        'new_account_no'  => 'nullable|string|max:50',
     ]);
 
     /*
@@ -182,6 +185,11 @@ class StaffController extends Controller
         'email'         => $request->email,
         'employee_code' => strtoupper($request->employee_code),
         'office_location_id' => $request->office_location_id,
+
+        // Payroll / salary sheet details
+        'salary_category' => $request->salary_category ?? 'staff',
+        'bank_account_no' => $request->bank_account_no,
+        'new_account_no'  => $request->new_account_no,
 
         // 🔓 Allow Anywhere Attendance
         'allow_anywhere_attendance' => $request->has('allow_anywhere_attendance'),
