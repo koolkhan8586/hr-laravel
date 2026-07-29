@@ -384,6 +384,7 @@ Route::middleware(['auth', 'salary'])
     Route::post('/salary-sheet', [SalaryController::class,'sheetStore'])->name('salary.sheet.store');
     Route::post('/salary-sheet/copy-previous', [SalaryController::class,'sheetCopyPrevious'])->name('salary.sheet.copy');
     Route::post('/salary-sheet/post', [SalaryController::class,'sheetPost'])->name('salary.sheet.post');
+    Route::post('/salary-sheet/pull-tax', [SalaryController::class,'sheetPullTax'])->name('salary.sheet.pull.tax');
     Route::get('/tax-sheet', [SalaryController::class,'taxSheet'])->name('salary.tax.sheet');
     Route::post('/tax-sheet', [SalaryController::class,'taxSheetStore'])->name('salary.tax.sheet.store');
     Route::post('/tax-sheet/apply', [SalaryController::class,'taxSheetApply'])->name('salary.tax.sheet.apply');
