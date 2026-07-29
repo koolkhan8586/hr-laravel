@@ -240,6 +240,24 @@ public function employeeIndex()
         $taxSlabs  = \App\Models\TaxSlab::activeSlabs();
         $taxBasis  = \App\Models\TaxSlab::basis();
 
+        // Anyone on the payroll who won't appear above, so a missing employee
+        // can be explained rather than silently dropped.
+        $shownIds = $users->pluck('id');
+
+        $missing = User::whereNotIn('id', $shownIds)
+            ->where(function ($q) {
+                $q->where('role', 'employee')
+                  ->orWhereHas('staff');
+            })
+            ->orderBy('name')
+            ->get()
+            ->map(fn ($u) => [
+                'user'   => $u,
+                'reason' => $u->role !== 'employee'
+                    ? 'Role is "'.$u->role.'", not Employee'
+                    : 'On the '.ucfirst($u->salary_category ?: 'staff').' sheet',
+            ]);
+
         return view('salary.sheet', compact(
             'users',
             'existing',
@@ -250,7 +268,8 @@ public function employeeIndex()
             'taxSlabs',
             'taxBasis',
             'sort',
-            'dir'
+            'dir',
+            'missing'
         ));
     }
 
@@ -576,6 +595,19 @@ public function employeeIndex()
 
         $rows = $this->buildBankRows($allForPeriod);
 
+        // A bank sheet is a list of transfers to make, so by default it only
+        // carries lines the bank can actually act on: a real account and a
+        // real amount. "All" keeps everyone for checking against the sheet.
+        $show = $request->show === 'all' ? 'all' : 'payable';
+
+        $excluded = collect();
+
+        if ($show === 'payable') {
+            [$rows, $excluded] = $rows->partition(
+                fn ($r) => $r['total'] > 0 && filled($r['user']->bank_account_no)
+            );
+        }
+
         $key = match ($sort) {
             'name'   => fn ($r) => $r['user']->name,
             'amount' => fn ($r) => $r['total'],
@@ -606,7 +638,9 @@ public function employeeIndex()
             'month',
             'year',
             'sort',
-            'dir'
+            'dir',
+            'show',
+            'excluded'
         ));
     }
 
@@ -683,6 +717,7 @@ public function employeeIndex()
                     ->get()
                     ->filter(fn ($s) => $s->user)
             )
+            ->filter(fn ($r) => $r['total'] > 0 && filled($r['user']->bank_account_no))
             ->sortBy(fn ($r) => ($r['user']->employee_code ?: 'zzzzzzzz'))
             ->values();
 
