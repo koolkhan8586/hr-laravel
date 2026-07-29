@@ -11,10 +11,20 @@
             </p>
         </div>
 
-        <a href="{{ route('admin.salary.sheet') }}"
-           class="bg-gray-700 text-white px-4 py-2 rounded text-sm">
-            Back to Salary Sheet
-        </a>
+        <div class="flex gap-2 flex-wrap">
+            <form method="POST" action="{{ route('admin.salary.tax.preset') }}"
+                  onsubmit="return confirm('Replace every slab below with the FBR 2026-27 bands? Anything you have changed here will be lost.');">
+                @csrf
+                <button class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded text-sm">
+                    Load FBR 2026&ndash;27
+                </button>
+            </form>
+
+            <a href="{{ route('admin.salary.sheet') }}"
+               class="bg-gray-700 text-white px-4 py-2 rounded text-sm">
+                Back to Salary Sheet
+            </a>
+        </div>
     </div>
 
     @if(session('success'))
@@ -105,6 +115,23 @@
     </div>
 
     {{-- ================= SLABS ================= --}}
+
+    {{-- Forms sit outside the table; row inputs bind to them by id --}}
+    @foreach($slabs as $slab)
+    <form id="slabUpdate{{ $slab->id }}" method="POST"
+          action="{{ route('admin.salary.tax.update', $slab->id) }}" class="hidden">
+        @csrf
+        @method('PUT')
+    </form>
+
+    <form id="slabDelete{{ $slab->id }}" method="POST"
+          action="{{ route('admin.salary.tax.destroy', $slab->id) }}" class="hidden"
+          onsubmit="return confirm('Remove this slab?');">
+        @csrf
+        @method('DELETE')
+    </form>
+    @endforeach
+
     <div class="bg-white rounded shadow overflow-x-auto mb-6">
 
         <table class="w-full text-sm">
@@ -114,6 +141,7 @@
                     <th class="p-3 text-right">To (up to)</th>
                     <th class="p-3 text-right">Fixed amount</th>
                     <th class="p-3 text-right">Rate %</th>
+                    <th class="p-3">Active</th>
                     <th class="p-3">Action</th>
                 </tr>
             </thead>
@@ -121,26 +149,52 @@
             <tbody>
 
             @forelse($slabs as $slab)
-            <tr class="border-t">
-                <td class="p-3 text-right">{{ number_format($slab->from_amount) }}</td>
-                <td class="p-3 text-right">
-                    {{ is_null($slab->to_amount) ? 'and above' : number_format($slab->to_amount) }}
+            <tr class="border-t {{ $slab->is_active ? '' : 'bg-gray-50 text-gray-400' }}">
+
+                <td class="p-2">
+                    <input type="number" step="0.01" min="0" name="from_amount"
+                           value="{{ $slab->from_amount }}" form="slabUpdate{{ $slab->id }}" required
+                           class="border px-2 py-1 rounded w-32 text-sm text-right">
                 </td>
-                <td class="p-3 text-right">{{ number_format($slab->fixed_amount) }}</td>
-                <td class="p-3 text-right">{{ rtrim(rtrim(number_format($slab->percentage, 2), '0'), '.') }}%</td>
-                <td class="p-3 text-center">
-                    <form method="POST" action="{{ route('admin.salary.tax.destroy', $slab->id) }}"
-                          onsubmit="return confirm('Remove this slab?');">
-                        @csrf
-                        @method('DELETE')
-                        <button class="bg-red-500 text-white px-3 py-1 rounded text-xs">Delete</button>
-                    </form>
+
+                <td class="p-2">
+                    <input type="number" step="0.01" min="0" name="to_amount"
+                           value="{{ $slab->to_amount }}" form="slabUpdate{{ $slab->id }}"
+                           placeholder="no limit"
+                           class="border px-2 py-1 rounded w-32 text-sm text-right">
                 </td>
+
+                <td class="p-2">
+                    <input type="number" step="0.01" min="0" name="fixed_amount"
+                           value="{{ $slab->fixed_amount }}" form="slabUpdate{{ $slab->id }}" required
+                           class="border px-2 py-1 rounded w-32 text-sm text-right">
+                </td>
+
+                <td class="p-2">
+                    <input type="number" step="0.01" min="0" max="100" name="percentage"
+                           value="{{ $slab->percentage }}" form="slabUpdate{{ $slab->id }}" required
+                           class="border px-2 py-1 rounded w-24 text-sm text-right">
+                </td>
+
+                <td class="p-2 text-center">
+                    <input type="checkbox" name="is_active" value="1"
+                           form="slabUpdate{{ $slab->id }}"
+                           {{ $slab->is_active ? 'checked' : '' }}>
+                </td>
+
+                <td class="p-2 whitespace-nowrap text-center">
+                    <button form="slabUpdate{{ $slab->id }}"
+                            class="bg-blue-600 text-white px-3 py-1 rounded text-xs">Save</button>
+
+                    <button form="slabDelete{{ $slab->id }}"
+                            class="bg-red-500 text-white px-3 py-1 rounded text-xs">Delete</button>
+                </td>
+
             </tr>
             @empty
             <tr>
-                <td colspan="5" class="p-4 text-gray-500 text-center">
-                    No slabs configured. Auto-calculate Tax will do nothing until you add some.
+                <td colspan="6" class="p-4 text-gray-500 text-center">
+                    No slabs configured. Use <strong>Load FBR 2026&ndash;27</strong> above, or add one below.
                 </td>
             </tr>
             @endforelse
@@ -149,6 +203,13 @@
         </table>
 
     </div>
+
+    @if($slabs->count())
+    <p class="text-xs text-gray-500 mb-6">
+        Bands read as: tax = fixed amount + (income &minus; From) &times; rate, for the band the income falls in.
+        Leaving <em>To</em> blank makes it the top band.
+    </p>
+    @endif
 
     {{-- ================= TESTER ================= --}}
     @if($slabs->count())

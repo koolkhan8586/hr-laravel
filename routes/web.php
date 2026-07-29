@@ -395,6 +395,7 @@ Route::delete('/leave-approval-emails/{id}', [LeaveApprovalEmailController::clas
     Route::post('/salary-sheet/copy-previous', [SalaryController::class,'sheetCopyPrevious'])->name('salary.sheet.copy');
     Route::post('/salary-sheet/post', [SalaryController::class,'sheetPost'])->name('salary.sheet.post');
     Route::get('/bank-sheet', [SalaryController::class,'bankSheet'])->name('salary.bank.sheet');
+    Route::get('/bank-sheet/export', [SalaryController::class,'bankSheetExport'])->name('salary.bank.sheet.export');
 
     // Salary sheet settings: custom columns + tax rules
     Route::get('/salary-columns', [SalarySettingController::class,'columns'])->name('salary.columns');
@@ -405,7 +406,9 @@ Route::delete('/leave-approval-emails/{id}', [LeaveApprovalEmailController::clas
 
     Route::get('/tax-calculate', [SalarySettingController::class,'tax'])->name('salary.tax');
     Route::post('/tax-calculate', [SalarySettingController::class,'storeTaxSlab'])->name('salary.tax.store');
+    Route::put('/tax-calculate/{id}', [SalarySettingController::class,'updateTaxSlab'])->name('salary.tax.update');
     Route::delete('/tax-calculate/{id}', [SalarySettingController::class,'destroyTaxSlab'])->name('salary.tax.destroy');
+    Route::post('/tax-calculate/load-fbr', [SalarySettingController::class,'loadTaxPreset'])->name('salary.tax.preset');
     Route::post('/tax-calculate/basis', [SalarySettingController::class,'updateTaxBasis'])->name('salary.tax.basis');
 
     Route::get('/salary/create', [SalaryController::class,'create'])->name('salary.create');

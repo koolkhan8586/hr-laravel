@@ -23,6 +23,41 @@ class TaxSlab extends Model
     ];
 
     /**
+     * FBR salaried income tax slabs for FY 2026-2027, on yearly income.
+     * [from, to (null = no limit), fixed amount, rate %]
+     */
+    public const FBR_2026_27 = [
+        [0,       600000,  0,       0],
+        [600000,  1200000, 0,       1],
+        [1200000, 2200000, 6000,    11],
+        [2200000, 3200000, 116000,  20],
+        [3200000, 4100000, 316000,  25],
+        [4100000, 5600000, 541000,  29],
+        [5600000, 7000000, 976000,  32],
+        [7000000, null,    1424000, 35],
+    ];
+
+    /**
+     * Replace the configured slabs with a preset.
+     */
+    public static function loadPreset(array $preset): int
+    {
+        static::query()->delete();
+
+        foreach ($preset as [$from, $to, $fixed, $rate]) {
+            static::create([
+                'from_amount'  => $from,
+                'to_amount'    => $to,
+                'fixed_amount' => $fixed,
+                'percentage'   => $rate,
+                'is_active'    => true,
+            ]);
+        }
+
+        return count($preset);
+    }
+
+    /**
      * Are the configured slabs written against yearly or monthly income?
      */
     public static function basis(): string
