@@ -159,7 +159,7 @@
                 <td class="border p-2">
                     {{ $row['user']->name }}
                     @if(!empty($row['contributors']))
-                    <span class="text-xs text-gray-600">
+                    <span class="text-xs text-gray-600 no-print">
                         (incl.
                         {{ collect($row['contributors'])->map(fn($c) => $c['user']->name)->implode(', ') }})
                     </span>
@@ -192,28 +192,6 @@
             </tfoot>
 
         </table>
-
-        {{-- RECONCILIATION --}}
-        <div class="mt-6 flex justify-end bank-recon">
-            <table class="text-sm border">
-                <tr>
-                    <td class="border px-4 py-1 text-gray-600">Faculty sheet</td>
-                    <td class="border px-4 py-1 text-right">{{ number_format($summary['teacher_net']) }}</td>
-                </tr>
-                <tr>
-                    <td class="border px-4 py-1 text-gray-600">Staff sheet</td>
-                    <td class="border px-4 py-1 text-right">{{ number_format($summary['staff_net']) }}</td>
-                </tr>
-                <tr>
-                    <td class="border px-4 py-1 text-gray-600">Cheque Amount</td>
-                    <td class="border px-4 py-1 text-right">-{{ number_format($summary['cheque_total']) }}</td>
-                </tr>
-                <tr class="bg-gray-100 font-bold">
-                    <td class="border px-4 py-1">Salary to bank sheet</td>
-                    <td class="border px-4 py-1 text-right">{{ number_format($grandTotal) }}</td>
-                </tr>
-            </table>
-        </div>
 
         {{-- LEFT OFF THE SHEET --}}
         @if($excluded->isNotEmpty())
@@ -283,10 +261,6 @@
     .bank-head h3 { font-size: 11pt !important; }
     .bank-head p  { margin: 0 !important; font-size: 8pt !important; }
     .bank-head .font-bold.text-lg { font-size: 11pt !important; }
-
-    .bank-recon { margin-top: 6px !important; }
-    .bank-recon table { font-size: 7.5pt !important; }
-    .bank-recon td { padding: 1px 6px !important; }
 
     .bank-sign { margin-top: 10px !important; font-size: 8pt !important; }
 
