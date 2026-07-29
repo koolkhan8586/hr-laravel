@@ -1,6 +1,16 @@
 <x-app-layout>
 
-<div class="max-w-6xl mx-auto py-6 px-4">
+@php
+    $sortLink = function ($key) use ($month, $year, $sort, $dir) {
+        $next = ($sort === $key && $dir === 'asc') ? 'desc' : 'asc';
+        return route('admin.salary.bank.sheet', [
+            'month' => $month, 'year' => $year, 'sort' => $key, 'dir' => $next,
+        ]);
+    };
+    $arrow = fn ($key) => $sort === $key ? ($dir === 'asc' ? ' ▲' : ' ▼') : '';
+@endphp
+
+<div class="max-w-6xl mx-auto py-6 px-4 print-area">
 
     <div class="flex justify-between items-start mb-4 flex-wrap gap-3 no-print">
 
@@ -11,14 +21,20 @@
             </p>
         </div>
 
-        <div class="flex gap-2">
+        <div class="flex gap-2 flex-wrap">
             <a href="{{ route('admin.salary.sheet', ['month' => $month, 'year' => $year]) }}"
                class="bg-gray-700 text-white px-4 py-2 rounded text-sm">
                 Salary Sheet
             </a>
+
+            <a href="{{ route('admin.salary.bank.sheet.export', ['month' => $month, 'year' => $year]) }}"
+               class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded text-sm">
+                Export CSV
+            </a>
+
             <button type="button" onclick="window.print()"
                     class="bg-blue-600 text-white px-4 py-2 rounded text-sm">
-                Print / Export
+                Print
             </button>
         </div>
 
@@ -44,6 +60,23 @@
                    class="border px-3 py-2 rounded text-sm w-28">
         </div>
 
+        <div>
+            <label class="block text-xs text-gray-500 mb-1">Sort by</label>
+            <select name="sort" class="border px-3 py-2 rounded text-sm">
+                <option value="code" {{ $sort === 'code' ? 'selected' : '' }}>Employee code</option>
+                <option value="name" {{ $sort === 'name' ? 'selected' : '' }}>Name</option>
+                <option value="amount" {{ $sort === 'amount' ? 'selected' : '' }}>Amount</option>
+            </select>
+        </div>
+
+        <div>
+            <label class="block text-xs text-gray-500 mb-1">Order</label>
+            <select name="dir" class="border px-3 py-2 rounded text-sm">
+                <option value="asc" {{ $dir === 'asc' ? 'selected' : '' }}>Ascending</option>
+                <option value="desc" {{ $dir === 'desc' ? 'selected' : '' }}>Descending</option>
+            </select>
+        </div>
+
         <button class="bg-blue-600 text-white px-4 py-2 rounded text-sm">Load</button>
 
     </form>
@@ -61,31 +94,42 @@
     <div id="bankSheetArea" class="bg-white rounded shadow p-6">
 
         {{-- HEADER --}}
-        <div class="text-center mb-4">
+        <div class="text-center mb-4 bank-head">
             <div class="flex items-center justify-center gap-3 mb-2">
-                <img src="{{ asset('uol-logo.png') }}" alt="" style="height:46px"
+                <img src="{{ asset('uol-logo.png') }}" alt="" style="height:40px"
                      onerror="this.style.display='none'">
                 <div class="font-bold text-lg">
                     {{ \App\Models\AppSetting::get('org_name', 'The University of Lahore (City Campus)') }}
                 </div>
             </div>
-            <h3 class="font-bold text-lg underline">ANNEXURE-A</h3>
-            <p class="font-semibold mt-2">Salaries to be Credited</p>
+            <h3 class="font-bold underline">ANNEXURE-A</h3>
+            <p class="font-semibold mt-1">Salaries to be Credited</p>
             <p class="text-sm">
                 {{ \Carbon\Carbon::create()->month($month)->format('F') }} {{ $year }}
             </p>
         </div>
 
-        <table class="w-full text-sm border">
+        <table class="w-full text-sm border" id="bankTable">
 
             <thead class="bg-gray-100">
                 <tr>
                     <th class="border p-2 w-16">SR NO.</th>
-                    <th class="border p-2 w-28">Employee ID</th>
-                    <th class="border p-2 text-left">Name of Employee</th>
+                    <th class="border p-2 w-28">
+                        <a href="{{ $sortLink('code') }}" class="hover:underline no-print-link">
+                            Employee ID{{ $arrow('code') }}
+                        </a>
+                    </th>
+                    <th class="border p-2 text-left">
+                        <a href="{{ $sortLink('name') }}" class="hover:underline no-print-link">
+                            Name of Employee{{ $arrow('name') }}
+                        </a>
+                    </th>
                     <th class="border p-2">Account No.</th>
-                    <th class="border p-2">New Account #</th>
-                    <th class="border p-2 text-right w-32">Amount</th>
+                    <th class="border p-2 text-right w-32">
+                        <a href="{{ $sortLink('amount') }}" class="hover:underline no-print-link">
+                            Amount{{ $arrow('amount') }}
+                        </a>
+                    </th>
                 </tr>
             </thead>
 
@@ -96,10 +140,9 @@
                 <td class="border p-2 text-center">{{ $i + 1 }}</td>
                 <td class="border p-2 text-center">{{ $salary->user->employee_code ?? '' }}</td>
                 <td class="border p-2">{{ $salary->user->name }}</td>
-                <td class="border p-2 text-center">{{ $salary->user->bank_account_no ?? '' }}</td>
                 <td class="border p-2 text-center">
-                    @if($salary->user->new_account_no)
-                        {{ $salary->user->new_account_no }}
+                    @if($salary->user->bank_account_no)
+                        {{ $salary->user->bank_account_no }}
                     @else
                         <span class="text-red-500 text-xs no-print">account missing</span>
                     @endif
@@ -114,7 +157,7 @@
 
             <tfoot>
                 <tr class="bg-gray-100 font-bold">
-                    <td class="border p-2 text-right" colspan="5">GRAND TOTAL</td>
+                    <td class="border p-2 text-right" colspan="4">GRAND TOTAL</td>
                     <td class="border p-2 text-right">{{ number_format($grandTotal) }}</td>
                 </tr>
             </tfoot>
@@ -122,29 +165,29 @@
         </table>
 
         {{-- RECONCILIATION --}}
-        <div class="mt-6 flex justify-end">
+        <div class="mt-6 flex justify-end bank-recon">
             <table class="text-sm border">
                 <tr>
-                    <td class="border px-4 py-2 text-gray-600">Faculty sheet</td>
-                    <td class="border px-4 py-2 text-right">{{ number_format($summary['teacher_net']) }}</td>
+                    <td class="border px-4 py-1 text-gray-600">Faculty sheet</td>
+                    <td class="border px-4 py-1 text-right">{{ number_format($summary['teacher_net']) }}</td>
                 </tr>
                 <tr>
-                    <td class="border px-4 py-2 text-gray-600">Staff sheet</td>
-                    <td class="border px-4 py-2 text-right">{{ number_format($summary['staff_net']) }}</td>
+                    <td class="border px-4 py-1 text-gray-600">Staff sheet</td>
+                    <td class="border px-4 py-1 text-right">{{ number_format($summary['staff_net']) }}</td>
                 </tr>
                 <tr>
-                    <td class="border px-4 py-2 text-gray-600">Cheque Amount</td>
-                    <td class="border px-4 py-2 text-right">-{{ number_format($summary['cheque_total']) }}</td>
+                    <td class="border px-4 py-1 text-gray-600">Cheque Amount</td>
+                    <td class="border px-4 py-1 text-right">-{{ number_format($summary['cheque_total']) }}</td>
                 </tr>
                 <tr class="bg-gray-100 font-bold">
-                    <td class="border px-4 py-2">Salary to bank sheet</td>
-                    <td class="border px-4 py-2 text-right">{{ number_format($grandTotal) }}</td>
+                    <td class="border px-4 py-1">Salary to bank sheet</td>
+                    <td class="border px-4 py-1 text-right">{{ number_format($grandTotal) }}</td>
                 </tr>
             </table>
         </div>
 
         {{-- SIGN OFF --}}
-        <div class="flex justify-between mt-12 text-sm">
+        <div class="flex justify-between mt-8 text-sm bank-sign">
             <div>Prepared By: _________________</div>
             <div>Checked By: _________________</div>
             <div>Approved By: _________________</div>
@@ -158,7 +201,35 @@
 
 <style>
 @media print {
-    .no-print { display: none !important; }
+
+    @page { size: A4 portrait; margin: 7mm; }
+
+    #bankSheetArea {
+        padding: 0 !important;
+        box-shadow: none !important;
+    }
+
+    /* Squeeze the whole annexure onto a single sheet */
+    #bankTable { font-size: 7.5pt !important; }
+    #bankTable th,
+    #bankTable td { padding: 1px 3px !important; line-height: 1.15 !important; }
+
+    .bank-head { margin-bottom: 4px !important; }
+    .bank-head img { height: 30px !important; }
+    .bank-head h3 { font-size: 11pt !important; }
+    .bank-head p  { margin: 0 !important; font-size: 8pt !important; }
+    .bank-head .font-bold.text-lg { font-size: 11pt !important; }
+
+    .bank-recon { margin-top: 6px !important; }
+    .bank-recon table { font-size: 7.5pt !important; }
+    .bank-recon td { padding: 1px 6px !important; }
+
+    .bank-sign { margin-top: 10px !important; font-size: 8pt !important; }
+
+    /* Header links print as plain text */
+    .no-print-link { text-decoration: none !important; color: #000 !important; }
+
+    #bankSheetArea, #bankTable { page-break-inside: auto; }
 }
 </style>
 

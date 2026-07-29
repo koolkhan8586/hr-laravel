@@ -114,15 +114,7 @@
                        name="bank_account_no"
                        value="{{ old('bank_account_no', $staff->user->bank_account_no) }}"
                        class="w-full border p-2 rounded">
-            </div>
-
-            <div>
-                <label class="block font-semibold mb-1">New Account #</label>
-                <input type="text"
-                       name="new_account_no"
-                       value="{{ old('new_account_no', $staff->user->new_account_no) }}"
-                       class="w-full border p-2 rounded">
-                <p class="text-xs text-gray-500 mt-1">Used as the credit account on the bank sheet.</p>
+                <p class="text-xs text-gray-500 mt-1">Credit account used on the bank sheet.</p>
             </div>
 
             <div class="mt-3">

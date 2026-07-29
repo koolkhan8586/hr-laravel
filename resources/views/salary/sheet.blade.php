@@ -10,6 +10,15 @@
 
     $postedCount = $users->filter(fn($u) => ($existing[$u->id] ?? null)?->isPosted())->count();
     $draftCount  = $users->filter(fn($u) => ($existing[$u->id] ?? null) && !$existing[$u->id]->isPosted())->count();
+
+    $sortLink = function ($key) use ($month, $year, $category, $sort, $dir) {
+        $next = ($sort === $key && $dir === 'asc') ? 'desc' : 'asc';
+        return route('admin.salary.sheet', [
+            'month' => $month, 'year' => $year, 'category' => $category,
+            'sort'  => $key,   'dir'  => $next,
+        ]);
+    };
+    $arrow = fn ($key) => $sort === $key ? ($dir === 'asc' ? ' ▲' : ' ▼') : '';
 @endphp
 
 <div class="max-w-full mx-auto py-6 px-4 print-area">
@@ -90,6 +99,23 @@
             </select>
         </div>
 
+        <div>
+            <label class="block text-xs text-gray-500 mb-1">Sort by</label>
+            <select name="sort" class="border px-3 py-2 rounded text-sm">
+                <option value="code" {{ $sort === 'code' ? 'selected' : '' }}>Employee code</option>
+                <option value="name" {{ $sort === 'name' ? 'selected' : '' }}>Name</option>
+                <option value="doj" {{ $sort === 'doj' ? 'selected' : '' }}>Joining date</option>
+            </select>
+        </div>
+
+        <div>
+            <label class="block text-xs text-gray-500 mb-1">Order</label>
+            <select name="dir" class="border px-3 py-2 rounded text-sm">
+                <option value="asc" {{ $dir === 'asc' ? 'selected' : '' }}>Ascending</option>
+                <option value="desc" {{ $dir === 'desc' ? 'selected' : '' }}>Descending</option>
+            </select>
+        </div>
+
         <button class="bg-blue-600 text-white px-4 py-2 rounded text-sm">Load Sheet</button>
 
     </form>
@@ -167,9 +193,15 @@
         <thead>
             <tr class="bg-gray-200">
                 <th class="border p-2">Sr.</th>
-                <th class="border p-2 text-left">Code</th>
-                <th class="border p-2 text-left">Name</th>
-                <th class="border p-2">DOJ</th>
+                <th class="border p-2 text-left">
+                    <a href="{{ $sortLink('code') }}" class="hover:underline no-print-link">Code{{ $arrow('code') }}</a>
+                </th>
+                <th class="border p-2 text-left">
+                    <a href="{{ $sortLink('name') }}" class="hover:underline no-print-link">Name{{ $arrow('name') }}</a>
+                </th>
+                <th class="border p-2">
+                    <a href="{{ $sortLink('doj') }}" class="hover:underline no-print-link">DOJ{{ $arrow('doj') }}</a>
+                </th>
 
                 <th class="border p-2 bg-green-50">Salary &amp; Wages</th>
                 <th class="border p-2 bg-green-50">Extra Load</th>
@@ -405,6 +437,9 @@
     #salarySheet { font-size: 8px !important; }
     #salarySheet th, #salarySheet td { padding: 2px !important; }
     #salarySheet input { width: auto !important; font-size: 8px !important; text-align: right; }
+
+    /* Sortable header links print as plain text */
+    .no-print-link { text-decoration: none !important; color: #000 !important; }
 }
 </style>
 

@@ -172,7 +172,6 @@ class StaffController extends Controller
         'role'            => 'required|in:employee,manager,admin',
         'salary_category' => 'nullable|in:teacher,staff',
         'bank_account_no' => 'nullable|string|max:50',
-        'new_account_no'  => 'nullable|string|max:50',
     ]);
 
     /*
@@ -189,7 +188,6 @@ class StaffController extends Controller
         // Payroll / salary sheet details
         'salary_category' => $request->salary_category ?? 'staff',
         'bank_account_no' => $request->bank_account_no,
-        'new_account_no'  => $request->new_account_no,
 
         // 🔓 Allow Anywhere Attendance
         'allow_anywhere_attendance' => $request->has('allow_anywhere_attendance'),

@@ -191,11 +191,15 @@ public function employeeIndex()
         $year     = (int) ($request->year ?? now()->year);
         $category = $request->category === 'teacher' ? 'teacher' : 'staff';
 
-        $users = User::with('staff')
+        [$sort, $dir] = $this->sheetSort($request);
+
+        $query = User::with('staff')
             ->where('role', 'employee')
-            ->where('salary_category', $category)
-            ->orderBy('name')
-            ->get();
+            ->where('salary_category', $category);
+
+        $this->applySheetSort($query, $sort, $dir);
+
+        $users = $query->get();
 
         // Existing rows for this period, keyed by user so the sheet reopens
         // with whatever was last saved.
@@ -216,8 +220,51 @@ public function employeeIndex()
             'category',
             'columns',
             'taxSlabs',
-            'taxBasis'
+            'taxBasis',
+            'sort',
+            'dir'
         ));
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Sheet ordering
+    |--------------------------------------------------------------------------
+    */
+
+    /** Whitelisted sort column and direction from the request. */
+    private function sheetSort(Request $request): array
+    {
+        $sort = in_array($request->sort, ['code', 'name', 'doj'])
+            ? $request->sort
+            : 'code';
+
+        $dir = $request->dir === 'desc' ? 'desc' : 'asc';
+
+        return [$sort, $dir];
+    }
+
+    /** Employees without the sorted value always sink to the bottom. */
+    private function applySheetSort($query, string $sort, string $dir): void
+    {
+        if ($sort === 'name') {
+            $query->orderBy('users.name', $dir);
+            return;
+        }
+
+        if ($sort === 'doj') {
+            $query->leftJoin('staff', 'staff.user_id', '=', 'users.id')
+                ->select('users.*')
+                ->orderByRaw('staff.joining_date IS NULL')
+                ->orderBy('staff.joining_date', $dir)
+                ->orderBy('users.name');
+            return;
+        }
+
+        // Codes are zero padded (EMP001...), so a plain string sort is right.
+        $query->orderByRaw("users.employee_code IS NULL OR users.employee_code = ''")
+            ->orderBy('users.employee_code', $dir)
+            ->orderBy('users.name');
     }
 
     /*
@@ -488,14 +535,27 @@ public function employeeIndex()
         $month = (int) ($request->month ?? now()->month);
         $year  = (int) ($request->year ?? now()->year);
 
+        $sort = in_array($request->sort, ['code', 'name', 'amount']) ? $request->sort : 'code';
+        $dir  = $request->dir === 'desc' ? 'desc' : 'asc';
+
         $salaries = Salary::with('user')
             ->where('month', $month)
             ->where('year', $year)
             ->get()
             // Only employees actually receiving money through the bank.
             ->filter(fn ($s) => $s->user && $s->bank_amount > 0)
-            ->sortBy(fn ($s) => $s->user->name)
             ->values();
+
+        $key = match ($sort) {
+            'name'   => fn ($s) => $s->user->name,
+            'amount' => fn ($s) => $s->bank_amount,
+            // Blank codes sort last whichever direction is chosen.
+            default  => fn ($s) => ($s->user->employee_code ?: 'zzzzzzzz'),
+        };
+
+        $salaries = ($dir === 'desc'
+            ? $salaries->sortByDesc($key)
+            : $salaries->sortBy($key))->values();
 
         $grandTotal = $salaries->sum(fn ($s) => $s->bank_amount);
 
@@ -520,8 +580,71 @@ public function employeeIndex()
             'grandTotal',
             'summary',
             'month',
-            'year'
+            'year',
+            'sort',
+            'dir'
         ));
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Bank sheet as CSV (opens straight in Excel)
+    |--------------------------------------------------------------------------
+    */
+    public function bankSheetExport(Request $request)
+    {
+        $month = (int) ($request->month ?? now()->month);
+        $year  = (int) ($request->year ?? now()->year);
+
+        $period = \Carbon\Carbon::create($year, $month, 1);
+
+        $salaries = Salary::with('user')
+            ->where('month', $month)
+            ->where('year', $year)
+            ->get()
+            ->filter(fn ($s) => $s->user && $s->bank_amount > 0)
+            ->sortBy(fn ($s) => ($s->user->employee_code ?: 'zzzzzzzz'))
+            ->values();
+
+        $filename = 'bank-sheet-'.$period->format('Y-m').'.csv';
+
+        return response()->streamDownload(function () use ($salaries, $period) {
+
+            $out = fopen('php://output', 'w');
+
+            // Excel needs the BOM to read non-ASCII names correctly.
+            fwrite($out, "\xEF\xBB\xBF");
+
+            fputcsv($out, ['ANNEXURE-A']);
+            fputcsv($out, ['Salaries to be Credited']);
+            fputcsv($out, [$period->format('F Y')]);
+            fputcsv($out, []);
+            fputcsv($out, ['SR NO.', 'Employee ID', 'Name of Employee', 'Account No.', 'Amount']);
+
+            $total = 0;
+
+            foreach ($salaries as $i => $salary) {
+                $total += $salary->bank_amount;
+
+                fputcsv($out, [
+                    $i + 1,
+                    $salary->user->employee_code,
+                    $salary->user->name,
+                    // Leading apostrophe stops Excel mangling long account
+                    // numbers into scientific notation.
+                    $salary->user->bank_account_no ? "'".$salary->user->bank_account_no : '',
+                    round($salary->bank_amount, 2),
+                ]);
+            }
+
+            fputcsv($out, []);
+            fputcsv($out, ['', '', 'GRAND TOTAL', '', round($total, 2)]);
+
+            fclose($out);
+
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
     }
 
     /*

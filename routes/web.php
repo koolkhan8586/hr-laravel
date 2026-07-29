@@ -371,6 +371,7 @@ Route::delete('/leave-approval-emails/{id}', [LeaveApprovalEmailController::clas
     Route::post('/salary-sheet/copy-previous', [SalaryController::class,'sheetCopyPrevious'])->name('salary.sheet.copy');
     Route::post('/salary-sheet/post', [SalaryController::class,'sheetPost'])->name('salary.sheet.post');
     Route::get('/bank-sheet', [SalaryController::class,'bankSheet'])->name('salary.bank.sheet');
+    Route::get('/bank-sheet/export', [SalaryController::class,'bankSheetExport'])->name('salary.bank.sheet.export');
 
     // Salary sheet settings: custom columns + tax rules
     Route::get('/salary-columns', [SalarySettingController::class,'columns'])->name('salary.columns');
