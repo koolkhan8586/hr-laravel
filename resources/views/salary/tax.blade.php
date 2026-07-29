@@ -67,6 +67,29 @@
         </form>
     </div>
 
+    {{-- ================= MEDICAL ALLOWANCE ================= --}}
+    <div class="bg-white p-5 rounded shadow mb-6">
+        <h3 class="font-semibold mb-3">Medical Allowance</h3>
+
+        <form method="POST" action="{{ route('admin.salary.tax.medical') }}" class="flex gap-4 items-end flex-wrap">
+            @csrf
+
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Tax sheet divides salary by</label>
+                <input type="number" step="0.01" min="1" max="5" name="divisor"
+                       value="{{ $divisor }}" required
+                       class="border px-3 py-2 rounded text-sm w-32">
+            </div>
+
+            <button class="bg-blue-600 text-white px-4 py-2 rounded text-sm">Save</button>
+
+            <p class="text-xs text-gray-500 flex-1 min-w-64">
+                Medical allowance is exempt, so the Tax Sheet divides Salary &amp; Wages by this
+                figure to reach taxable income. 1.1 removes a 10% medical component.
+            </p>
+        </form>
+    </div>
+
     {{-- ================= ADD SLAB ================= --}}
     <div class="bg-white p-5 rounded shadow mb-6">
         <h3 class="font-semibold mb-1">Add Slab</h3>
