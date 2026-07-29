@@ -1,7 +1,15 @@
 <x-app-layout>
 
 @php
-    $sortLink = function ($key) use ($month, $year, $sort, $dir) {
+    // Fall back rather than fail if this view is ever rendered by an older
+    // controller (for example a deploy where PHP is still serving cached
+    // bytecode for the class but the template has already been replaced).
+    $sort     = $sort     ?? 'code';
+    $dir      = $dir      ?? 'asc';
+    $show     = $show     ?? 'payable';
+    $excluded = $excluded ?? collect();
+
+    $sortLink = function ($key) use ($month, $year, $sort, $dir, $show) {
         $next = ($sort === $key && $dir === 'asc') ? 'desc' : 'asc';
         return route('admin.salary.bank.sheet', [
             'month' => $month, 'year' => $year, 'sort' => $key, 'dir' => $next,

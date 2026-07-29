@@ -1,6 +1,13 @@
 <x-app-layout>
 
 @php
+    // Fall back rather than fail if this view is ever rendered by an older
+    // controller (for example a deploy where PHP is still serving cached
+    // bytecode for the class but the template has already been replaced).
+    $sort    = $sort    ?? 'code';
+    $dir     = $dir     ?? 'asc';
+    $missing = $missing ?? collect();
+
     $monthName  = \Carbon\Carbon::create()->month($month)->format('F');
     $sheetLabel = match($category) { 'teacher' => 'Teachers', 'all' => 'All Employees', default => 'Staff' };
     $showTPayment = in_array($category, ['teacher', 'all']);
