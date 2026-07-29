@@ -621,20 +621,10 @@ public function employeeIndex()
 
         $grandTotal = $salaries->sum('total');
 
-        $summary = [
-            'teacher_net' => $allForPeriod
-                ->filter(fn ($s) => $s->user && $s->user->salary_category === 'teacher')
-                ->sum('net_salary'),
-            'staff_net' => $allForPeriod
-                ->filter(fn ($s) => $s->user && $s->user->salary_category === 'staff')
-                ->sum('net_salary'),
-            'cheque_total' => $allForPeriod->sum('cheque_amount'),
-        ];
 
         return view('salary.bank-sheet', compact(
             'salaries',
             'grandTotal',
-            'summary',
             'month',
             'year',
             'sort',
@@ -692,7 +682,17 @@ public function employeeIndex()
         $taxSlabs       = \App\Models\TaxSlab::activeSlabs();
         $taxBasis       = \App\Models\TaxSlab::basis();
 
-        $rows = $users->map(function ($user) use ($sheets, $monthlyBasic, $medicalDivisor) {
+        // Tax actually deducted, taken from posted salaries only, so the sheet
+        // records what was really collected rather than what was planned.
+        $deducted = Salary::where('year', $year)
+            ->where('status', 'posted')
+            ->get()
+            ->groupBy('user_id')
+            ->map(fn ($rows) => $rows->pluck('income_tax', 'month')
+                ->map(fn ($v) => (float) $v)
+                ->all());
+
+        $rows = $users->map(function ($user) use ($sheets, $monthlyBasic, $medicalDivisor, $deducted) {
 
             $sheet = $sheets[$user->id] ?? null;
 
@@ -709,14 +709,20 @@ public function employeeIndex()
             // Deducted as whole rupees, matching what is written to the sheet.
             $monthly = round(max(0, $net) / 12);
 
+            $paidByMonth = $deducted[$user->id] ?? [];
+            $paid        = round(array_sum($paidByMonth), 2);
+
             return [
-                'user'       => $user,
-                'annual'     => $annual,
-                'taxable'    => $taxable,
-                'payable'    => $payable,
-                'adjustment' => $adjustment,
-                'net'        => $net,
-                'monthly'    => $monthly,
+                'user'          => $user,
+                'annual'        => $annual,
+                'taxable'       => $taxable,
+                'payable'       => $payable,
+                'adjustment'    => $adjustment,
+                'net'           => $net,
+                'monthly'       => $monthly,
+                'paid_by_month' => $paidByMonth,
+                'paid'          => $paid,
+                'balance'       => round(max(0, $net) - $paid, 2),
             ];
         });
 

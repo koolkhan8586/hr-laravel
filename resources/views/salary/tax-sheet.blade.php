@@ -161,6 +161,10 @@
     <table class="min-w-full text-xs border" id="taxSheet">
 
         <thead>
+            <tr class="bg-gray-300">
+                <th class="border p-1" colspan="8"></th>
+                <th class="border p-1 text-center" colspan="14">Tax Deducted (posted salaries)</th>
+            </tr>
             <tr class="bg-gray-200">
                 <th class="border p-2 text-left">
                     <a href="{{ $sortLink('code') }}" class="hover:underline no-print-link">Employee ID{{ $arrow('code') }}</a>
@@ -174,6 +178,13 @@
                 <th class="border p-2 bg-yellow-50">Tax Adjustment</th>
                 <th class="border p-2 bg-amber-100 font-bold">Net Payable Tax</th>
                 <th class="border p-2 bg-red-100 font-bold">Monthly Tax<br><span class="font-normal text-[10px]">&divide; 12</span></th>
+                @for($m = 1; $m <= 12; $m++)
+                <th class="border p-1 bg-slate-50 text-[10px]">
+                    {{ \Carbon\Carbon::create()->month($m)->format('M') }}
+                </th>
+                @endfor
+                <th class="border p-2 bg-slate-100 font-bold">Tax Paid</th>
+                <th class="border p-2 bg-slate-100 font-bold">Balance</th>
             </tr>
         </thead>
 
@@ -211,6 +222,21 @@
 
             <td class="border p-1 text-right monthly font-bold bg-red-50">0</td>
 
+            @for($m = 1; $m <= 12; $m++)
+            @php $paidThisMonth = $row['paid_by_month'][$m] ?? null; @endphp
+            <td class="border p-1 text-right text-[10px] bg-slate-50">
+                {{ $paidThisMonth ? number_format($paidThisMonth) : '' }}
+            </td>
+            @endfor
+
+            <td class="border p-1 text-right font-bold bg-slate-100">
+                {{ $row['paid'] ? number_format($row['paid']) : '' }}
+            </td>
+
+            <td class="border p-1 text-right font-bold bg-slate-100 {{ $row['balance'] < 0 ? 'text-red-600' : '' }}">
+                {{ $row['balance'] != 0 ? number_format($row['balance']) : '' }}
+            </td>
+
         </tr>
         @endforeach
 
@@ -225,6 +251,14 @@
                 <td class="border p-2 text-right" id="sumAdjust">0</td>
                 <td class="border p-2 text-right" id="sumNet">0</td>
                 <td class="border p-2 text-right" id="sumMonthly">0</td>
+                @for($m = 1; $m <= 12; $m++)
+                @php $colTotal = $rows->sum(fn($r) => $r['paid_by_month'][$m] ?? 0); @endphp
+                <td class="border p-1 text-right text-[10px]">
+                    {{ $colTotal ? number_format($colTotal) : '' }}
+                </td>
+                @endfor
+                <td class="border p-2 text-right">{{ number_format($rows->sum('paid')) }}</td>
+                <td class="border p-2 text-right">{{ number_format($rows->sum('balance')) }}</td>
             </tr>
         </tfoot>
 
@@ -252,9 +286,9 @@
 
 @media print {
     .sheet-header { display: block !important; }
-    @page { size: A4 portrait; margin: 8mm; }
-    #taxSheet { font-size: 8pt !important; }
-    #taxSheet th, #taxSheet td { padding: 2px !important; }
+    @page { size: A4 landscape; margin: 6mm; }
+    #taxSheet { font-size: 6.5pt !important; }
+    #taxSheet th, #taxSheet td { padding: 1px !important; }
     #taxSheet input { width: auto !important; font-size: 8pt !important; text-align: right; }
     .no-print-link { text-decoration: none !important; color: #000 !important; }
 }
