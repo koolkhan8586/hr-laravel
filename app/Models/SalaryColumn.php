@@ -23,9 +23,14 @@ class SalaryColumn extends Model
      */
     public static function forCategory(string $category)
     {
-        return static::where('is_active', true)
-            ->whereIn('applies_to', ['both', $category])
-            ->orderBy('sort_order')
+        $query = static::where('is_active', true);
+
+        // The combined sheet carries every column.
+        if ($category !== 'all') {
+            $query->whereIn('applies_to', ['both', $category]);
+        }
+
+        return $query->orderBy('sort_order')
             ->orderBy('id')
             ->get();
     }

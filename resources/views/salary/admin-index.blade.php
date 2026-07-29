@@ -1,5 +1,15 @@
 <x-app-layout>
 
+@php
+    $sortLink = function ($key) use ($sort, $dir) {
+        $next = ($sort === $key && $dir === 'asc') ? 'desc' : 'asc';
+        return request()->fullUrlWithQuery(['sort' => $key, 'dir' => $next]);
+    };
+    $arrow = fn ($key) => $sort === $key ? ($dir === 'asc' ? ' ▲' : ' ▼') : '';
+@endphp
+
+
+
 <div class="max-w-7xl mx-auto py-8 px-6">
 
     {{-- ================= HEADER ================= --}}
@@ -138,12 +148,12 @@
                     <th class="p-3">
                         <input type="checkbox" onclick="toggleAll(this)">
                     </th>
-                    <th class="p-3 text-left">Emp Code</th>
-                    <th class="p-3 text-left">Employee</th>
-                    <th class="p-3 text-left">Month</th>
+                    <th class="p-3 text-left"><a href="{{ $sortLink('code') }}" class="hover:underline">Emp Code{{ $arrow('code') }}</a></th>
+                    <th class="p-3 text-left"><a href="{{ $sortLink('employee') }}" class="hover:underline">Employee{{ $arrow('employee') }}</a></th>
+                    <th class="p-3 text-left"><a href="{{ $sortLink('month') }}" class="hover:underline">Month{{ $arrow('month') }}</a></th>
                     <th class="p-3 text-left">Year</th>
-                    <th class="p-3 text-left">Net Salary</th>
-                    <th class="p-3 text-left">Status</th>
+                    <th class="p-3 text-left"><a href="{{ $sortLink('net') }}" class="hover:underline">Net Salary{{ $arrow('net') }}</a></th>
+                    <th class="p-3 text-left"><a href="{{ $sortLink('status') }}" class="hover:underline">Status{{ $arrow('status') }}</a></th>
                     <th class="p-3 text-left">Actions</th>
                 </tr>
             </thead>

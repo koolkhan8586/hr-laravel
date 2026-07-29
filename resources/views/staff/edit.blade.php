@@ -117,6 +117,35 @@
                 <p class="text-xs text-gray-500 mt-1">Credit account used on the bank sheet.</p>
             </div>
 
+            <div>
+                <label class="block font-semibold mb-1">Pay Into Another Account</label>
+                <select name="bank_payee_id" class="w-full border p-2 rounded">
+                    <option value="">Own account</option>
+                    @foreach($payees as $payee)
+                        <option value="{{ $payee->id }}"
+                            {{ old('bank_payee_id', $staff->user->bank_payee_id) == $payee->id ? 'selected' : '' }}>
+                            {{ $payee->name }}{{ $payee->employee_code ? ' ('.$payee->employee_code.')' : '' }}
+                        </option>
+                    @endforeach
+                </select>
+                <p class="text-xs text-gray-500 mt-1">
+                    For employees with no account of their own. Their pay is merged into
+                    the chosen person's line on the bank sheet.
+                </p>
+            </div>
+
+            <div>
+                <label class="block font-semibold mb-1">Salary Access</label>
+                <label class="flex items-center gap-2 mt-2">
+                    <input type="checkbox" name="can_manage_salary" value="1"
+                           {{ old('can_manage_salary', $staff->user->can_manage_salary) ? 'checked' : '' }}>
+                    <span class="text-sm">Can work on Salary Management</span>
+                </label>
+                <p class="text-xs text-gray-500 mt-1">
+                    Grants access to the salary screens without making them an admin.
+                </p>
+            </div>
+
             <div class="mt-3">
     <label class="block font-semibold mb-1">Office Location</label>
 

@@ -39,9 +39,31 @@ class SalaryController extends Controller
             $query->where('user_id', $request->employee);
         }
 
-        $salaries = $query->orderByDesc('year')
-                          ->orderByDesc('month')
-                          ->get();
+        // Sortable columns for the list view
+        $sort = in_array($request->sort, ['code', 'employee', 'month', 'net', 'status'])
+            ? $request->sort
+            : 'period';
+
+        $dir = $request->dir === 'desc' ? 'desc' : 'asc';
+
+        match ($sort) {
+            'code' => $query->leftJoin('users', 'users.id', '=', 'salaries.user_id')
+                ->select('salaries.*')
+                ->orderByRaw("users.employee_code IS NULL OR users.employee_code = ''")
+                ->orderBy('users.employee_code', $dir),
+
+            'employee' => $query->leftJoin('users', 'users.id', '=', 'salaries.user_id')
+                ->select('salaries.*')
+                ->orderBy('users.name', $dir),
+
+            'month'  => $query->orderBy('year', $dir)->orderBy('month', $dir),
+            'net'    => $query->orderBy('net_salary', $dir),
+            'status' => $query->orderBy('status', $dir),
+
+            default  => $query->orderByDesc('year')->orderByDesc('month'),
+        };
+
+        $salaries = $query->get();
 
         $employees = User::where('role', 'employee')->get();
 
@@ -54,6 +76,8 @@ class SalaryController extends Controller
         return view('salary.admin-index', compact(
             'salaries',
             'employees',
+            'sort',
+            'dir',
             'totalSalaries',
             'totalNet',
             'totalDeductions',
@@ -189,13 +213,17 @@ public function employeeIndex()
     {
         $month    = (int) ($request->month ?? now()->month);
         $year     = (int) ($request->year ?? now()->year);
-        $category = $request->category === 'teacher' ? 'teacher' : 'staff';
+        $category = in_array($request->category, ['teacher', 'staff', 'all'])
+            ? $request->category
+            : 'staff';
 
         [$sort, $dir] = $this->sheetSort($request);
 
-        $query = User::with('staff')
-            ->where('role', 'employee')
-            ->where('salary_category', $category);
+        $query = User::with('staff')->where('role', 'employee');
+
+        if ($category !== 'all') {
+            $query->where('salary_category', $category);
+        }
 
         $this->applySheetSort($query, $sort, $dir);
 
@@ -277,7 +305,7 @@ public function employeeIndex()
         $request->validate([
             'month'    => 'required|integer|min:1|max:12',
             'year'     => 'required|integer|min:2000|max:2100',
-            'category' => 'required|in:teacher,staff',
+            'category' => 'required|in:teacher,staff,all',
         ]);
 
         $month = (int) $request->month;
@@ -286,7 +314,8 @@ public function employeeIndex()
         $from = \Carbon\Carbon::create($year, $month, 1)->subMonth();
 
         $userIds = User::where('role', 'employee')
-            ->where('salary_category', $request->category)
+            ->when($request->category !== 'all',
+                fn ($q) => $q->where('salary_category', $request->category))
             ->pluck('id');
 
         $previous = Salary::where('month', $from->month)
@@ -371,11 +400,12 @@ public function employeeIndex()
         $request->validate([
             'month'    => 'required|integer|min:1|max:12',
             'year'     => 'required|integer|min:2000|max:2100',
-            'category' => 'required|in:teacher,staff',
+            'category' => 'required|in:teacher,staff,all',
         ]);
 
         $userIds = User::where('role', 'employee')
-            ->where('salary_category', $request->category)
+            ->when($request->category !== 'all',
+                fn ($q) => $q->where('salary_category', $request->category))
             ->pluck('id');
 
         $drafts = Salary::with('user')
@@ -431,7 +461,7 @@ public function employeeIndex()
         $request->validate([
             'month'          => 'required|integer|min:1|max:12',
             'year'           => 'required|integer|min:2000|max:2100',
-            'category'       => 'required|in:teacher,staff',
+            'category'       => 'required|in:teacher,staff,all',
             'rows'           => 'required|array',
             'rows.*.user_id' => 'required|exists:users,id',
         ]);
@@ -538,32 +568,26 @@ public function employeeIndex()
         $sort = in_array($request->sort, ['code', 'name', 'amount']) ? $request->sort : 'code';
         $dir  = $request->dir === 'desc' ? 'desc' : 'asc';
 
-        $salaries = Salary::with('user')
+        $allForPeriod = Salary::with('user.bankPayee')
             ->where('month', $month)
             ->where('year', $year)
             ->get()
-            // Only employees actually receiving money through the bank.
-            ->filter(fn ($s) => $s->user && $s->bank_amount > 0)
-            ->values();
+            ->filter(fn ($s) => $s->user);
+
+        $rows = $this->buildBankRows($allForPeriod);
 
         $key = match ($sort) {
-            'name'   => fn ($s) => $s->user->name,
-            'amount' => fn ($s) => $s->bank_amount,
+            'name'   => fn ($r) => $r['user']->name,
+            'amount' => fn ($r) => $r['total'],
             // Blank codes sort last whichever direction is chosen.
-            default  => fn ($s) => ($s->user->employee_code ?: 'zzzzzzzz'),
+            default  => fn ($r) => ($r['user']->employee_code ?: 'zzzzzzzz'),
         };
 
         $salaries = ($dir === 'desc'
-            ? $salaries->sortByDesc($key)
-            : $salaries->sortBy($key))->values();
+            ? $rows->sortByDesc($key)
+            : $rows->sortBy($key))->values();
 
-        $grandTotal = $salaries->sum(fn ($s) => $s->bank_amount);
-
-        // Reconciliation figures matching the footer of the Excel sheets.
-        $allForPeriod = Salary::with('user')
-            ->where('month', $month)
-            ->where('year', $year)
-            ->get();
+        $grandTotal = $salaries->sum('total');
 
         $summary = [
             'teacher_net' => $allForPeriod
@@ -588,6 +612,60 @@ public function employeeIndex()
 
     /*
     |--------------------------------------------------------------------------
+    | Turn a month's salaries into bank sheet lines
+    |--------------------------------------------------------------------------
+    | One line per account that gets credited. An employee who is set to be
+    | paid into someone else's account contributes to that person's line
+    | instead of getting one of their own. Employees paid entirely by cheque
+    | still appear, with no amount, so the sheet stays a full roster.
+    */
+    private function buildBankRows($salaries)
+    {
+        $rows = [];
+
+        $touch = function (&$rows, User $user) {
+            if (!isset($rows[$user->id])) {
+                $rows[$user->id] = [
+                    'user'         => $user,
+                    'total'        => 0.0,
+                    'own'          => 0.0,
+                    'contributors' => [],
+                ];
+            }
+        };
+
+        foreach ($salaries as $salary) {
+
+            $employee = $salary->user;
+            $amount   = (float) $salary->bank_amount;
+
+            // Guard against a payee chain pointing back at the employee.
+            $payee = $employee->bankPayee;
+
+            if ($payee && $payee->id !== $employee->id) {
+                $touch($rows, $payee);
+                $rows[$payee->id]['total'] += $amount;
+
+                if ($amount > 0) {
+                    $rows[$payee->id]['contributors'][] = [
+                        'user'   => $employee,
+                        'amount' => $amount,
+                    ];
+                }
+
+                continue;
+            }
+
+            $touch($rows, $employee);
+            $rows[$employee->id]['total'] += $amount;
+            $rows[$employee->id]['own']   += $amount;
+        }
+
+        return collect($rows)->values();
+    }
+
+    /*
+    |--------------------------------------------------------------------------
     | Bank sheet as CSV (opens straight in Excel)
     |--------------------------------------------------------------------------
     */
@@ -598,12 +676,14 @@ public function employeeIndex()
 
         $period = \Carbon\Carbon::create($year, $month, 1);
 
-        $salaries = Salary::with('user')
-            ->where('month', $month)
-            ->where('year', $year)
-            ->get()
-            ->filter(fn ($s) => $s->user && $s->bank_amount > 0)
-            ->sortBy(fn ($s) => ($s->user->employee_code ?: 'zzzzzzzz'))
+        $salaries = $this->buildBankRows(
+                Salary::with('user.bankPayee')
+                    ->where('month', $month)
+                    ->where('year', $year)
+                    ->get()
+                    ->filter(fn ($s) => $s->user)
+            )
+            ->sortBy(fn ($r) => ($r['user']->employee_code ?: 'zzzzzzzz'))
             ->values();
 
         $filename = 'bank-sheet-'.$period->format('Y-m').'.csv';
@@ -623,17 +703,24 @@ public function employeeIndex()
 
             $total = 0;
 
-            foreach ($salaries as $i => $salary) {
-                $total += $salary->bank_amount;
+            foreach ($salaries as $i => $row) {
+                $total += $row['total'];
+
+                $name = $row['user']->name;
+
+                if (!empty($row['contributors'])) {
+                    $name .= ' (incl. '.collect($row['contributors'])
+                        ->map(fn ($c) => $c['user']->name)->implode(', ').')';
+                }
 
                 fputcsv($out, [
                     $i + 1,
-                    $salary->user->employee_code,
-                    $salary->user->name,
+                    $row['user']->employee_code,
+                    $name,
                     // Leading apostrophe stops Excel mangling long account
                     // numbers into scientific notation.
-                    $salary->user->bank_account_no ? "'".$salary->user->bank_account_no : '',
-                    round($salary->bank_amount, 2),
+                    $row['user']->bank_account_no ? "'".$row['user']->bank_account_no : '',
+                    $row['total'] > 0 ? round($row['total'], 2) : '',
                 ]);
             }
 
