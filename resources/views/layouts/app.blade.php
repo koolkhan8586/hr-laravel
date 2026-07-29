@@ -308,6 +308,10 @@ Salary Sheet
 Bank Sheet
 </a>
 
+<a href="{{ route('admin.salary.tax.sheet') }}" class="block py-1 hover:text-blue-600">
+Tax Sheet
+</a>
+
 <a href="{{ route('admin.salary.tax') }}" class="block py-1 hover:text-blue-600">
 Tax Calculate
 </a>

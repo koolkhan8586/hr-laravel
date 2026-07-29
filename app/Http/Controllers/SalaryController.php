@@ -646,6 +646,210 @@ public function employeeIndex()
 
     /*
     |--------------------------------------------------------------------------
+    | TAX SHEET
+    |--------------------------------------------------------------------------
+    | Yearly working that produces each employee's monthly tax deduction:
+    |
+    |   taxable  = salary & wages / medical divisor   (medical is exempt)
+    |   payable  = tax on taxable, from the configured slabs
+    |   net      = payable - tax adjustment
+    |   monthly  = net / 12
+    */
+    public function taxSheet(Request $request)
+    {
+        $year = (int) ($request->year ?? now()->year);
+
+        // Month whose salary sheet seeds the yearly figure
+        $sourceMonth = (int) ($request->source_month ?? now()->month);
+
+        [$sort, $dir] = $this->sheetSort($request);
+
+        $query = User::with('staff')->where('role', 'employee');
+
+        $category = in_array($request->category, ['teacher', 'staff', 'all'])
+            ? $request->category
+            : 'all';
+
+        if ($category !== 'all') {
+            $query->where('salary_category', $category);
+        }
+
+        $this->applySheetSort($query, $sort, $dir);
+
+        $users = $query->get();
+
+        $sheets = \App\Models\TaxSheet::where('year', $year)
+            ->get()
+            ->keyBy('user_id');
+
+        // Monthly basic from the chosen month, used when a row has no figure yet
+        $monthlyBasic = Salary::where('year', $year)
+            ->where('month', $sourceMonth)
+            ->get()
+            ->keyBy('user_id');
+
+        $medicalDivisor = (float) \App\Models\AppSetting::get('tax_medical_divisor', 1.1);
+        $taxSlabs       = \App\Models\TaxSlab::activeSlabs();
+        $taxBasis       = \App\Models\TaxSlab::basis();
+
+        $rows = $users->map(function ($user) use ($sheets, $monthlyBasic, $medicalDivisor) {
+
+            $sheet = $sheets[$user->id] ?? null;
+
+            $annual = $sheet && $sheet->annual_salary > 0
+                ? (float) $sheet->annual_salary
+                : round((float) ($monthlyBasic[$user->id]->basic_salary ?? 0) * 12, 2);
+
+            $taxable = $medicalDivisor > 0 ? round($annual / $medicalDivisor, 2) : $annual;
+            $payable = \App\Models\TaxSlab::annualTaxFor($taxable);
+
+            $adjustment = (float) ($sheet->tax_adjustment ?? 0);
+            $net        = round($payable - $adjustment, 2);
+            $monthly    = round($net / 12, 2);
+
+            return [
+                'user'       => $user,
+                'annual'     => $annual,
+                'taxable'    => $taxable,
+                'payable'    => $payable,
+                'adjustment' => $adjustment,
+                'net'        => $net,
+                'monthly'    => $monthly,
+            ];
+        });
+
+        return view('salary.tax-sheet', compact(
+            'rows',
+            'year',
+            'sourceMonth',
+            'category',
+            'sort',
+            'dir',
+            'medicalDivisor',
+            'taxSlabs',
+            'taxBasis'
+        ));
+    }
+
+    /**
+     * Save the editable columns: yearly salary and the tax adjustment.
+     */
+    public function taxSheetStore(Request $request)
+    {
+        $request->validate([
+            'year'           => 'required|integer|min:2000|max:2100',
+            'rows'           => 'required|array',
+            'rows.*.user_id' => 'required|exists:users,id',
+        ]);
+
+        $year  = (int) $request->year;
+        $saved = 0;
+
+        foreach ($request->rows as $row) {
+
+            $amount = fn ($k) => round((float) str_replace(',', '', $row[$k] ?? 0), 2);
+
+            $annual     = $amount('annual_salary');
+            $adjustment = $amount('tax_adjustment');
+
+            $existing = \App\Models\TaxSheet::where('user_id', $row['user_id'])
+                ->where('year', $year)
+                ->first();
+
+            // Don't create empty rows for employees nobody has touched.
+            if (!$existing && $annual == 0 && $adjustment == 0) {
+                continue;
+            }
+
+            \App\Models\TaxSheet::updateOrCreate(
+                ['user_id' => $row['user_id'], 'year' => $year],
+                ['annual_salary' => $annual, 'tax_adjustment' => $adjustment]
+            );
+
+            $saved++;
+        }
+
+        return redirect()->route('admin.salary.tax.sheet', $request->only([
+            'year', 'category', 'source_month', 'sort', 'dir',
+        ]))->with('success', "Tax sheet saved ({$saved} employees).");
+    }
+
+    /**
+     * Push the calculated monthly tax onto a month's salary sheet.
+     */
+    public function taxSheetApply(Request $request)
+    {
+        $request->validate([
+            'year'  => 'required|integer|min:2000|max:2100',
+            'month' => 'required|integer|min:1|max:12',
+        ]);
+
+        $year  = (int) $request->year;
+        $month = (int) $request->month;
+
+        $medicalDivisor = (float) \App\Models\AppSetting::get('tax_medical_divisor', 1.1);
+
+        $sheets = \App\Models\TaxSheet::where('year', $year)->get();
+
+        if ($sheets->isEmpty()) {
+            return back()->with('error', 'There is no saved tax sheet for '.$year.' yet.');
+        }
+
+        $applied = 0;
+        $skipped = 0;
+        $clamped = 0;
+
+        foreach ($sheets as $sheet) {
+
+            $salary = Salary::where('user_id', $sheet->user_id)
+                ->where('month', $month)
+                ->where('year', $year)
+                ->first();
+
+            if (!$salary) {
+                continue;
+            }
+
+            // A posted salary is finalised; leave it alone.
+            if ($salary->isPosted()) {
+                $skipped++;
+                continue;
+            }
+
+            $taxable = $medicalDivisor > 0
+                ? $sheet->annual_salary / $medicalDivisor
+                : $sheet->annual_salary;
+
+            $net = \App\Models\TaxSlab::annualTaxFor($taxable) - $sheet->tax_adjustment;
+
+            // An adjustment larger than the tax would otherwise write a
+            // negative deduction, which would quietly increase net pay.
+            if ($net < 0) {
+                $net = 0;
+                $clamped++;
+            }
+
+            $salary->update(['income_tax' => round($net / 12, 2)]);
+
+            $applied++;
+        }
+
+        $message = "Monthly tax written to {$applied} row(s) on the "
+            .\Carbon\Carbon::create($year, $month, 1)->format('F Y').' salary sheet.';
+
+        if ($skipped) {
+            $message .= " {$skipped} posted row(s) were left unchanged.";
+        }
+
+        if ($clamped) {
+            $message .= " {$clamped} row(s) had an adjustment larger than the tax due and were written as zero.";
+        }
+
+        return back()->with('success', $message);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
     | Turn a month's salaries into bank sheet lines
     |--------------------------------------------------------------------------
     | One line per account that gets credited. An employee who is set to be

@@ -108,10 +108,26 @@ class SalarySettingController extends Controller
     */
     public function tax()
     {
-        $slabs = TaxSlab::orderBy('from_amount')->get();
-        $basis = TaxSlab::basis();
+        $slabs   = TaxSlab::orderBy('from_amount')->get();
+        $basis   = TaxSlab::basis();
+        $divisor = AppSetting::get('tax_medical_divisor', 1.1);
 
-        return view('salary.tax', compact('slabs', 'basis'));
+        return view('salary.tax', compact('slabs', 'basis', 'divisor'));
+    }
+
+    /**
+     * Divisor the tax sheet uses to strip the exempt medical allowance.
+     */
+    public function updateMedicalDivisor(Request $request)
+    {
+        $request->validate([
+            'divisor' => 'required|numeric|min:1|max:5',
+        ]);
+
+        AppSetting::put('tax_medical_divisor', $request->divisor);
+
+        return back()->with('success',
+            'Tax sheet will now divide salary by '.$request->divisor.' to remove the medical allowance.');
     }
 
     public function storeTaxSlab(Request $request)

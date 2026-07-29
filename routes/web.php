@@ -408,6 +408,10 @@ Route::middleware(['auth', 'salary'])
     Route::post('/salary-sheet', [SalaryController::class,'sheetStore'])->name('salary.sheet.store');
     Route::post('/salary-sheet/copy-previous', [SalaryController::class,'sheetCopyPrevious'])->name('salary.sheet.copy');
     Route::post('/salary-sheet/post', [SalaryController::class,'sheetPost'])->name('salary.sheet.post');
+    Route::get('/tax-sheet', [SalaryController::class,'taxSheet'])->name('salary.tax.sheet');
+    Route::post('/tax-sheet', [SalaryController::class,'taxSheetStore'])->name('salary.tax.sheet.store');
+    Route::post('/tax-sheet/apply', [SalaryController::class,'taxSheetApply'])->name('salary.tax.sheet.apply');
+
     Route::get('/bank-sheet', [SalaryController::class,'bankSheet'])->name('salary.bank.sheet');
     Route::get('/bank-sheet/export', [SalaryController::class,'bankSheetExport'])->name('salary.bank.sheet.export');
 
@@ -424,6 +428,7 @@ Route::middleware(['auth', 'salary'])
     Route::delete('/tax-calculate/{id}', [SalarySettingController::class,'destroyTaxSlab'])->name('salary.tax.destroy');
     Route::post('/tax-calculate/load-fbr', [SalarySettingController::class,'loadTaxPreset'])->name('salary.tax.preset');
     Route::post('/tax-calculate/basis', [SalarySettingController::class,'updateTaxBasis'])->name('salary.tax.basis');
+    Route::post('/tax-calculate/medical', [SalarySettingController::class,'updateMedicalDivisor'])->name('salary.tax.medical');
 
     Route::get('/salary/create', [SalaryController::class,'create'])->name('salary.create');
     Route::post('/salary/store', [SalaryController::class,'store'])->name('salary.store');

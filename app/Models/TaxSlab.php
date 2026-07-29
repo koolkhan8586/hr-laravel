@@ -100,6 +100,23 @@ class TaxSlab extends Model
     }
 
     /**
+     * Tax for a full year of taxable income, honouring the configured basis.
+     */
+    public static function annualTaxFor(float $annualIncome): float
+    {
+        if ($annualIncome <= 0) {
+            return 0.0;
+        }
+
+        if (static::basis() === 'monthly') {
+            // Slabs describe a month, so tax a month and scale up.
+            return round(static::taxFor($annualIncome / 12) * 12, 2);
+        }
+
+        return static::taxFor($annualIncome);
+    }
+
+    /**
      * Monthly tax for a monthly taxable income, honouring the configured basis.
      */
     public static function monthlyTaxFor(float $monthlyIncome): float
