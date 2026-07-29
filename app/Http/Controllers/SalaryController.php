@@ -705,7 +705,9 @@ public function employeeIndex()
 
             $adjustment = (float) ($sheet->tax_adjustment ?? 0);
             $net        = round($payable - $adjustment, 2);
-            $monthly    = round($net / 12, 2);
+
+            // Deducted as whole rupees, matching what is written to the sheet.
+            $monthly = round(max(0, $net) / 12);
 
             return [
                 'user'       => $user,
@@ -814,7 +816,8 @@ public function employeeIndex()
             $net = 0;
         }
 
-        return ['monthly' => round($net / 12, 2), 'clamped' => $clamped];
+        // Payroll deducts whole rupees, so 363.64 comes off as 364.
+        return ['monthly' => round($net / 12), 'clamped' => $clamped];
     }
 
     /**
