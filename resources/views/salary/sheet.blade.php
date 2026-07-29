@@ -2,7 +2,8 @@
 
 @php
     $monthName  = \Carbon\Carbon::create()->month($month)->format('F');
-    $sheetLabel = $category === 'teacher' ? 'Teachers' : 'Staff';
+    $sheetLabel = match($category) { 'teacher' => 'Teachers', 'all' => 'All Employees', default => 'Staff' };
+    $showTPayment = in_array($category, ['teacher', 'all']);
     $orgName    = \App\Models\AppSetting::get('org_name', 'The University of Lahore (City Campus)');
 
     $earningColumns   = $columns->where('type', 'earning');
@@ -96,6 +97,7 @@
             <select name="category" class="border px-3 py-2 rounded text-sm">
                 <option value="teacher" {{ $category == 'teacher' ? 'selected' : '' }}>Teachers</option>
                 <option value="staff" {{ $category == 'staff' ? 'selected' : '' }}>Staff</option>
+                <option value="all" {{ $category == 'all' ? 'selected' : '' }}>All</option>
             </select>
         </div>
 
@@ -123,7 +125,7 @@
     @if($users->isEmpty())
 
     <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded">
-        No employees are marked as <strong>{{ $sheetLabel }}</strong> yet.
+        No employees found for <strong>{{ $sheetLabel }}</strong>.
         Set each employee's Salary Sheet field from
         <a href="{{ route('admin.staff.index') }}" class="underline font-semibold">Staff Management</a>.
     </div>
@@ -161,6 +163,11 @@
                 Post Sheet ({{ $draftCount }})
             </button>
         </form>
+
+        <label class="flex items-center gap-2 text-sm bg-white border border-gray-300 px-3 py-2 rounded cursor-pointer">
+            <input type="checkbox" id="hideEmptyCols">
+            Hide empty columns
+        </label>
 
         <span class="text-xs text-gray-500">
             {{ $postedCount }} row(s) already posted.
@@ -206,7 +213,7 @@
                 <th class="border p-2 bg-green-50">Salary &amp; Wages</th>
                 <th class="border p-2 bg-green-50">Extra Load</th>
                 <th class="border p-2 bg-green-50">Invigilation</th>
-                @if($category === 'teacher')
+                @if($showTPayment)
                 <th class="border p-2 bg-green-50">T.Payment</th>
                 @endif
                 <th class="border p-2 bg-green-50">Eidi</th>
@@ -271,7 +278,7 @@
             </td>
             @endforeach
 
-            @if($category === 'teacher')
+            @if($showTPayment)
             <td class="border p-0">
                 <input type="number" step="0.01" min="0" data-col="t_payment"
                        name="rows[{{ $i }}][t_payment]" value="{{ $row->t_payment ?? '' }}" {{ $ro }}
@@ -354,7 +361,7 @@
                 <td class="border p-2 text-right" data-sum="basic_salary">0</td>
                 <td class="border p-2 text-right" data-sum="extra_load">0</td>
                 <td class="border p-2 text-right" data-sum="invigilation">0</td>
-                @if($category === 'teacher')
+                @if($showTPayment)
                 <td class="border p-2 text-right" data-sum="t_payment">0</td>
                 @endif
                 <td class="border p-2 text-right" data-sum="eidi">0</td>
@@ -562,8 +569,57 @@
         });
     }
 
+    /* ---------- Hide columns that are entirely empty ---------- */
+
+    const hideBox = document.getElementById('hideEmptyCols');
+
+    function applyHideEmpty() {
+        const table = document.getElementById('salarySheet');
+        if (!table || !hideBox) return;
+
+        const on = hideBox.checked;
+
+        // Which data columns carry nothing at all?
+        const empty = {};
+        document.querySelectorAll('#salarySheet input[data-col]').forEach(el => {
+            const k = el.dataset.col;
+            if (!(k in empty)) empty[k] = true;
+            if (num(el) !== 0) empty[k] = false;
+        });
+
+        const firstRow = table.tBodies[0].rows[0];
+        if (!firstRow) return;
+
+        Object.keys(empty).forEach(key => {
+
+            const probe = firstRow.querySelector(`input[data-col="${key}"]`);
+            if (!probe) return;
+
+            const idx  = probe.closest('td').cellIndex;
+            const hide = on && empty[key] === true;
+            const val  = hide ? 'none' : '';
+
+            // Header row carrying the column labels
+            const headRow = table.tHead.rows[table.tHead.rows.length - 1];
+            if (headRow.cells[idx]) headRow.cells[idx].style.display = val;
+
+            for (const row of table.tBodies[0].rows) {
+                if (row.cells[idx]) row.cells[idx].style.display = val;
+            }
+
+            // The footer's first cell spans four columns, so match on the
+            // key rather than trusting cell positions to line up.
+            const footCell = table.tFoot.querySelector(`[data-sum="${key}"]`);
+            if (footCell) footCell.style.display = val;
+        });
+    }
+
+    if (hideBox) {
+        hideBox.addEventListener('change', applyHideEmpty);
+    }
+
     document.querySelectorAll('#salarySheet input[type=number]')
-        .forEach(el => el.addEventListener('input', recalc));
+        .forEach(el => el.addEventListener('input', () => { recalc(); applyHideEmpty(); }));
 
     recalc();
 })();

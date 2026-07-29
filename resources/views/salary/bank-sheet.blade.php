@@ -17,7 +17,7 @@
         <div>
             <h2 class="text-2xl font-bold text-gray-800">Bank Sheet</h2>
             <p class="text-sm text-gray-500 mt-1">
-                Employees paid by bank transfer. Anyone paid fully by cheque is excluded.
+                Everyone on the month's sheet. Cheque-only employees show a dash, and merged salaries appear on the receiving account.
             </p>
         </div>
 
@@ -135,20 +135,32 @@
 
             <tbody>
 
-            @foreach($salaries as $i => $salary)
+            @foreach($salaries as $i => $row)
             <tr>
                 <td class="border p-2 text-center">{{ $i + 1 }}</td>
-                <td class="border p-2 text-center">{{ $salary->user->employee_code ?? '' }}</td>
-                <td class="border p-2">{{ $salary->user->name }}</td>
+                <td class="border p-2 text-center">{{ $row['user']->employee_code ?? '' }}</td>
+                <td class="border p-2">
+                    {{ $row['user']->name }}
+                    @if(!empty($row['contributors']))
+                    <span class="text-xs text-gray-600">
+                        (incl.
+                        {{ collect($row['contributors'])->map(fn($c) => $c['user']->name)->implode(', ') }})
+                    </span>
+                    @endif
+                </td>
                 <td class="border p-2 text-center">
-                    @if($salary->user->bank_account_no)
-                        {{ $salary->user->bank_account_no }}
+                    @if($row['user']->bank_account_no)
+                        {{ $row['user']->bank_account_no }}
                     @else
                         <span class="text-red-500 text-xs no-print">account missing</span>
                     @endif
                 </td>
                 <td class="border p-2 text-right">
-                    {{ number_format($salary->bank_amount) }}
+                    @if($row['total'] > 0)
+                        {{ number_format($row['total']) }}
+                    @else
+                        <span class="text-gray-500">&ndash;</span>
+                    @endif
                 </td>
             </tr>
             @endforeach

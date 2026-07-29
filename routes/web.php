@@ -381,6 +381,20 @@ Route::delete('/leave-approval-emails/{id}', [LeaveApprovalEmailController::clas
     // Loan Management moved to separate role group below
 
 
+});
+
+/*
+|--------------------------------------------------------------------------
+| Salary Management
+|--------------------------------------------------------------------------
+| Open to admins, plus any user granted the salary permission on their
+| staff record. Route names stay under admin.* so existing links work.
+*/
+Route::middleware(['auth', 'salary'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+
     /*
     |--------------------------------------------------------------------------
     | Salary Management (Admin) (UNCHANGED)
@@ -429,6 +443,7 @@ Route::delete('/leave-approval-emails/{id}', [LeaveApprovalEmailController::clas
     Route::get('/salary/{id}', [SalaryController::class,'show'])->name('salary.show');
     Route::post('/salary/import-confirm', [SalaryController::class,'confirmImport'])->name('salary.import.confirm');
 });
+
 
 /*
 |--------------------------------------------------------------------------

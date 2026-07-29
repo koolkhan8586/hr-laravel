@@ -1,5 +1,15 @@
     <x-app-layout>
 
+@php
+    $sortLink = function ($key) use ($sort, $dir) {
+        $next = ($sort === $key && $dir === 'asc') ? 'desc' : 'asc';
+        return request()->fullUrlWithQuery(['sort' => $key, 'dir' => $next]);
+    };
+    $arrow = fn ($key) => $sort === $key ? ($dir === 'asc' ? ' ▲' : ' ▼') : '';
+@endphp
+
+
+
 <div class="max-w-7xl mx-auto py-8 px-6">
 
     {{-- HEADER --}}
@@ -55,12 +65,12 @@
             <thead class="bg-gray-100">
                 <tr>
                     <th class="p-3"><input type="checkbox" id="selectAll"></th>
-                    <th class="p-3">Employee ID</th>
-                    <th class="p-3">Name</th>
-                    <th class="p-3">Department</th>
-                    <th class="p-3">Designation</th>
-                    <th class="p-3">Salary</th>
-                    <th class="p-3">Status</th>
+                    <th class="p-3"><a href="{{ $sortLink('code') }}" class="hover:underline">Employee ID{{ $arrow('code') }}</a></th>
+                    <th class="p-3"><a href="{{ $sortLink('name') }}" class="hover:underline">Name{{ $arrow('name') }}</a></th>
+                    <th class="p-3"><a href="{{ $sortLink('department') }}" class="hover:underline">Department{{ $arrow('department') }}</a></th>
+                    <th class="p-3"><a href="{{ $sortLink('designation') }}" class="hover:underline">Designation{{ $arrow('designation') }}</a></th>
+                    <th class="p-3"><a href="{{ $sortLink('salary') }}" class="hover:underline">Salary{{ $arrow('salary') }}</a></th>
+                    <th class="p-3"><a href="{{ $sortLink('status') }}" class="hover:underline">Status{{ $arrow('status') }}</a></th>
                     <th class="p-3">Actions</th>
                 </tr>
             </thead>

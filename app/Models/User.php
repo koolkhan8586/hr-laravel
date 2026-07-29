@@ -31,6 +31,8 @@ class User extends Authenticatable
         'salary_category',
         'bank_account_no',
         'new_account_no',
+        'bank_payee_id',
+        'can_manage_salary',
     ];
 
     /*
@@ -81,6 +83,18 @@ class User extends Authenticatable
     public function staff()
     {
         return $this->hasOne(Staff::class);
+    }
+
+    /** Employee whose account this person's salary is credited into. */
+    public function bankPayee()
+    {
+        return $this->belongsTo(User::class, 'bank_payee_id');
+    }
+
+    /** Employees whose salary is credited into this person's account. */
+    public function bankPayeeFor()
+    {
+        return $this->hasMany(User::class, 'bank_payee_id');
     }
 
     public function salaries()

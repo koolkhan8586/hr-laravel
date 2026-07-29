@@ -37,9 +37,25 @@ class StaffController extends Controller
             $query->where('department', $request->department);
         }
 
-        $staff = $query->orderByDesc('created_at')->get();
+        // Sortable columns. Name lives on the user, the rest on the staff row.
+        $sort = in_array($request->sort, ['code', 'name', 'department', 'designation', 'salary', 'status'])
+            ? $request->sort
+            : 'code';
 
-        return view('staff.index', compact('staff'));
+        $dir = $request->dir === 'desc' ? 'desc' : 'asc';
+
+        if ($sort === 'name') {
+            $query->leftJoin('users', 'users.id', '=', 'staff.user_id')
+                ->select('staff.*')
+                ->orderBy('users.name', $dir);
+        } else {
+            $column = $sort === 'code' ? 'employee_id' : $sort;
+            $query->orderBy($column, $dir);
+        }
+
+        $staff = $query->get();
+
+        return view('staff.index', compact('staff', 'sort', 'dir'));
     }
 
     /*
@@ -149,8 +165,13 @@ class StaffController extends Controller
     // 🔥 ADD THIS LINE
     $locations = \App\Models\OfficeLocation::all();
 
-    // 🔥 ADD locations in compact
-    return view('staff.edit', compact('staff','locations'));
+    // Possible bank payees: any other employee, ordered for the dropdown
+    $payees = User::where('role', 'employee')
+        ->where('id', '!=', $staff->user_id)
+        ->orderBy('name')
+        ->get(['id', 'name', 'employee_code']);
+
+    return view('staff.edit', compact('staff','locations','payees'));
 }
 
     /*
@@ -172,6 +193,7 @@ class StaffController extends Controller
         'role'            => 'required|in:employee,manager,admin',
         'salary_category' => 'nullable|in:teacher,staff',
         'bank_account_no' => 'nullable|string|max:50',
+        'bank_payee_id'   => 'nullable|exists:users,id',
     ]);
 
     /*
@@ -188,6 +210,13 @@ class StaffController extends Controller
         // Payroll / salary sheet details
         'salary_category' => $request->salary_category ?? 'staff',
         'bank_account_no' => $request->bank_account_no,
+
+        // Never let an employee point at themselves as their own payee
+        'bank_payee_id'   => $request->bank_payee_id == $staff->user_id
+            ? null
+            : $request->bank_payee_id,
+
+        'can_manage_salary' => $request->boolean('can_manage_salary'),
 
         // 🔓 Allow Anywhere Attendance
         'allow_anywhere_attendance' => $request->has('allow_anywhere_attendance'),
