@@ -162,7 +162,7 @@
 
         <thead>
             <tr class="bg-gray-300">
-                <th class="border p-1" colspan="8"></th>
+                <th class="border p-1" colspan="9"></th>
                 <th class="border p-1 text-center" colspan="14">Tax Deducted (posted salaries)</th>
             </tr>
             <tr class="bg-gray-200">
@@ -173,9 +173,10 @@
                     <a href="{{ $sortLink('name') }}" class="hover:underline no-print-link">Employee Name{{ $arrow('name') }}</a>
                 </th>
                 <th class="border p-2 bg-green-50">Salary &amp; Wages<br><span class="font-normal text-[10px]">yearly</span></th>
+                <th class="border p-2 bg-green-50 w-24">Additional<br>Income<br><span class="font-normal text-[10px]">monthly</span></th>
                 <th class="border p-2 bg-blue-50">Taxable Income<br><span class="font-normal text-[10px]">&divide; {{ $medicalDivisor }} (less medical)</span></th>
                 <th class="border p-2 bg-amber-50">Payable Tax<br><span class="font-normal text-[10px]">yearly</span></th>
-                <th class="border p-2 bg-yellow-50">Tax Adjustment</th>
+                <th class="border p-2 bg-yellow-50 w-24">Tax<br>Adjustment</th>
                 <th class="border p-2 bg-amber-100 font-bold">Net Payable Tax</th>
                 <th class="border p-2 bg-red-100 font-bold">Monthly Tax<br><span class="font-normal text-[10px]">&divide; 12</span></th>
                 @for($m = 1; $m <= 12; $m++)
@@ -207,6 +208,14 @@
                        class="annual w-32 p-1 text-right border-0">
             </td>
 
+            <td class="border p-0">
+                <input type="number" step="0.01" min="0"
+                       name="rows[{{ $i }}][additional_income]"
+                       value="{{ $row['additional'] != 0 ? $row['additional'] : '' }}"
+                       class="additional w-20 p-1 text-right border-0 bg-green-50"
+                       title="Extra taxable income per month">
+            </td>
+
             <td class="border p-1 text-right taxable bg-blue-50">0</td>
 
             <td class="border p-1 text-right payable bg-amber-50">0</td>
@@ -215,7 +224,7 @@
                 <input type="number" step="0.01"
                        name="rows[{{ $i }}][tax_adjustment]"
                        value="{{ $row['adjustment'] != 0 ? $row['adjustment'] : '' }}"
-                       class="adjustment w-28 p-1 text-right border-0 bg-yellow-50">
+                       class="adjustment w-20 p-1 text-right border-0 bg-yellow-50">
             </td>
 
             <td class="border p-1 text-right net font-bold bg-amber-50">0</td>
@@ -246,6 +255,7 @@
             <tr>
                 <td class="border p-2 text-right" colspan="2">TOTAL</td>
                 <td class="border p-2 text-right" id="sumAnnual">0</td>
+                <td class="border p-2 text-right" id="sumAdditional">0</td>
                 <td class="border p-2 text-right" id="sumTaxable">0</td>
                 <td class="border p-2 text-right" id="sumPayable">0</td>
                 <td class="border p-2 text-right" id="sumAdjust">0</td>
@@ -331,12 +341,17 @@
 
     function recalc() {
 
-        let tAnnual = 0, tTaxable = 0, tPayable = 0, tAdjust = 0, tNet = 0, tMonthly = 0;
+        let tAnnual = 0, tAdditional = 0, tTaxable = 0, tPayable = 0, tAdjust = 0, tNet = 0, tMonthly = 0;
 
         document.querySelectorAll('.tax-row').forEach(row => {
 
-            const annual  = num(row.querySelector('.annual'));
-            const taxable = DIVISOR > 0 ? annual / DIVISOR : annual;
+            const annual = num(row.querySelector('.annual'));
+
+            // Additional income is monthly and carries no medical component,
+            // so it is annualised and taxed in full.
+            const additional = num(row.querySelector('.additional'));
+
+            const taxable = (DIVISOR > 0 ? annual / DIVISOR : annual) + (additional * 12);
             const payable = annualTax(taxable);
             const adjust  = num(row.querySelector('.adjustment'));
             const net = payable - adjust;
@@ -359,7 +374,8 @@
             monCell.classList.toggle('text-red-600', over);
             monCell.title = over ? 'Adjustment exceeds the tax due; applied as 0' : '';
 
-            tAnnual  += annual;
+            tAnnual     += annual;
+            tAdditional += additional;
             tTaxable += taxable;
             tPayable += payable;
             tAdjust  += adjust;
@@ -369,7 +385,8 @@
 
         const put = (id, v) => document.getElementById(id).textContent = fmt(v);
 
-        put('sumAnnual',  tAnnual);
+        put('sumAnnual',     tAnnual);
+        put('sumAdditional', tAdditional);
         put('sumTaxable', tTaxable);
         put('sumPayable', tPayable);
         put('sumAdjust',  tAdjust);

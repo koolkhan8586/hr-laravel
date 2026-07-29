@@ -700,7 +700,14 @@ public function employeeIndex()
                 ? (float) $sheet->annual_salary
                 : round((float) ($monthlyBasic[$user->id]->basic_salary ?? 0) * 12, 2);
 
-            $taxable = $medicalDivisor > 0 ? round($annual / $medicalDivisor, 2) : $annual;
+            // Additional income is monthly and carries no medical component,
+            // so it is annualised and taxed in full.
+            $additional = (float) ($sheet->additional_income ?? 0);
+
+            $taxable = ($medicalDivisor > 0 ? $annual / $medicalDivisor : $annual)
+                + ($additional * 12);
+            $taxable = round($taxable, 2);
+
             $payable = \App\Models\TaxSlab::annualTaxFor($taxable);
 
             $adjustment = (float) ($sheet->tax_adjustment ?? 0);
@@ -715,6 +722,7 @@ public function employeeIndex()
             return [
                 'user'          => $user,
                 'annual'        => $annual,
+                'additional'    => $additional,
                 'taxable'       => $taxable,
                 'payable'       => $payable,
                 'adjustment'    => $adjustment,
@@ -758,6 +766,7 @@ public function employeeIndex()
             $amount = fn ($k) => round((float) str_replace(',', '', $row[$k] ?? 0), 2);
 
             $annual     = $amount('annual_salary');
+            $additional = $amount('additional_income');
             $adjustment = $amount('tax_adjustment');
 
             $existing = \App\Models\TaxSheet::where('user_id', $row['user_id'])
@@ -765,13 +774,17 @@ public function employeeIndex()
                 ->first();
 
             // Don't create empty rows for employees nobody has touched.
-            if (!$existing && $annual == 0 && $adjustment == 0) {
+            if (!$existing && $annual == 0 && $additional == 0 && $adjustment == 0) {
                 continue;
             }
 
             \App\Models\TaxSheet::updateOrCreate(
                 ['user_id' => $row['user_id'], 'year' => $year],
-                ['annual_salary' => $annual, 'tax_adjustment' => $adjustment]
+                [
+                    'annual_salary'     => $annual,
+                    'additional_income' => $additional,
+                    'tax_adjustment'    => $adjustment,
+                ]
             );
 
             $saved++;
@@ -808,9 +821,7 @@ public function employeeIndex()
     {
         $divisor = (float) \App\Models\AppSetting::get('tax_medical_divisor', 1.1);
 
-        $taxable = $divisor > 0
-            ? $sheet->annual_salary / $divisor
-            : $sheet->annual_salary;
+        $taxable = $sheet->taxableIncome($divisor);
 
         $net = \App\Models\TaxSlab::annualTaxFor($taxable) - $sheet->tax_adjustment;
 

@@ -10,12 +10,14 @@ class TaxSheet extends Model
         'user_id',
         'year',
         'annual_salary',
+        'additional_income',
         'tax_adjustment',
     ];
 
     protected $casts = [
-        'annual_salary'  => 'float',
-        'tax_adjustment' => 'float',
+        'annual_salary'     => 'float',
+        'additional_income' => 'float',
+        'tax_adjustment'    => 'float',
     ];
 
     public function user()
@@ -23,13 +25,16 @@ class TaxSheet extends Model
         return $this->belongsTo(User::class);
     }
 
-    /** Medical allowance is exempt, so the taxable part is the rest. */
+    /**
+     * Medical allowance is exempt from salary, so only the rest is taxed.
+     * Additional income carries no medical component and is taxed in full.
+     */
     public function taxableIncome(float $medicalDivisor = 1.1): float
     {
-        if ($medicalDivisor <= 0) {
-            return $this->annual_salary;
-        }
+        $fromSalary = $medicalDivisor > 0
+            ? $this->annual_salary / $medicalDivisor
+            : $this->annual_salary;
 
-        return round($this->annual_salary / $medicalDivisor, 2);
+        return round($fromSalary + ($this->additional_income * 12), 2);
     }
 }
