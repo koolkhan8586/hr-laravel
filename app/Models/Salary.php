@@ -35,6 +35,7 @@ class Salary extends Model
         // Final
         'net_salary',
         'cheque_amount',
+        'custom_values',
 
         // Status
         'is_posted',
@@ -43,8 +44,9 @@ class Salary extends Model
     ];
 
     protected $casts = [
-        'is_posted' => 'boolean',
-        'posted_at' => 'datetime',
+        'is_posted'     => 'boolean',
+        'posted_at'     => 'datetime',
+        'custom_values' => 'array',
     ];
 
     protected static function boot()
@@ -68,6 +70,10 @@ class Salary extends Model
                 ($salary->loan_deduction ?? 0) +
                 ($salary->insurance ?? 0) +
                 ($salary->other_deductions ?? 0);
+
+            // Admin-defined columns contribute to the same two buckets.
+            $totalEarnings   += $salary->customTotal('earning');
+            $totalDeductions += $salary->customTotal('deduction');
 
             // SAVE THESE ALSO
             $salary->gross_total = $totalEarnings;
@@ -101,6 +107,48 @@ class Salary extends Model
             'is_posted' => false,
             'posted_at' => null,
         ]);
+    }
+
+    /**
+     * Value stored against one admin-defined column.
+     */
+    public function customValue($columnId)
+    {
+        return (float) (($this->custom_values ?? [])[$columnId] ?? 0);
+    }
+
+    /**
+     * Sum of the admin-defined columns of a given type ("earning"/"deduction").
+     */
+    public function customTotal(string $type): float
+    {
+        $values = $this->custom_values ?? [];
+
+        if (empty($values)) {
+            return 0.0;
+        }
+
+        // Memoised per request: a sheet save runs this once per row.
+        static $idsByType = null;
+
+        if ($idsByType === null) {
+            $idsByType = SalaryColumn::all(['id', 'type'])
+                ->groupBy('type')
+                ->map(fn ($rows) => $rows->pluck('id')->all())
+                ->all();
+        }
+
+        $ids = $idsByType[$type] ?? [];
+
+        $total = 0.0;
+
+        foreach ($values as $columnId => $amount) {
+            if (in_array((int) $columnId, $ids)) {
+                $total += (float) $amount;
+            }
+        }
+
+        return $total;
     }
 
     /**

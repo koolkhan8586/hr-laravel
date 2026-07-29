@@ -204,13 +204,174 @@ public function employeeIndex()
             ->get()
             ->keyBy('user_id');
 
+        $columns   = \App\Models\SalaryColumn::forCategory($category);
+        $taxSlabs  = \App\Models\TaxSlab::activeSlabs();
+        $taxBasis  = \App\Models\TaxSlab::basis();
+
         return view('salary.sheet', compact(
             'users',
             'existing',
             'month',
             'year',
-            'category'
+            'category',
+            'columns',
+            'taxSlabs',
+            'taxBasis'
         ));
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Copy the previous month's sheet into this one
+    |--------------------------------------------------------------------------
+    */
+    public function sheetCopyPrevious(Request $request)
+    {
+        $request->validate([
+            'month'    => 'required|integer|min:1|max:12',
+            'year'     => 'required|integer|min:2000|max:2100',
+            'category' => 'required|in:teacher,staff',
+        ]);
+
+        $month = (int) $request->month;
+        $year  = (int) $request->year;
+
+        $from = \Carbon\Carbon::create($year, $month, 1)->subMonth();
+
+        $userIds = User::where('role', 'employee')
+            ->where('salary_category', $request->category)
+            ->pluck('id');
+
+        $previous = Salary::where('month', $from->month)
+            ->where('year', $from->year)
+            ->whereIn('user_id', $userIds)
+            ->get();
+
+        if ($previous->isEmpty()) {
+            return back()->with('error',
+                'Nothing to copy - there is no '.$from->format('F Y').' sheet for this category.');
+        }
+
+        $copied  = 0;
+        $skipped = 0;
+
+        foreach ($previous as $row) {
+
+            $target = Salary::where('user_id', $row->user_id)
+                ->where('month', $month)
+                ->where('year', $year)
+                ->first();
+
+            // Never touch a month that is already finalised.
+            if ($target && $target->isPosted()) {
+                $skipped++;
+                continue;
+            }
+
+            $values = [
+                'basic_salary'     => $row->basic_salary,
+                'extra_load'       => $row->extra_load,
+                'invigilation'     => $row->invigilation,
+                't_payment'        => $row->t_payment,
+                'eidi'             => $row->eidi,
+                'increment'        => $row->increment,
+                'other_earnings'   => $row->other_earnings,
+
+                'extra_leaves'     => $row->extra_leaves,
+                'income_tax'       => $row->income_tax,
+                'loan_deduction'   => $row->loan_deduction,
+                'insurance'        => $row->insurance,
+                'other_deductions' => $row->other_deductions,
+
+                'cheque_amount'    => $row->cheque_amount,
+                'custom_values'    => $row->custom_values,
+            ];
+
+            if ($target) {
+                $target->update($values);
+            } else {
+                Salary::create($values + [
+                    'user_id' => $row->user_id,
+                    'month'   => $month,
+                    'year'    => $year,
+                    'status'  => 'draft',
+                ]);
+            }
+
+            $copied++;
+        }
+
+        $message = "Copied {$copied} row(s) from ".$from->format('F Y').'.';
+
+        if ($skipped) {
+            $message .= " {$skipped} already-posted row(s) were left unchanged.";
+        }
+
+        return redirect()->route('admin.salary.sheet', [
+            'month'    => $month,
+            'year'     => $year,
+            'category' => $request->category,
+        ])->with('success', $message);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Post the whole sheet (loan deduction + employee email)
+    |--------------------------------------------------------------------------
+    */
+    public function sheetPost(Request $request)
+    {
+        $request->validate([
+            'month'    => 'required|integer|min:1|max:12',
+            'year'     => 'required|integer|min:2000|max:2100',
+            'category' => 'required|in:teacher,staff',
+        ]);
+
+        $userIds = User::where('role', 'employee')
+            ->where('salary_category', $request->category)
+            ->pluck('id');
+
+        $drafts = Salary::with('user')
+            ->where('month', $request->month)
+            ->where('year', $request->year)
+            ->whereIn('user_id', $userIds)
+            ->where('status', 'draft')
+            ->get();
+
+        if ($drafts->isEmpty()) {
+            return back()->with('error', 'There are no draft salaries to post for this sheet.');
+        }
+
+        $posted = 0;
+        $failedMail = 0;
+
+        foreach ($drafts as $salary) {
+
+            // Handles the loan ledger entry and flips the row to posted.
+            $this->processLoanDeductionAndPost($salary);
+
+            try {
+                \Mail::to($salary->user->email)
+                    ->queue(new \App\Mail\SalaryPostedMail($salary));
+            } catch (\Exception $e) {
+                $failedMail++;
+                \Log::error('Salary post mail failed: '.$e->getMessage());
+            }
+
+            $posted++;
+        }
+
+        $message = "Posted {$posted} salaries. Employees can now see them in their portal.";
+
+        if ($failedMail) {
+            $message .= " {$failedMail} notification email(s) could not be sent - check the mail log.";
+        }
+
+        return redirect()->route('admin.salary.sheet', [
+            'month'    => $request->month,
+            'year'     => $request->year,
+            'category' => $request->category,
+        ])->with('success', $message);
     }
 
     /*
@@ -230,6 +391,10 @@ public function employeeIndex()
 
         $month = (int) $request->month;
         $year  = (int) $request->year;
+
+        $columnIds = \App\Models\SalaryColumn::forCategory($request->category)
+            ->pluck('id')
+            ->all();
 
         $saved   = 0;
         $skipped = 0;
@@ -267,10 +432,24 @@ public function employeeIndex()
                 'cheque_amount'    => $amount('cheque_amount'),
             ];
 
+            // Admin-defined columns arrive as rows[i][custom][columnId].
+            $custom = [];
+
+            foreach ($columnIds as $columnId) {
+                $raw = $row['custom'][$columnId] ?? null;
+                $val = round((float) str_replace(',', '', $raw ?? 0), 2);
+
+                if ($val != 0) {
+                    $custom[$columnId] = $val;
+                }
+            }
+
             // Skip untouched rows so blank employees don't create empty records.
-            if (!$existing && collect($values)->every(fn ($v) => $v == 0)) {
+            if (!$existing && empty($custom) && collect($values)->every(fn ($v) => $v == 0)) {
                 continue;
             }
+
+            $values['custom_values'] = $custom ?: null;
 
             if ($existing) {
                 $existing->update($values);

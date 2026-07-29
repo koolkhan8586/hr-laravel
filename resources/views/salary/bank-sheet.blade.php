@@ -62,6 +62,13 @@
 
         {{-- HEADER --}}
         <div class="text-center mb-4">
+            <div class="flex items-center justify-center gap-3 mb-2">
+                <img src="{{ asset('uol-logo.png') }}" alt="" style="height:46px"
+                     onerror="this.style.display='none'">
+                <div class="font-bold text-lg">
+                    {{ \App\Models\AppSetting::get('org_name', 'The University of Lahore (City Campus)') }}
+                </div>
+            </div>
             <h3 class="font-bold text-lg underline">ANNEXURE-A</h3>
             <p class="font-semibold mt-2">Salaries to be Credited</p>
             <p class="text-sm">
