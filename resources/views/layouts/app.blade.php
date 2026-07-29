@@ -19,6 +19,99 @@
 
 <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
+{{-- Shared print rules: strip the app chrome so only the page content prints --}}
+<style>
+@media print {
+
+    /* App chrome never belongs on paper */
+    aside,
+    header,
+    .no-print,
+    .fixed {
+        display: none !important;
+    }
+
+    html, body {
+        background: #fff !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* Let the content use the full sheet instead of the flex column */
+    body > div,
+    body > div > div {
+        display: block !important;
+        min-height: 0 !important;
+    }
+
+    main {
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+        max-width: none !important;
+        flex: none !important;
+    }
+
+    .print-area,
+    .max-w-7xl,
+    .max-w-6xl,
+    .max-w-5xl,
+    .max-w-full {
+        max-width: none !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+    }
+
+    /* Tables must not be clipped, and headers repeat on every page */
+    .overflow-x-auto {
+        overflow: visible !important;
+    }
+
+    table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        page-break-inside: auto;
+    }
+
+    thead {
+        display: table-header-group;
+    }
+
+    tfoot {
+        display: table-footer-group;
+    }
+
+    tr, td, th {
+        page-break-inside: avoid;
+    }
+
+    th, td {
+        border: 1px solid #999 !important;
+    }
+
+    /* Form fields print as plain values */
+    input, select, textarea {
+        border: none !important;
+        background: transparent !important;
+        -webkit-appearance: none;
+        appearance: none;
+        padding: 0 !important;
+    }
+
+    input[type=number]::-webkit-outer-spin-button,
+    input[type=number]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    a[href]:after {
+        content: none !important;
+    }
+}
+</style>
+
 </head>
 
 <body class="font-sans antialiased bg-gray-100">
@@ -201,6 +294,14 @@ Salary Sheet
 
 <a href="{{ route('admin.salary.bank.sheet') }}" class="block py-1 hover:text-blue-600">
 Bank Sheet
+</a>
+
+<a href="{{ route('admin.salary.tax') }}" class="block py-1 hover:text-blue-600">
+Tax Calculate
+</a>
+
+<a href="{{ route('admin.salary.columns') }}" class="block py-1 hover:text-blue-600">
+Sheet Columns
 </a>
 
 </div>

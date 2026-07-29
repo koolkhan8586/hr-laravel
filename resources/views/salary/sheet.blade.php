@@ -1,8 +1,21 @@
 <x-app-layout>
 
-<div class="max-w-full mx-auto py-6 px-4">
+@php
+    $monthName  = \Carbon\Carbon::create()->month($month)->format('F');
+    $sheetLabel = $category === 'teacher' ? 'Teachers' : 'Staff';
+    $orgName    = \App\Models\AppSetting::get('org_name', 'The University of Lahore (City Campus)');
 
-    <div class="flex justify-between items-start mb-4 flex-wrap gap-3">
+    $earningColumns   = $columns->where('type', 'earning');
+    $deductionColumns = $columns->where('type', 'deduction');
+
+    $postedCount = $users->filter(fn($u) => ($existing[$u->id] ?? null)?->isPosted())->count();
+    $draftCount  = $users->filter(fn($u) => ($existing[$u->id] ?? null) && !$existing[$u->id]->isPosted())->count();
+@endphp
+
+<div class="max-w-full mx-auto py-6 px-4 print-area">
+
+    {{-- ================= SCREEN TOOLBAR ================= --}}
+    <div class="flex justify-between items-start mb-4 flex-wrap gap-3 no-print">
 
         <div>
             <h2 class="text-2xl font-bold text-gray-800">Salary Sheet</h2>
@@ -11,33 +24,46 @@
             </p>
         </div>
 
-        <div class="flex gap-2">
+        <div class="flex gap-2 flex-wrap">
+
+            <a href="{{ route('admin.salary.columns') }}"
+               class="bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded text-sm">
+                Columns
+            </a>
+
+            <a href="{{ route('admin.salary.tax') }}"
+               class="bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded text-sm">
+                Tax Rules
+            </a>
+
             <a href="{{ route('admin.salary.bank.sheet', ['month' => $month, 'year' => $year]) }}"
-               class="bg-gray-700 text-white px-4 py-2 rounded text-sm">
+               class="bg-gray-700 text-white px-3 py-2 rounded text-sm">
                 Bank Sheet
             </a>
+
             <button type="button" onclick="window.print()"
-                    class="bg-blue-600 text-white px-4 py-2 rounded text-sm">
+                    class="bg-blue-600 text-white px-3 py-2 rounded text-sm">
                 Print
             </button>
+
         </div>
 
     </div>
 
     @if(session('success'))
-    <div class="bg-green-100 text-green-700 p-3 rounded mb-4">
-        {{ session('success') }}
-    </div>
+    <div class="bg-green-100 text-green-700 p-3 rounded mb-4 no-print">{{ session('success') }}</div>
+    @endif
+
+    @if(session('error'))
+    <div class="bg-red-100 text-red-700 p-3 rounded mb-4 no-print">{{ session('error') }}</div>
     @endif
 
     @if($errors->any())
-    <div class="bg-red-100 text-red-700 p-3 rounded mb-4">
-        {{ $errors->first() }}
-    </div>
+    <div class="bg-red-100 text-red-700 p-3 rounded mb-4 no-print">{{ $errors->first() }}</div>
     @endif
 
-    {{-- PERIOD / CATEGORY SELECTOR --}}
-    <form method="GET" class="flex gap-3 mb-5 items-end flex-wrap bg-white p-4 rounded shadow">
+    {{-- ================= PERIOD SELECTOR ================= --}}
+    <form method="GET" class="flex gap-3 mb-4 items-end flex-wrap bg-white p-4 rounded shadow no-print">
 
         <div>
             <label class="block text-xs text-gray-500 mb-1">Month</label>
@@ -71,12 +97,61 @@
     @if($users->isEmpty())
 
     <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded">
-        No employees are marked as <strong>{{ ucfirst($category) }}</strong> yet.
+        No employees are marked as <strong>{{ $sheetLabel }}</strong> yet.
         Set each employee's Salary Sheet field from
         <a href="{{ route('admin.staff.index') }}" class="underline font-semibold">Staff Management</a>.
     </div>
 
     @else
+
+    {{-- ================= SHEET ACTIONS (outside the main form) ================= --}}
+    <div class="flex gap-2 mb-4 flex-wrap items-center no-print">
+
+        <form method="POST" action="{{ route('admin.salary.sheet.copy') }}"
+              onsubmit="return confirm('Copy last month\'s figures into {{ $monthName }} {{ $year }}? Rows already posted will be left alone.');">
+            @csrf
+            <input type="hidden" name="month" value="{{ $month }}">
+            <input type="hidden" name="year" value="{{ $year }}">
+            <input type="hidden" name="category" value="{{ $category }}">
+            <button class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm">
+                Copy Last Month
+            </button>
+        </form>
+
+        <button type="button" id="autoTaxBtn"
+                class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded text-sm">
+            Auto-calculate Tax
+        </button>
+
+        <form method="POST" action="{{ route('admin.salary.sheet.post') }}"
+              onsubmit="return confirm('Post {{ $draftCount }} draft salary row(s)? This deducts loan instalments and emails each employee.');">
+            @csrf
+            <input type="hidden" name="month" value="{{ $month }}">
+            <input type="hidden" name="year" value="{{ $year }}">
+            <input type="hidden" name="category" value="{{ $category }}">
+            <button class="bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded text-sm"
+                    {{ $draftCount === 0 ? 'disabled' : '' }}
+                    style="{{ $draftCount === 0 ? 'opacity:.5;cursor:not-allowed' : '' }}">
+                Post Sheet ({{ $draftCount }})
+            </button>
+        </form>
+
+        <span class="text-xs text-gray-500">
+            {{ $postedCount }} row(s) already posted.
+        </span>
+
+    </div>
+
+    {{-- ================= PRINT LETTERHEAD ================= --}}
+    <div class="sheet-header text-center mb-3">
+        <div class="flex items-center justify-center gap-3">
+            <img src="{{ asset('uol-logo.png') }}" alt="" style="height:46px" onerror="this.style.display='none'">
+            <div>
+                <div class="font-bold text-lg">{{ $orgName }}</div>
+                <div class="text-sm">Salary Sheet {{ $monthName }} {{ $year }} &mdash; {{ $sheetLabel }}</div>
+            </div>
+        </div>
+    </div>
 
     <form method="POST" action="{{ route('admin.salary.sheet.store') }}">
     @csrf
@@ -90,12 +165,6 @@
     <table class="min-w-full text-xs border" id="salarySheet">
 
         <thead>
-            <tr class="bg-gray-100 text-center">
-                <th class="border p-2" colspan="20">
-                    Salary Sheet {{ \Carbon\Carbon::create()->month($month)->format('F') }} {{ $year }}
-                    &mdash; {{ $category === 'teacher' ? 'Teachers' : 'Staff' }}
-                </th>
-            </tr>
             <tr class="bg-gray-200">
                 <th class="border p-2">Sr.</th>
                 <th class="border p-2 text-left">Code</th>
@@ -110,6 +179,9 @@
                 @endif
                 <th class="border p-2 bg-green-50">Eidi</th>
                 <th class="border p-2 bg-green-50">Increment</th>
+                @foreach($earningColumns as $col)
+                <th class="border p-2 bg-green-50">{{ $col->name }}</th>
+                @endforeach
                 <th class="border p-2 bg-green-100 font-bold">Total Addition</th>
 
                 <th class="border p-2 bg-red-50">Extra Leaves</th>
@@ -117,10 +189,13 @@
                 <th class="border p-2 bg-red-50">Loan</th>
                 <th class="border p-2 bg-red-50">Insurance</th>
                 <th class="border p-2 bg-red-50">Others</th>
+                @foreach($deductionColumns as $col)
+                <th class="border p-2 bg-red-50">{{ $col->name }}</th>
+                @endforeach
                 <th class="border p-2 bg-red-100 font-bold">Total Deduction</th>
 
                 <th class="border p-2 bg-blue-100 font-bold">Total Salary Paid</th>
-                <th class="border p-2 bg-yellow-50">Amount (Cheque)</th>
+                <th class="border p-2 bg-yellow-50">Amount</th>
                 <th class="border p-2">Sign</th>
             </tr>
         </thead>
@@ -129,11 +204,13 @@
 
         @foreach($users as $i => $user)
         @php
-            $row = $existing[$user->id] ?? null;
+            $row    = $existing[$user->id] ?? null;
             $posted = $row && $row->isPosted();
+            $ro     = $posted ? 'readonly' : '';
+            $roCls  = $posted ? 'bg-gray-100' : '';
         @endphp
 
-        <tr class="salary-row {{ $posted ? 'bg-gray-100' : '' }}">
+        <tr class="salary-row {{ $posted ? 'bg-gray-50' : '' }}">
 
             <td class="border p-1 text-center">{{ $i + 1 }}</td>
 
@@ -145,7 +222,7 @@
             <td class="border p-1 whitespace-nowrap">
                 {{ $user->name }}
                 @if($posted)
-                <span class="text-[10px] text-white bg-gray-500 px-1 rounded">POSTED</span>
+                <span class="text-[10px] text-white bg-gray-500 px-1 rounded no-print">POSTED</span>
                 @endif
             </td>
 
@@ -156,21 +233,17 @@
             {{-- EARNINGS --}}
             @foreach(['basic_salary','extra_load','invigilation'] as $field)
             <td class="border p-0">
-                <input type="number" step="0.01" min="0"
-                       name="rows[{{ $i }}][{{ $field }}]"
-                       value="{{ $row->$field ?? '' }}"
-                       {{ $posted ? 'readonly' : '' }}
-                       class="earning w-24 p-1 text-right border-0 focus:ring-1 focus:ring-blue-400 {{ $posted ? 'bg-gray-100' : '' }}">
+                <input type="number" step="0.01" min="0" data-col="{{ $field }}"
+                       name="rows[{{ $i }}][{{ $field }}]" value="{{ $row->$field ?? '' }}" {{ $ro }}
+                       class="earning w-24 p-1 text-right border-0 {{ $roCls }}">
             </td>
             @endforeach
 
             @if($category === 'teacher')
             <td class="border p-0">
-                <input type="number" step="0.01" min="0"
-                       name="rows[{{ $i }}][t_payment]"
-                       value="{{ $row->t_payment ?? '' }}"
-                       {{ $posted ? 'readonly' : '' }}
-                       class="earning w-24 p-1 text-right border-0 focus:ring-1 focus:ring-blue-400 {{ $posted ? 'bg-gray-100' : '' }}">
+                <input type="number" step="0.01" min="0" data-col="t_payment"
+                       name="rows[{{ $i }}][t_payment]" value="{{ $row->t_payment ?? '' }}" {{ $ro }}
+                       class="earning w-24 p-1 text-right border-0 {{ $roCls }}">
             </td>
             @else
             <input type="hidden" name="rows[{{ $i }}][t_payment]" value="{{ $row->t_payment ?? 0 }}">
@@ -178,24 +251,50 @@
 
             @foreach(['eidi','increment'] as $field)
             <td class="border p-0">
-                <input type="number" step="0.01" min="0"
-                       name="rows[{{ $i }}][{{ $field }}]"
-                       value="{{ $row->$field ?? '' }}"
-                       {{ $posted ? 'readonly' : '' }}
-                       class="earning w-24 p-1 text-right border-0 focus:ring-1 focus:ring-blue-400 {{ $posted ? 'bg-gray-100' : '' }}">
+                <input type="number" step="0.01" min="0" data-col="{{ $field }}"
+                       name="rows[{{ $i }}][{{ $field }}]" value="{{ $row->$field ?? '' }}" {{ $ro }}
+                       class="earning w-24 p-1 text-right border-0 {{ $roCls }}">
+            </td>
+            @endforeach
+
+            @foreach($earningColumns as $col)
+            <td class="border p-0">
+                <input type="number" step="0.01" min="0" data-col="custom_{{ $col->id }}"
+                       name="rows[{{ $i }}][custom][{{ $col->id }}]"
+                       value="{{ $row && $row->customValue($col->id) != 0 ? $row->customValue($col->id) : '' }}" {{ $ro }}
+                       class="earning w-24 p-1 text-right border-0 {{ $roCls }}">
             </td>
             @endforeach
 
             <td class="border p-1 text-right font-bold bg-green-50 total-addition">0</td>
 
             {{-- DEDUCTIONS --}}
-            @foreach(['extra_leaves','income_tax','loan_deduction','insurance','other_deductions'] as $field)
             <td class="border p-0">
-                <input type="number" step="0.01" min="0"
-                       name="rows[{{ $i }}][{{ $field }}]"
-                       value="{{ $row->$field ?? '' }}"
-                       {{ $posted ? 'readonly' : '' }}
-                       class="deduction w-24 p-1 text-right border-0 focus:ring-1 focus:ring-blue-400 {{ $posted ? 'bg-gray-100' : '' }}">
+                <input type="number" step="0.01" min="0" data-col="extra_leaves"
+                       name="rows[{{ $i }}][extra_leaves]" value="{{ $row->extra_leaves ?? '' }}" {{ $ro }}
+                       class="deduction w-24 p-1 text-right border-0 {{ $roCls }}">
+            </td>
+
+            <td class="border p-0">
+                <input type="number" step="0.01" min="0" data-col="income_tax"
+                       name="rows[{{ $i }}][income_tax]" value="{{ $row->income_tax ?? '' }}" {{ $ro }}
+                       class="deduction tax-input w-24 p-1 text-right border-0 {{ $roCls }}">
+            </td>
+
+            @foreach(['loan_deduction','insurance','other_deductions'] as $field)
+            <td class="border p-0">
+                <input type="number" step="0.01" min="0" data-col="{{ $field }}"
+                       name="rows[{{ $i }}][{{ $field }}]" value="{{ $row->$field ?? '' }}" {{ $ro }}
+                       class="deduction w-24 p-1 text-right border-0 {{ $roCls }}">
+            </td>
+            @endforeach
+
+            @foreach($deductionColumns as $col)
+            <td class="border p-0">
+                <input type="number" step="0.01" min="0" data-col="custom_{{ $col->id }}"
+                       name="rows[{{ $i }}][custom][{{ $col->id }}]"
+                       value="{{ $row && $row->customValue($col->id) != 0 ? $row->customValue($col->id) : '' }}" {{ $ro }}
+                       class="deduction w-24 p-1 text-right border-0 {{ $roCls }}">
             </td>
             @endforeach
 
@@ -204,11 +303,9 @@
             <td class="border p-1 text-right font-bold bg-blue-50 net-salary">0</td>
 
             <td class="border p-0">
-                <input type="number" step="0.01" min="0"
-                       name="rows[{{ $i }}][cheque_amount]"
-                       value="{{ $row->cheque_amount ?? '' }}"
-                       {{ $posted ? 'readonly' : '' }}
-                       class="cheque w-24 p-1 text-right border-0 bg-yellow-50 focus:ring-1 focus:ring-blue-400"
+                <input type="number" step="0.01" min="0" data-col="cheque_amount"
+                       name="rows[{{ $i }}][cheque_amount]" value="{{ $row->cheque_amount ?? '' }}" {{ $ro }}
+                       class="cheque w-24 p-1 text-right border-0 bg-yellow-50"
                        title="Leave blank if paid through the bank">
             </td>
 
@@ -222,23 +319,31 @@
         <tfoot class="bg-gray-100 font-bold">
             <tr>
                 <td class="border p-2 text-right" colspan="4">TOTAL</td>
-                <td class="border p-2 text-right" id="sumBasic">0</td>
-                <td class="border p-2 text-right" id="sumExtraLoad">0</td>
-                <td class="border p-2 text-right" id="sumInvigilation">0</td>
+                <td class="border p-2 text-right" data-sum="basic_salary">0</td>
+                <td class="border p-2 text-right" data-sum="extra_load">0</td>
+                <td class="border p-2 text-right" data-sum="invigilation">0</td>
                 @if($category === 'teacher')
-                <td class="border p-2 text-right" id="sumTPayment">0</td>
+                <td class="border p-2 text-right" data-sum="t_payment">0</td>
                 @endif
-                <td class="border p-2 text-right" id="sumEidi">0</td>
-                <td class="border p-2 text-right" id="sumIncrement">0</td>
+                <td class="border p-2 text-right" data-sum="eidi">0</td>
+                <td class="border p-2 text-right" data-sum="increment">0</td>
+                @foreach($earningColumns as $col)
+                <td class="border p-2 text-right" data-sum="custom_{{ $col->id }}">0</td>
+                @endforeach
                 <td class="border p-2 text-right bg-green-100" id="sumAddition">0</td>
-                <td class="border p-2 text-right" id="sumExtraLeaves">0</td>
-                <td class="border p-2 text-right" id="sumTax">0</td>
-                <td class="border p-2 text-right" id="sumLoan">0</td>
-                <td class="border p-2 text-right" id="sumInsurance">0</td>
-                <td class="border p-2 text-right" id="sumOthers">0</td>
+
+                <td class="border p-2 text-right" data-sum="extra_leaves">0</td>
+                <td class="border p-2 text-right" data-sum="income_tax">0</td>
+                <td class="border p-2 text-right" data-sum="loan_deduction">0</td>
+                <td class="border p-2 text-right" data-sum="insurance">0</td>
+                <td class="border p-2 text-right" data-sum="other_deductions">0</td>
+                @foreach($deductionColumns as $col)
+                <td class="border p-2 text-right" data-sum="custom_{{ $col->id }}">0</td>
+                @endforeach
                 <td class="border p-2 text-right bg-red-100" id="sumDeduction">0</td>
+
                 <td class="border p-2 text-right bg-blue-100" id="sumNet">0</td>
-                <td class="border p-2 text-right bg-yellow-100" id="sumCheque">0</td>
+                <td class="border p-2 text-right bg-yellow-100" data-sum="cheque_amount">0</td>
                 <td class="border p-2"></td>
             </tr>
         </tfoot>
@@ -249,7 +354,7 @@
 
     {{-- RECONCILIATION --}}
     <div class="mt-4 flex justify-end">
-        <table class="text-sm bg-white rounded shadow">
+        <table class="text-sm bg-white rounded shadow border">
             <tr class="border-b">
                 <td class="px-4 py-2 text-gray-600">Total Salary</td>
                 <td class="px-4 py-2 text-right font-bold" id="recTotal">0</td>
@@ -265,12 +370,19 @@
         </table>
     </div>
 
-    <div class="mt-5">
+    {{-- SIGN OFF (print) --}}
+    <div class="sign-off justify-between mt-10 text-sm">
+        <div>Prepared By: _______________</div>
+        <div>Checked By: _______________</div>
+        <div>Approved By: _______________</div>
+    </div>
+
+    <div class="mt-5 no-print">
         <button class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded">
             Save Salary Sheet
         </button>
         <span class="text-xs text-gray-500 ml-3">
-            Saves as draft. Post them from Salary Management when finalised.
+            Saves as draft. Use <strong>Post Sheet</strong> once the figures are final.
         </span>
     </div>
 
@@ -280,13 +392,30 @@
 
 </div>
 
+<style>
+    .sheet-header { display: none; }
+    .sign-off { display: none; }
+
+@media print {
+    .sheet-header { display: block !important; }
+    .sign-off { display: flex !important; }
+
+    @page { size: A4 landscape; margin: 8mm; }
+
+    #salarySheet { font-size: 8px !important; }
+    #salarySheet th, #salarySheet td { padding: 2px !important; }
+    #salarySheet input { width: auto !important; font-size: 8px !important; text-align: right; }
+}
+</style>
+
 <script>
 (function () {
 
-    const fmt = n => n.toLocaleString(undefined, {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2
-    });
+    const TAX_SLABS = @json($taxSlabs);
+    const TAX_BASIS = @json($taxBasis);
+
+    const fmt = n => (Math.round(n * 100) / 100)
+        .toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
     const num = el => {
         const v = parseFloat(el.value);
@@ -317,47 +446,85 @@
             const chq = row.querySelector('.cheque');
             if (chq) grandCheque += num(chq);
 
-            // per-column totals
-            row.querySelectorAll('input[type=number]').forEach(el => {
-                const m = el.name.match(/\[(\w+)\]$/);
-                if (!m) return;
-                colSums[m[1]] = (colSums[m[1]] || 0) + num(el);
+            row.querySelectorAll('input[data-col]').forEach(el => {
+                const k = el.dataset.col;
+                colSums[k] = (colSums[k] || 0) + num(el);
             });
         });
 
-        const put = (id, val) => {
-            const el = document.getElementById(id);
-            if (el) el.textContent = fmt(val || 0);
-        };
+        document.querySelectorAll('[data-sum]').forEach(cell => {
+            cell.textContent = fmt(colSums[cell.dataset.sum] || 0);
+        });
 
-        put('sumBasic',        colSums.basic_salary);
-        put('sumExtraLoad',    colSums.extra_load);
-        put('sumInvigilation', colSums.invigilation);
-        put('sumTPayment',     colSums.t_payment);
-        put('sumEidi',         colSums.eidi);
-        put('sumIncrement',    colSums.increment);
-        put('sumExtraLeaves',  colSums.extra_leaves);
-        put('sumTax',          colSums.income_tax);
-        put('sumLoan',         colSums.loan_deduction);
-        put('sumInsurance',    colSums.insurance);
-        put('sumOthers',       colSums.other_deductions);
-        put('sumCheque',       colSums.cheque_amount);
+        let totalAddition = 0, totalDeduction = 0;
+        document.querySelectorAll('.salary-row').forEach(row => {
+            row.querySelectorAll('.earning').forEach(el => totalAddition += num(el));
+            row.querySelectorAll('.deduction').forEach(el => totalDeduction += num(el));
+        });
 
-        const totalAddition = (colSums.basic_salary || 0) + (colSums.extra_load || 0)
-            + (colSums.invigilation || 0) + (colSums.t_payment || 0)
-            + (colSums.eidi || 0) + (colSums.increment || 0);
+        document.getElementById('sumAddition').textContent  = fmt(totalAddition);
+        document.getElementById('sumDeduction').textContent = fmt(totalDeduction);
+        document.getElementById('sumNet').textContent       = fmt(grandNet);
 
-        const totalDeduction = (colSums.extra_leaves || 0) + (colSums.income_tax || 0)
-            + (colSums.loan_deduction || 0) + (colSums.insurance || 0)
-            + (colSums.other_deductions || 0);
+        document.getElementById('recTotal').textContent  = fmt(grandNet);
+        document.getElementById('recCheque').textContent = fmt(grandCheque);
+        document.getElementById('recBank').textContent   = fmt(grandNet - grandCheque);
+    }
 
-        put('sumAddition',  totalAddition);
-        put('sumDeduction', totalDeduction);
-        put('sumNet',       grandNet);
+    /* ---------- Tax from the configured slabs ---------- */
 
-        put('recTotal',  grandNet);
-        put('recCheque', grandCheque);
-        put('recBank',   grandNet - grandCheque);
+    function taxFor(income) {
+        if (income <= 0) return 0;
+
+        for (const s of TAX_SLABS) {
+            const from = parseFloat(s.from_amount);
+            const to   = s.to_amount === null ? null : parseFloat(s.to_amount);
+
+            if (income > from && (to === null || income <= to)) {
+                const tax = parseFloat(s.fixed_amount)
+                    + ((income - from) * parseFloat(s.percentage) / 100);
+                return Math.max(0, Math.round(tax * 100) / 100);
+            }
+        }
+        return 0;
+    }
+
+    function monthlyTax(monthlyIncome) {
+        if (monthlyIncome <= 0) return 0;
+        if (TAX_BASIS === 'monthly') return taxFor(monthlyIncome);
+        return Math.round((taxFor(monthlyIncome * 12) / 12) * 100) / 100;
+    }
+
+    const autoBtn = document.getElementById('autoTaxBtn');
+
+    if (autoBtn) {
+        autoBtn.addEventListener('click', function () {
+
+            if (!TAX_SLABS.length) {
+                alert('No tax slabs are configured yet. Add them under Tax Rules first.');
+                return;
+            }
+
+            if (!confirm('Overwrite the Tax column using the configured slabs? You can still edit any value afterwards.')) {
+                return;
+            }
+
+            let changed = 0;
+
+            document.querySelectorAll('.salary-row').forEach(row => {
+                const taxInput = row.querySelector('.tax-input');
+                if (!taxInput || taxInput.readOnly) return;
+
+                let addition = 0;
+                row.querySelectorAll('.earning').forEach(el => addition += num(el));
+
+                taxInput.value = monthlyTax(addition) || '';
+                changed++;
+            });
+
+            recalc();
+            alert(changed + ' row(s) updated. Adjust any of them by hand if needed, then Save.');
+        });
     }
 
     document.querySelectorAll('#salarySheet input[type=number]')

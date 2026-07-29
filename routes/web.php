@@ -17,6 +17,7 @@ use App\Http\Controllers\WorkFromHomeController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\OfficeLocationController;
 use App\Http\Controllers\LeaveApprovalEmailController;
+use App\Http\Controllers\SalarySettingController;
 
 
 /*
@@ -367,7 +368,21 @@ Route::delete('/leave-approval-emails/{id}', [LeaveApprovalEmailController::clas
     // Kept off the /salary/{id} prefix so they can't be swallowed by it.
     Route::get('/salary-sheet', [SalaryController::class,'sheet'])->name('salary.sheet');
     Route::post('/salary-sheet', [SalaryController::class,'sheetStore'])->name('salary.sheet.store');
+    Route::post('/salary-sheet/copy-previous', [SalaryController::class,'sheetCopyPrevious'])->name('salary.sheet.copy');
+    Route::post('/salary-sheet/post', [SalaryController::class,'sheetPost'])->name('salary.sheet.post');
     Route::get('/bank-sheet', [SalaryController::class,'bankSheet'])->name('salary.bank.sheet');
+
+    // Salary sheet settings: custom columns + tax rules
+    Route::get('/salary-columns', [SalarySettingController::class,'columns'])->name('salary.columns');
+    Route::post('/salary-columns', [SalarySettingController::class,'storeColumn'])->name('salary.columns.store');
+    Route::put('/salary-columns/{id}', [SalarySettingController::class,'updateColumn'])->name('salary.columns.update');
+    Route::delete('/salary-columns/{id}', [SalarySettingController::class,'destroyColumn'])->name('salary.columns.destroy');
+    Route::post('/salary-sheet-header', [SalarySettingController::class,'updateHeader'])->name('salary.header.update');
+
+    Route::get('/tax-calculate', [SalarySettingController::class,'tax'])->name('salary.tax');
+    Route::post('/tax-calculate', [SalarySettingController::class,'storeTaxSlab'])->name('salary.tax.store');
+    Route::delete('/tax-calculate/{id}', [SalarySettingController::class,'destroyTaxSlab'])->name('salary.tax.destroy');
+    Route::post('/tax-calculate/basis', [SalarySettingController::class,'updateTaxBasis'])->name('salary.tax.basis');
 
     Route::get('/salary/create', [SalaryController::class,'create'])->name('salary.create');
     Route::post('/salary/store', [SalaryController::class,'store'])->name('salary.store');
