@@ -784,20 +784,62 @@ public function employeeIndex()
             'month' => 'required|integer|min:1|max:12',
         ]);
 
-        $year  = (int) $request->year;
-        $month = (int) $request->month;
+        return $this->writeTaxFromTaxSheet(
+            (int) $request->year,
+            (int) $request->month
+        );
+    }
 
-        $medicalDivisor = (float) \App\Models\AppSetting::get('tax_medical_divisor', 1.1);
+    /**
+     * Monthly deduction the tax sheet works out for one employee.
+     * Shared so the tax sheet and the salary sheet can never disagree.
+     *
+     * @return array{monthly: float, clamped: bool}
+     */
+    private function monthlyTaxFromSheet(\App\Models\TaxSheet $sheet): array
+    {
+        $divisor = (float) \App\Models\AppSetting::get('tax_medical_divisor', 1.1);
 
-        $sheets = \App\Models\TaxSheet::where('year', $year)->get();
+        $taxable = $divisor > 0
+            ? $sheet->annual_salary / $divisor
+            : $sheet->annual_salary;
+
+        $net = \App\Models\TaxSlab::annualTaxFor($taxable) - $sheet->tax_adjustment;
+
+        // An adjustment larger than the tax would otherwise write a negative
+        // deduction, which would quietly increase net pay.
+        $clamped = $net < 0;
+
+        if ($clamped) {
+            $net = 0;
+        }
+
+        return ['monthly' => round($net / 12, 2), 'clamped' => $clamped];
+    }
+
+    /**
+     * Write the tax sheet's monthly figure onto a month's salary rows.
+     * Optionally limited to one sheet category.
+     */
+    private function writeTaxFromTaxSheet(int $year, int $month, ?string $category = null)
+    {
+        $sheets = \App\Models\TaxSheet::with('user')->where('year', $year)->get();
 
         if ($sheets->isEmpty()) {
-            return back()->with('error', 'There is no saved tax sheet for '.$year.' yet.');
+            return back()->with('error',
+                'There is no saved tax sheet for '.$year.' yet. Fill in the Tax Sheet and save it first.');
+        }
+
+        if ($category && $category !== 'all') {
+            $sheets = $sheets->filter(
+                fn ($s) => $s->user && $s->user->salary_category === $category
+            );
         }
 
         $applied = 0;
         $skipped = 0;
         $clamped = 0;
+        $noRow   = 0;
 
         foreach ($sheets as $sheet) {
 
@@ -807,6 +849,7 @@ public function employeeIndex()
                 ->first();
 
             if (!$salary) {
+                $noRow++;
                 continue;
             }
 
@@ -816,36 +859,52 @@ public function employeeIndex()
                 continue;
             }
 
-            $taxable = $medicalDivisor > 0
-                ? $sheet->annual_salary / $medicalDivisor
-                : $sheet->annual_salary;
+            $result = $this->monthlyTaxFromSheet($sheet);
 
-            $net = \App\Models\TaxSlab::annualTaxFor($taxable) - $sheet->tax_adjustment;
+            $salary->update(['income_tax' => $result['monthly']]);
 
-            // An adjustment larger than the tax would otherwise write a
-            // negative deduction, which would quietly increase net pay.
-            if ($net < 0) {
-                $net = 0;
+            if ($result['clamped']) {
                 $clamped++;
             }
-
-            $salary->update(['income_tax' => round($net / 12, 2)]);
 
             $applied++;
         }
 
-        $message = "Monthly tax written to {$applied} row(s) on the "
-            .\Carbon\Carbon::create($year, $month, 1)->format('F Y').' salary sheet.';
+        $period = \Carbon\Carbon::create($year, $month, 1)->format('F Y');
+
+        $message = "Tax column updated from the tax sheet for {$applied} employee(s) on {$period}.";
 
         if ($skipped) {
             $message .= " {$skipped} posted row(s) were left unchanged.";
         }
 
         if ($clamped) {
-            $message .= " {$clamped} row(s) had an adjustment larger than the tax due and were written as zero.";
+            $message .= " {$clamped} row(s) had an adjustment larger than the tax due and were set to zero.";
+        }
+
+        if ($noRow) {
+            $message .= " {$noRow} employee(s) on the tax sheet have no salary row for {$period}.";
         }
 
         return back()->with('success', $message);
+    }
+
+    /**
+     * Pull the tax column on the salary sheet from the saved tax sheet.
+     */
+    public function sheetPullTax(Request $request)
+    {
+        $request->validate([
+            'month'    => 'required|integer|min:1|max:12',
+            'year'     => 'required|integer|min:2000|max:2100',
+            'category' => 'required|in:teacher,staff,all',
+        ]);
+
+        return $this->writeTaxFromTaxSheet(
+            (int) $request->year,
+            (int) $request->month,
+            $request->category
+        );
     }
 
     /*

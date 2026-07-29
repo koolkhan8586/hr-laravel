@@ -153,10 +153,21 @@
             </button>
         </form>
 
-        <button type="button" id="autoTaxBtn"
-                class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded text-sm">
-            Auto-calculate Tax
-        </button>
+        <form method="POST" action="{{ route('admin.salary.sheet.pull.tax') }}"
+              onsubmit="return confirm('Replace the Tax column with the figures worked out on the {{ $year }} tax sheet? Posted rows are left alone, and you can still edit any value afterwards.');">
+            @csrf
+            <input type="hidden" name="month" value="{{ $month }}">
+            <input type="hidden" name="year" value="{{ $year }}">
+            <input type="hidden" name="category" value="{{ $category }}">
+            <button class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded text-sm">
+                Update Tax from Tax Sheet
+            </button>
+        </form>
+
+        <a href="{{ route('admin.salary.tax.sheet', ['year' => $year, 'category' => $category, 'source_month' => $month]) }}"
+           class="bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded text-sm">
+            Open Tax Sheet
+        </a>
 
         <form method="POST" action="{{ route('admin.salary.sheet.post') }}"
               onsubmit="return confirm('Post {{ $draftCount }} draft salary row(s)? This deducts loan instalments and emails each employee.');">
@@ -492,9 +503,6 @@
 <script>
 (function () {
 
-    const TAX_SLABS = @json($taxSlabs);
-    const TAX_BASIS = @json($taxBasis);
-
     const fmt = n => (Math.round(n * 100) / 100)
         .toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
@@ -557,62 +565,6 @@
         document.getElementById('recTotal').textContent  = fmt(grandNet);
         document.getElementById('recCheque').textContent = fmt(grandCheque);
         document.getElementById('recBank').textContent   = fmt(grandNet - grandCheque);
-    }
-
-    /* ---------- Tax from the configured slabs ---------- */
-
-    function taxFor(income) {
-        if (income <= 0) return 0;
-
-        for (const s of TAX_SLABS) {
-            const from = parseFloat(s.from_amount);
-            const to   = s.to_amount === null ? null : parseFloat(s.to_amount);
-
-            if (income > from && (to === null || income <= to)) {
-                const tax = parseFloat(s.fixed_amount)
-                    + ((income - from) * parseFloat(s.percentage) / 100);
-                return Math.max(0, Math.round(tax * 100) / 100);
-            }
-        }
-        return 0;
-    }
-
-    function monthlyTax(monthlyIncome) {
-        if (monthlyIncome <= 0) return 0;
-        if (TAX_BASIS === 'monthly') return taxFor(monthlyIncome);
-        return Math.round((taxFor(monthlyIncome * 12) / 12) * 100) / 100;
-    }
-
-    const autoBtn = document.getElementById('autoTaxBtn');
-
-    if (autoBtn) {
-        autoBtn.addEventListener('click', function () {
-
-            if (!TAX_SLABS.length) {
-                alert('No tax slabs are configured yet. Add them under Tax Rules first.');
-                return;
-            }
-
-            if (!confirm('Overwrite the Tax column using the configured slabs? You can still edit any value afterwards.')) {
-                return;
-            }
-
-            let changed = 0;
-
-            document.querySelectorAll('.salary-row').forEach(row => {
-                const taxInput = row.querySelector('.tax-input');
-                if (!taxInput || taxInput.readOnly) return;
-
-                let addition = 0;
-                row.querySelectorAll('.earning').forEach(el => addition += num(el));
-
-                taxInput.value = monthlyTax(addition) || '';
-                changed++;
-            });
-
-            recalc();
-            alert(changed + ' row(s) updated. Adjust any of them by hand if needed, then Save.');
-        });
     }
 
     /* ---------- Blank out zero cells ---------- */
