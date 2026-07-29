@@ -169,6 +169,11 @@
             Hide empty columns
         </label>
 
+        <label class="flex items-center gap-2 text-sm bg-white border border-gray-300 px-3 py-2 rounded cursor-pointer">
+            <input type="checkbox" id="hideZeros" checked>
+            Hide zeros
+        </label>
+
         <span class="text-xs text-gray-500">
             {{ $postedCount }} row(s) already posted.
         </span>
@@ -427,6 +432,33 @@
 
     </form>
 
+    @if($missing->isNotEmpty())
+    <div class="mt-6 bg-amber-50 border border-amber-200 rounded p-4 no-print">
+        <p class="font-semibold text-amber-800 text-sm mb-2">
+            {{ $missing->count() }} employee(s) are not on this sheet
+        </p>
+        <table class="text-xs w-full">
+            <tr class="text-left text-amber-800">
+                <th class="py-1 pr-4">Code</th>
+                <th class="py-1 pr-4">Name</th>
+                <th class="py-1">Why</th>
+            </tr>
+            @foreach($missing as $row)
+            <tr class="text-amber-900 border-t border-amber-100">
+                <td class="py-1 pr-4">{{ $row['user']->employee_code ?: '-' }}</td>
+                <td class="py-1 pr-4">{{ $row['user']->name }}</td>
+                <td class="py-1">{{ $row['reason'] }}</td>
+            </tr>
+            @endforeach
+        </table>
+        <p class="text-xs text-amber-700 mt-2">
+            Change their Salary Sheet or Role on the
+            <a href="{{ route('admin.staff.index') }}" class="underline font-semibold">staff record</a>,
+            or pick <strong>All</strong> above to see everyone at once.
+        </p>
+    </div>
+    @endif
+
     @endif
 
 </div>
@@ -479,9 +511,16 @@
 
             const net = addition - deduction;
 
-            row.querySelector('.total-addition').textContent  = fmt(addition);
-            row.querySelector('.total-deduction').textContent = fmt(deduction);
-            row.querySelector('.net-salary').textContent      = fmt(net);
+            const blankZero = zeroBox && zeroBox.checked;
+            const put = (sel, v) => {
+                const cell = row.querySelector(sel);
+                cell.dataset.raw = fmt(v);
+                cell.textContent = (blankZero && v === 0) ? '' : fmt(v);
+            };
+
+            put('.total-addition',  addition);
+            put('.total-deduction', deduction);
+            put('.net-salary',      net);
 
             grandNet += net;
 
@@ -569,6 +608,42 @@
         });
     }
 
+    /* ---------- Blank out zero cells ---------- */
+
+    const zeroBox = document.getElementById('hideZeros');
+
+    function applyHideZeros() {
+        if (!zeroBox) return;
+
+        const on = zeroBox.checked;
+
+        document.querySelectorAll('#salarySheet input[data-col]').forEach(el => {
+
+            if (on) {
+                // Remember which cells we blanked so they can come back.
+                if (el.value !== '' && num(el) === 0) {
+                    el.dataset.zeroed = '1';
+                    el.value = '';
+                }
+            } else if (el.dataset.zeroed === '1') {
+                el.value = 0;
+                delete el.dataset.zeroed;
+            }
+        });
+
+        // Computed cells follow the same rule.
+        document.querySelectorAll('.total-addition, .total-deduction, .net-salary')
+            .forEach(cell => {
+                const raw = cell.dataset.raw ?? cell.textContent;
+                cell.dataset.raw = raw;
+                cell.textContent = (on && parseFloat(raw.replace(/,/g, '')) === 0) ? '' : raw;
+            });
+    }
+
+    if (zeroBox) {
+        zeroBox.addEventListener('change', () => { applyHideZeros(); recalc(); applyHideEmpty(); });
+    }
+
     /* ---------- Hide columns that are entirely empty ---------- */
 
     const hideBox = document.getElementById('hideEmptyCols');
@@ -621,7 +696,9 @@
     document.querySelectorAll('#salarySheet input[type=number]')
         .forEach(el => el.addEventListener('input', () => { recalc(); applyHideEmpty(); }));
 
+    applyHideZeros();
     recalc();
+    applyHideEmpty();
 })();
 </script>
 

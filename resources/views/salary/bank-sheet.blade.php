@@ -5,6 +5,7 @@
         $next = ($sort === $key && $dir === 'asc') ? 'desc' : 'asc';
         return route('admin.salary.bank.sheet', [
             'month' => $month, 'year' => $year, 'sort' => $key, 'dir' => $next,
+            'show'  => $show,
         ]);
     };
     $arrow = fn ($key) => $sort === $key ? ($dir === 'asc' ? ' ▲' : ' ▼') : '';
@@ -17,7 +18,7 @@
         <div>
             <h2 class="text-2xl font-bold text-gray-800">Bank Sheet</h2>
             <p class="text-sm text-gray-500 mt-1">
-                Everyone on the month's sheet. Cheque-only employees show a dash, and merged salaries appear on the receiving account.
+                Transfers to send to the bank. Merged salaries appear on the receiving account.
             </p>
         </div>
 
@@ -74,6 +75,14 @@
             <select name="dir" class="border px-3 py-2 rounded text-sm">
                 <option value="asc" {{ $dir === 'asc' ? 'selected' : '' }}>Ascending</option>
                 <option value="desc" {{ $dir === 'desc' ? 'selected' : '' }}>Descending</option>
+            </select>
+        </div>
+
+        <div>
+            <label class="block text-xs text-gray-500 mb-1">Show</label>
+            <select name="show" class="border px-3 py-2 rounded text-sm">
+                <option value="payable" {{ $show === 'payable' ? 'selected' : '' }}>Payable only</option>
+                <option value="all" {{ $show === 'all' ? 'selected' : '' }}>Everyone on the sheet</option>
             </select>
         </div>
 
@@ -197,6 +206,41 @@
                 </tr>
             </table>
         </div>
+
+        {{-- LEFT OFF THE SHEET --}}
+        @if($excluded->isNotEmpty())
+        <div class="mt-6 bg-amber-50 border border-amber-200 rounded p-4 no-print">
+            <p class="font-semibold text-amber-800 text-sm mb-2">
+                {{ $excluded->count() }} employee(s) are not on this bank sheet
+            </p>
+            <table class="text-xs w-full">
+                <tr class="text-left text-amber-800">
+                    <th class="py-1 pr-4">Code</th>
+                    <th class="py-1 pr-4">Name</th>
+                    <th class="py-1 pr-4 text-right">Net for the month</th>
+                    <th class="py-1">Why</th>
+                </tr>
+                @foreach($excluded->sortBy(fn($r) => $r['user']->employee_code ?: 'zzzz') as $row)
+                <tr class="text-amber-900 border-t border-amber-100">
+                    <td class="py-1 pr-4">{{ $row['user']->employee_code ?: '-' }}</td>
+                    <td class="py-1 pr-4">{{ $row['user']->name }}</td>
+                    <td class="py-1 pr-4 text-right">{{ number_format($row['total']) }}</td>
+                    <td class="py-1">
+                        @if($row['total'] <= 0)
+                            Nothing to transfer this month
+                        @else
+                            No account number on file
+                        @endif
+                    </td>
+                </tr>
+                @endforeach
+            </table>
+            <p class="text-xs text-amber-700 mt-2">
+                Add an account number on the staff record, or point them at a
+                colleague's account, to bring them onto the sheet.
+            </p>
+        </div>
+        @endif
 
         {{-- SIGN OFF --}}
         <div class="flex justify-between mt-8 text-sm bank-sign">
