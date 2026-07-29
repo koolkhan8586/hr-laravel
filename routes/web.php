@@ -381,7 +381,9 @@ Route::delete('/leave-approval-emails/{id}', [LeaveApprovalEmailController::clas
 
     Route::get('/tax-calculate', [SalarySettingController::class,'tax'])->name('salary.tax');
     Route::post('/tax-calculate', [SalarySettingController::class,'storeTaxSlab'])->name('salary.tax.store');
+    Route::put('/tax-calculate/{id}', [SalarySettingController::class,'updateTaxSlab'])->name('salary.tax.update');
     Route::delete('/tax-calculate/{id}', [SalarySettingController::class,'destroyTaxSlab'])->name('salary.tax.destroy');
+    Route::post('/tax-calculate/load-fbr', [SalarySettingController::class,'loadTaxPreset'])->name('salary.tax.preset');
     Route::post('/tax-calculate/basis', [SalarySettingController::class,'updateTaxBasis'])->name('salary.tax.basis');
 
     Route::get('/salary/create', [SalaryController::class,'create'])->name('salary.create');

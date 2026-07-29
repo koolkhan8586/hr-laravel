@@ -136,11 +136,48 @@ class SalarySettingController extends Controller
         return back()->with('success', 'Tax slab added.');
     }
 
+    public function updateTaxSlab(Request $request, $id)
+    {
+        $slab = TaxSlab::findOrFail($id);
+
+        $request->validate([
+            'from_amount'  => 'required|numeric|min:0',
+            'to_amount'    => 'nullable|numeric|gt:from_amount',
+            'fixed_amount' => 'required|numeric|min:0',
+            'percentage'   => 'required|numeric|min:0|max:100',
+        ], [
+            'to_amount.gt' => 'The upper limit must be greater than the lower limit.',
+        ]);
+
+        $slab->update([
+            'from_amount'  => $request->from_amount,
+            'to_amount'    => $request->to_amount,
+            'fixed_amount' => $request->fixed_amount,
+            'percentage'   => $request->percentage,
+            'is_active'    => $request->boolean('is_active'),
+        ]);
+
+        return back()->with('success', 'Slab updated.');
+    }
+
     public function destroyTaxSlab($id)
     {
         TaxSlab::findOrFail($id)->delete();
 
         return back()->with('success', 'Tax slab removed.');
+    }
+
+    /**
+     * Replace everything with the published FBR slabs.
+     */
+    public function loadTaxPreset()
+    {
+        $count = TaxSlab::loadPreset(TaxSlab::FBR_2026_27);
+
+        AppSetting::put('tax_basis', 'annual');
+
+        return back()->with('success',
+            "Loaded the {$count} FBR 2026-27 slabs as yearly income. Edit any of them below if you need to.");
     }
 
     public function updateTaxBasis(Request $request)
