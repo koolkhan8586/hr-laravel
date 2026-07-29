@@ -305,8 +305,10 @@
             const taxable = DIVISOR > 0 ? annual / DIVISOR : annual;
             const payable = annualTax(taxable);
             const adjust  = num(row.querySelector('.adjustment'));
-            const net     = payable - adjust;
-            const monthly = net / 12;
+            const net = payable - adjust;
+
+            // Deducted as whole rupees, matching what is written to the sheet.
+            const monthly = Math.round(Math.max(0, net) / 12);
 
             row.querySelector('.taxable').textContent = fmt(taxable);
             row.querySelector('.payable').textContent = fmt(payable);
