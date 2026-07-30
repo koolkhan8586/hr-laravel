@@ -1007,6 +1007,85 @@ public function employeeIndex()
 
     /*
     |--------------------------------------------------------------------------
+    | BANK LETTER
+    |--------------------------------------------------------------------------
+    | Covering letter that goes to the bank with the annexure. Prints bare so
+    | it can go onto pre-printed letterhead.
+    */
+    public function bankLetter(Request $request)
+    {
+        $month = (int) ($request->month ?? now()->month);
+        $year  = (int) ($request->year ?? now()->year);
+
+        // Same rule as the bank sheet: only lines the bank can act on.
+        $amount = $this->buildBankRows(
+            Salary::with('user.bankPayee')
+                ->where('month', $month)
+                ->where('year', $year)
+                ->get()
+                ->filter(fn ($s) => $s->user)
+        )
+        ->filter(fn ($r) => $r['total'] > 0 && filled($r['user']->bank_account_no))
+        ->sum('total');
+
+        $amount = round($amount, 2);
+
+        // Typing a figure wins over the bank sheet, for the odd occasion the
+        // letter has to say something else.
+        if ($request->filled('amount')) {
+            $amount = round((float) str_replace(',', '', $request->amount), 2);
+        }
+
+        $letterDate = $request->filled('letter_date')
+            ? \Carbon\Carbon::parse($request->letter_date)
+            : now();
+
+        $chequeDate = $request->filled('cheque_date')
+            ? \Carbon\Carbon::parse($request->cheque_date)
+            : $letterDate->copy();
+
+        $chequeNo = $request->cheque_no ?? '';
+
+        $settings = [
+            'bank'      => \App\Models\AppSetting::get('bank_letter_bank', 'Al Baraka Bank Ltd.'),
+            'branch'    => \App\Models\AppSetting::get('bank_letter_branch', 'Gulberg III Lahore'),
+            'signatory' => \App\Models\AppSetting::get('bank_letter_signatory', ''),
+            'top_mm'    => (int) \App\Models\AppSetting::get('bank_letter_top_mm', 45),
+        ];
+
+        return view('salary.bank-letter', compact(
+            'month',
+            'year',
+            'amount',
+            'letterDate',
+            'chequeDate',
+            'chequeNo',
+            'settings'
+        ));
+    }
+
+    /**
+     * Bank, branch, signatory and the gap left for the letterhead.
+     */
+    public function bankLetterSettings(Request $request)
+    {
+        $request->validate([
+            'bank'      => 'required|string|max:150',
+            'branch'    => 'nullable|string|max:150',
+            'signatory' => 'nullable|string|max:150',
+            'top_mm'    => 'required|integer|min:0|max:150',
+        ]);
+
+        \App\Models\AppSetting::put('bank_letter_bank', $request->bank);
+        \App\Models\AppSetting::put('bank_letter_branch', $request->branch);
+        \App\Models\AppSetting::put('bank_letter_signatory', $request->signatory);
+        \App\Models\AppSetting::put('bank_letter_top_mm', $request->top_mm);
+
+        return back()->with('success', 'Letter details saved.');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
     | Turn a month's salaries into bank sheet lines
     |--------------------------------------------------------------------------
     | One line per account that gets credited. An employee who is set to be

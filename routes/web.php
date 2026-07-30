@@ -417,6 +417,9 @@ Route::middleware(['auth', 'salary'])
     Route::get('/bank-sheet', [SalaryController::class,'bankSheet'])->name('salary.bank.sheet');
     Route::get('/bank-sheet/export', [SalaryController::class,'bankSheetExport'])->name('salary.bank.sheet.export');
 
+    Route::get('/bank-letter', [SalaryController::class,'bankLetter'])->name('salary.bank.letter');
+    Route::post('/bank-letter/settings', [SalaryController::class,'bankLetterSettings'])->name('salary.bank.letter.settings');
+
     // Salary sheet settings: custom columns + tax rules
     Route::get('/salary-columns', [SalarySettingController::class,'columns'])->name('salary.columns');
     Route::post('/salary-columns', [SalarySettingController::class,'storeColumn'])->name('salary.columns.store');
