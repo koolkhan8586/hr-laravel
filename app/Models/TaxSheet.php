@@ -27,7 +27,8 @@ class TaxSheet extends Model
 
     /**
      * Medical allowance is exempt from salary, so only the rest is taxed.
-     * Additional income carries no medical component and is taxed in full.
+     * Additional income is already a yearly figure and carries no medical
+     * component, so it is taxed in full.
      */
     public function taxableIncome(float $medicalDivisor = 1.1): float
     {
@@ -35,6 +36,6 @@ class TaxSheet extends Model
             ? $this->annual_salary / $medicalDivisor
             : $this->annual_salary;
 
-        return round($fromSalary + ($this->additional_income * 12), 2);
+        return round($fromSalary + $this->additional_income, 2);
     }
 }

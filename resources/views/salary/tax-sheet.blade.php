@@ -173,7 +173,7 @@
                     <a href="{{ $sortLink('name') }}" class="hover:underline no-print-link">Employee Name{{ $arrow('name') }}</a>
                 </th>
                 <th class="border p-2 bg-green-50">Salary &amp; Wages<br><span class="font-normal text-[10px]">yearly</span></th>
-                <th class="border p-2 bg-green-50 w-24">Additional<br>Income<br><span class="font-normal text-[10px]">monthly</span></th>
+                <th class="border p-2 bg-green-50 w-28">Additional<br>Income<br><span class="font-normal text-[10px]">yearly</span></th>
                 <th class="border p-2 bg-blue-50">Taxable Income<br><span class="font-normal text-[10px]">&divide; {{ $medicalDivisor }} (less medical)</span></th>
                 <th class="border p-2 bg-amber-50">Payable Tax<br><span class="font-normal text-[10px]">yearly</span></th>
                 <th class="border p-2 bg-yellow-50 w-24">Tax<br>Adjustment</th>
@@ -212,8 +212,8 @@
                 <input type="number" step="0.01" min="0"
                        name="rows[{{ $i }}][additional_income]"
                        value="{{ $row['additional'] != 0 ? $row['additional'] : '' }}"
-                       class="additional w-20 p-1 text-right border-0 bg-green-50"
-                       title="Extra taxable income per month">
+                       class="additional w-24 p-1 text-right border-0 bg-green-50"
+                       title="Extra taxable income for the year">
             </td>
 
             <td class="border p-1 text-right taxable bg-blue-50">0</td>
@@ -347,11 +347,11 @@
 
             const annual = num(row.querySelector('.annual'));
 
-            // Additional income is monthly and carries no medical component,
-            // so it is annualised and taxed in full.
+            // Additional income is a yearly figure carrying no medical
+            // component, so it is taxed in full.
             const additional = num(row.querySelector('.additional'));
 
-            const taxable = (DIVISOR > 0 ? annual / DIVISOR : annual) + (additional * 12);
+            const taxable = (DIVISOR > 0 ? annual / DIVISOR : annual) + additional;
             const payable = annualTax(taxable);
             const adjust  = num(row.querySelector('.adjustment'));
             const net = payable - adjust;

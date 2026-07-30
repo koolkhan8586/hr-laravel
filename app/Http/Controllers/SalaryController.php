@@ -700,12 +700,12 @@ public function employeeIndex()
                 ? (float) $sheet->annual_salary
                 : round((float) ($monthlyBasic[$user->id]->basic_salary ?? 0) * 12, 2);
 
-            // Additional income is monthly and carries no medical component,
-            // so it is annualised and taxed in full.
+            // Additional income is a yearly figure carrying no medical
+            // component, so it is taxed in full.
             $additional = (float) ($sheet->additional_income ?? 0);
 
             $taxable = ($medicalDivisor > 0 ? $annual / $medicalDivisor : $annual)
-                + ($additional * 12);
+                + $additional;
             $taxable = round($taxable, 2);
 
             $payable = \App\Models\TaxSlab::annualTaxFor($taxable);
