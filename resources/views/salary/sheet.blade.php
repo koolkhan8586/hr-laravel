@@ -274,7 +274,7 @@
 
         <tr class="salary-row {{ $posted ? 'bg-gray-50' : '' }}">
 
-            <td class="border p-1 text-center">{{ $i + 1 }}</td>
+            <td class="border p-1 text-center sr-cell"></td>
 
             <td class="border p-1">
                 {{ $user->employee_code ?? '-' }}
@@ -485,6 +485,12 @@
     .sheet-header { display: none; }
     .sign-off { display: none; }
 
+    /* Sr numbering comes from a counter rather than a fixed number, so rows
+       hidden from the printout do not leave gaps in the sequence. */
+    #salarySheet tbody { counter-reset: salaryRow; }
+    #salarySheet tbody tr.salary-row { counter-increment: salaryRow; }
+    #salarySheet tbody tr.salary-row .sr-cell::before { content: counter(salaryRow); }
+
 @media print {
     .sheet-header { display: block !important; }
     .sign-off { display: flex !important; }
@@ -497,6 +503,9 @@
 
     /* Sortable header links print as plain text */
     .no-print-link { text-decoration: none !important; color: #000 !important; }
+
+    /* Nobody with a blank Salary & Wages belongs on the printed sheet */
+    #salarySheet tbody tr.row-no-salary { display: none !important; }
 }
 </style>
 
@@ -565,6 +574,15 @@
         document.getElementById('recTotal').textContent  = fmt(grandNet);
         document.getElementById('recCheque').textContent = fmt(grandCheque);
         document.getElementById('recBank').textContent   = fmt(grandNet - grandCheque);
+    }
+
+    /* ---------- Rows with no salary are left off the printout ---------- */
+
+    function markEmptyRows() {
+        document.querySelectorAll('.salary-row').forEach(row => {
+            const wage = row.querySelector('input[data-col="basic_salary"]');
+            row.classList.toggle('row-no-salary', !wage || num(wage) === 0);
+        });
     }
 
     /* ---------- Blank out zero cells ---------- */
@@ -653,11 +671,12 @@
     }
 
     document.querySelectorAll('#salarySheet input[type=number]')
-        .forEach(el => el.addEventListener('input', () => { recalc(); applyHideEmpty(); }));
+        .forEach(el => el.addEventListener('input', () => { recalc(); applyHideEmpty(); markEmptyRows(); }));
 
     applyHideZeros();
     recalc();
     applyHideEmpty();
+    markEmptyRows();
 })();
 </script>
 
