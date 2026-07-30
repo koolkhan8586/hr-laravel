@@ -692,13 +692,31 @@ public function employeeIndex()
                 ->map(fn ($v) => (float) $v)
                 ->all());
 
-        $rows = $users->map(function ($user) use ($sheets, $monthlyBasic, $medicalDivisor, $deducted) {
+        $resynced = 0;
+
+        $rows = $users->map(function ($user) use ($sheets, $monthlyBasic, $medicalDivisor, $deducted, &$resynced) {
 
             $sheet = $sheets[$user->id] ?? null;
 
-            $annual = $sheet && $sheet->annual_salary > 0
-                ? (float) $sheet->annual_salary
-                : round((float) ($monthlyBasic[$user->id]->basic_salary ?? 0) * 12, 2);
+            // What the salary sheet says the year is worth right now.
+            $derived = round((float) ($monthlyBasic[$user->id]->basic_salary ?? 0) * 12, 2);
+
+            if (!$sheet) {
+                $annual = $derived;
+            } elseif ($sheet->salary_overridden) {
+                // Someone typed their own figure; leave it alone.
+                $annual = (float) $sheet->annual_salary;
+            } else {
+                // Track the salary sheet, so a change of wage flows through.
+                // Only when there is a salary to read, or a month without one
+                // would wipe a good figure.
+                if ($derived > 0 && abs($sheet->annual_salary - $derived) > 0.01) {
+                    $sheet->update(['annual_salary' => $derived]);
+                    $resynced++;
+                }
+
+                $annual = $sheet->annual_salary > 0 ? (float) $sheet->annual_salary : $derived;
+            }
 
             // Additional income is a yearly figure carrying no medical
             // component, so it is taxed in full.
@@ -722,6 +740,8 @@ public function employeeIndex()
             return [
                 'user'          => $user,
                 'annual'        => $annual,
+                'derived'       => $derived,
+                'overridden'    => (bool) ($sheet->salary_overridden ?? false),
                 'additional'    => $additional,
                 'taxable'       => $taxable,
                 'payable'       => $payable,
@@ -738,6 +758,7 @@ public function employeeIndex()
 
         return view('salary.tax-sheet', compact(
             'rows',
+            'resynced',
             'year',
             'sourceMonth',
             'category',
@@ -760,8 +781,16 @@ public function employeeIndex()
             'rows.*.user_id' => 'required|exists:users,id',
         ]);
 
-        $year  = (int) $request->year;
-        $saved = 0;
+        $year        = (int) $request->year;
+        $sourceMonth = (int) ($request->source_month ?? now()->month);
+        $saved       = 0;
+
+        // What the salary sheet says each year is worth, to tell a typed
+        // figure apart from one that simply tracks the salary sheet.
+        $derivedFor = Salary::where('year', $year)
+            ->where('month', $sourceMonth)
+            ->get()
+            ->mapWithKeys(fn ($s) => [$s->user_id => round((float) $s->basic_salary * 12, 2)]);
 
         foreach ($request->rows as $row) {
 
@@ -780,10 +809,15 @@ public function employeeIndex()
                 continue;
             }
 
+            $derived = $derivedFor[$row['user_id']] ?? 0;
+
             \App\Models\TaxSheet::updateOrCreate(
                 ['user_id' => $row['user_id'], 'year' => $year],
                 [
                     'annual_salary'     => $annual,
+                    // Only a figure that differs from the salary sheet counts
+                    // as an override; anything matching keeps tracking it.
+                    'salary_overridden' => $derived > 0 && abs($annual - $derived) > 0.01,
                     'additional_income' => $additional,
                     'tax_adjustment'    => $adjustment,
                 ]
@@ -795,6 +829,48 @@ public function employeeIndex()
         return redirect()->route('admin.salary.tax.sheet', $request->only([
             'year', 'category', 'source_month', 'sort', 'dir',
         ]))->with('success', "Tax sheet saved ({$saved} employees).");
+    }
+
+    /**
+     * Drop any typed yearly salaries and take the salary sheet's figures.
+     */
+    public function taxSheetResync(Request $request)
+    {
+        $request->validate([
+            'year'         => 'required|integer|min:2000|max:2100',
+            'source_month' => 'required|integer|min:1|max:12',
+        ]);
+
+        $year  = (int) $request->year;
+        $month = (int) $request->source_month;
+
+        $derivedFor = Salary::where('year', $year)
+            ->where('month', $month)
+            ->get()
+            ->mapWithKeys(fn ($s) => [$s->user_id => round((float) $s->basic_salary * 12, 2)]);
+
+        $updated = 0;
+
+        foreach (\App\Models\TaxSheet::where('year', $year)->get() as $sheet) {
+
+            $derived = $derivedFor[$sheet->user_id] ?? 0;
+
+            if ($derived <= 0) {
+                continue;
+            }
+
+            $sheet->update([
+                'annual_salary'     => $derived,
+                'salary_overridden' => false,
+            ]);
+
+            $updated++;
+        }
+
+        $period = \Carbon\Carbon::create($year, $month, 1)->format('F Y');
+
+        return back()->with('success',
+            "Yearly salary taken from the {$period} salary sheet for {$updated} employee(s).");
     }
 
     /**

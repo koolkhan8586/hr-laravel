@@ -45,6 +45,12 @@
 
     </div>
 
+    @if(!empty($resynced))
+    <div class="bg-blue-50 border border-blue-200 text-blue-800 p-3 rounded mb-4 no-print text-sm">
+        {{ $resynced }} yearly salary figure(s) refreshed from the salary sheet.
+    </div>
+    @endif
+
     @if(session('success'))
     <div class="bg-green-100 text-green-700 p-3 rounded mb-4 no-print">{{ session('success') }}</div>
     @endif
@@ -136,6 +142,16 @@
             </button>
         </form>
 
+        <form method="POST" action="{{ route('admin.salary.tax.sheet.resync') }}"
+              onsubmit="return confirm('Take the yearly salary from the salary sheet for everyone, discarding any figures typed here?');">
+            @csrf
+            <input type="hidden" name="year" value="{{ $year }}">
+            <input type="hidden" name="source_month" value="{{ $sourceMonth }}">
+            <button class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm">
+                Resync Salary from Sheet
+            </button>
+        </form>
+
         <span class="text-xs text-gray-500 max-w-md">
             Save first &mdash; Apply uses the saved figures, not what is on screen.
         </span>
@@ -201,11 +217,15 @@
 
             <td class="border p-1 whitespace-nowrap">{{ $row['user']->name }}</td>
 
-            <td class="border p-0">
+            <td class="border p-0 relative">
                 <input type="number" step="0.01" min="0"
                        name="rows[{{ $i }}][annual_salary]"
                        value="{{ $row['annual'] != 0 ? $row['annual'] : '' }}"
-                       class="annual w-32 p-1 text-right border-0">
+                       class="annual w-32 p-1 text-right border-0
+                              {{ $row['overridden'] ? 'bg-amber-50' : '' }}"
+                       @if($row['overridden'])
+                       title="Typed by hand. The salary sheet says {{ number_format($row['derived']) }} for the year."
+                       @endif>
             </td>
 
             <td class="border p-0">
@@ -279,7 +299,9 @@
             Save Tax Sheet
         </button>
         <span class="text-xs text-gray-500 ml-3">
-            Only Salary &amp; Wages and Tax Adjustment are stored; the rest is calculated.
+            Only Salary &amp; Wages, Additional Income and Tax Adjustment are stored; the rest is calculated.
+            A shaded Salary &amp; Wages cell was typed by hand and no longer follows the salary sheet &mdash;
+            use <strong>Resync Salary from Sheet</strong> to put it back.
         </span>
     </div>
 

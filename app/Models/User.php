@@ -27,6 +27,13 @@ class User extends Authenticatable
         'mobile',
         'password',
 
+        // Set by staff management. Without these the values are silently
+        // dropped on save, because a non-empty fillable list wins over guarded.
+        'employee_code',
+        'office_location_id',
+        'allow_anywhere_attendance',
+        'attendance_override_until',
+
         // Payroll / salary sheet details
         'salary_category',
         'bank_account_no',
