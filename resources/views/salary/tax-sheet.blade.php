@@ -185,14 +185,14 @@
                 </th>
                 @endfor
                 <th class="border p-2 bg-slate-100 font-bold">Tax Paid</th>
-                <th class="border p-2 bg-slate-100 font-bold">Balance</th>
+                <th class="border p-2 bg-slate-100 font-bold">Balance<br><span class="font-normal text-[10px]">net &minus; paid</span></th>
             </tr>
         </thead>
 
         <tbody>
 
         @foreach($rows as $i => $row)
-        <tr class="tax-row">
+        <tr class="tax-row" data-paid="{{ $row['paid'] }}">
 
             <td class="border p-1">
                 {{ $row['user']->employee_code ?? '-' }}
@@ -242,9 +242,7 @@
                 {{ $row['paid'] ? number_format($row['paid']) : '' }}
             </td>
 
-            <td class="border p-1 text-right font-bold bg-slate-100 {{ $row['balance'] < 0 ? 'text-red-600' : '' }}">
-                {{ $row['balance'] != 0 ? number_format($row['balance']) : '' }}
-            </td>
+            <td class="border p-1 text-right font-bold bg-slate-100 balance"></td>
 
         </tr>
         @endforeach
@@ -268,7 +266,7 @@
                 </td>
                 @endfor
                 <td class="border p-2 text-right">{{ number_format($rows->sum('paid')) }}</td>
-                <td class="border p-2 text-right">{{ number_format($rows->sum('balance')) }}</td>
+                <td class="border p-2 text-right" id="sumBalance">0</td>
             </tr>
         </tfoot>
 
@@ -341,7 +339,7 @@
 
     function recalc() {
 
-        let tAnnual = 0, tAdditional = 0, tTaxable = 0, tPayable = 0, tAdjust = 0, tNet = 0, tMonthly = 0;
+        let tAnnual = 0, tAdditional = 0, tTaxable = 0, tPayable = 0, tAdjust = 0, tNet = 0, tMonthly = 0, tBalance = 0;
 
         document.querySelectorAll('.tax-row').forEach(row => {
 
@@ -366,6 +364,18 @@
 
             netCell.textContent = fmt(net);
             monCell.textContent = fmt(monthly);
+
+            // Payable tax less the adjustment, less what has been collected.
+            const paid    = parseFloat(row.dataset.paid || 0) || 0;
+            const balance = net - paid;
+
+            const balCell = row.querySelector('.balance');
+            if (balCell) {
+                balCell.textContent = balance !== 0 ? fmt(balance) : '';
+                balCell.classList.toggle('text-red-600', balance < 0);
+            }
+
+            tBalance += balance;
 
             // An adjustment bigger than the tax due is worth flagging: it is
             // written to the salary sheet as zero, not as a refund.
@@ -392,6 +402,7 @@
         put('sumAdjust',  tAdjust);
         put('sumNet',     tNet);
         put('sumMonthly', tMonthly);
+        put('sumBalance', tBalance);
     }
 
     document.querySelectorAll('#taxSheet input[type=number]')

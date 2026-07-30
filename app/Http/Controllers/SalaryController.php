@@ -730,7 +730,9 @@ public function employeeIndex()
                 'monthly'       => $monthly,
                 'paid_by_month' => $paidByMonth,
                 'paid'          => $paid,
-                'balance'       => round(max(0, $net) - $paid, 2),
+                // Payable tax (which already includes additional income)
+                // less the adjustment, less what has been collected.
+                'balance'       => round($net - $paid, 2),
             ];
         });
 
