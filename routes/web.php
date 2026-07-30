@@ -388,6 +388,7 @@ Route::middleware(['auth', 'salary'])
     Route::get('/tax-sheet', [SalaryController::class,'taxSheet'])->name('salary.tax.sheet');
     Route::post('/tax-sheet', [SalaryController::class,'taxSheetStore'])->name('salary.tax.sheet.store');
     Route::post('/tax-sheet/apply', [SalaryController::class,'taxSheetApply'])->name('salary.tax.sheet.apply');
+    Route::post('/tax-sheet/resync', [SalaryController::class,'taxSheetResync'])->name('salary.tax.sheet.resync');
 
     Route::get('/bank-sheet', [SalaryController::class,'bankSheet'])->name('salary.bank.sheet');
     Route::get('/bank-sheet/export', [SalaryController::class,'bankSheetExport'])->name('salary.bank.sheet.export');

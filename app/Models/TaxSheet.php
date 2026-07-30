@@ -10,12 +10,14 @@ class TaxSheet extends Model
         'user_id',
         'year',
         'annual_salary',
+        'salary_overridden',
         'additional_income',
         'tax_adjustment',
     ];
 
     protected $casts = [
         'annual_salary'     => 'float',
+        'salary_overridden' => 'boolean',
         'additional_income' => 'float',
         'tax_adjustment'    => 'float',
     ];
