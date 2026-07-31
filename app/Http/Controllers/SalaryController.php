@@ -1049,7 +1049,7 @@ public function employeeIndex()
         $settings = [
             'bank'      => \App\Models\AppSetting::get('bank_letter_bank', 'Al Baraka Bank Ltd.'),
             'branch'    => \App\Models\AppSetting::get('bank_letter_branch', 'Gulberg III Lahore'),
-            'signatory' => \App\Models\AppSetting::get('bank_letter_signatory', ''),
+            'signatory' => \App\Models\AppSetting::get('bank_letter_signatory', 'Mohammad Maqbool'),
             'top_mm'    => (int) \App\Models\AppSetting::get('bank_letter_top_mm', 45),
         ];
 
