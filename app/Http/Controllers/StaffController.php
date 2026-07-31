@@ -191,6 +191,7 @@ class StaffController extends Controller
         'designation'   => 'required',
         'salary'          => 'required|numeric',
         'role'            => 'required|in:employee,manager,admin',
+        'joining_date'    => 'required|date',
         'salary_category' => 'nullable|in:teacher,staff',
         'bank_account_no' => 'nullable|string|max:50',
         'bank_payee_id'   => 'nullable|exists:users,id',
@@ -236,10 +237,11 @@ class StaffController extends Controller
     |--------------------------------------------------------------------------
     */
     $staff->update([
-    'employee_id' => strtoupper($request->employee_code),
-    'department'  => $request->department,
-    'designation' => $request->designation,
-    'salary'      => $request->salary
+    'employee_id'  => strtoupper($request->employee_code),
+    'department'   => $request->department,
+    'designation'  => $request->designation,
+    'salary'       => $request->salary,
+    'joining_date' => $request->joining_date,
 ]);
 
     return redirect()->route('admin.staff.index')

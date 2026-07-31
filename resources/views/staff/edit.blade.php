@@ -81,13 +81,35 @@
                        required>
             </div>
 
+            @php
+                // Legacy rows can hold a zero date, which parses to something
+                // no date picker will show. Treat anything implausible as blank
+                // so a real date has to be chosen.
+                $joiningDate = null;
+
+                try {
+                    $parsed = $staff->joining_date
+                        ? \Carbon\Carbon::parse($staff->joining_date)
+                        : null;
+
+                    if ($parsed && $parsed->year > 1900) {
+                        $joiningDate = $parsed->format('Y-m-d');
+                    }
+                } catch (\Throwable $e) {
+                    $joiningDate = null;
+                }
+            @endphp
+
             <div>
                 <label class="block font-semibold mb-1">Joining Date</label>
                 <input type="date"
                        name="joining_date"
-                       value="{{ old('joining_date', $staff->joining_date) }}"
+                       value="{{ old('joining_date', $joiningDate) }}"
                        class="w-full border p-2 rounded"
                        required>
+                @unless($joiningDate)
+                <p class="text-xs text-amber-700 mt-1">No valid joining date on record &mdash; please set one.</p>
+                @endunless
             </div>
 
             <div>
