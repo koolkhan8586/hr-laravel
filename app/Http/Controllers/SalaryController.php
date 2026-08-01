@@ -1028,13 +1028,18 @@ public function employeeIndex()
         ->filter(fn ($r) => $r['total'] > 0 && filled($r['user']->bank_account_no))
         ->sum('total');
 
-        $amount = round($amount, 2);
+        // What the bank sheet says for this month, always recomputed.
+        $sheetAmount = round($amount, 2);
 
-        // Typing a figure wins over the bank sheet, for the odd occasion the
-        // letter has to say something else.
-        if ($request->filled('amount')) {
-            $amount = round((float) str_replace(',', '', $request->amount), 2);
-        }
+        // The amount box is an override and is normally left empty. Only a
+        // figure actually typed into it wins, otherwise changing the month
+        // would keep resubmitting whatever the box happened to be holding.
+        $override = $request->input('amount');
+        $hasOverride = $override !== null && trim((string) $override) !== '';
+
+        $amount = $hasOverride
+            ? round((float) str_replace(',', '', $override), 2)
+            : $sheetAmount;
 
         $letterDate = $request->filled('letter_date')
             ? \Carbon\Carbon::parse($request->letter_date)
@@ -1057,6 +1062,8 @@ public function employeeIndex()
             'month',
             'year',
             'amount',
+            'sheetAmount',
+            'hasOverride',
             'letterDate',
             'chequeDate',
             'chequeNo',

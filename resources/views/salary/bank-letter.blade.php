@@ -78,10 +78,14 @@
             <div>
                 <label class="block text-xs text-gray-500 mb-1">Amount</label>
                 <input type="number" step="0.01" name="amount" id="amount"
-                       value="{{ $amount }}"
+                       value="{{ $hasOverride ? $amount : '' }}"
+                       placeholder="{{ number_format($sheetAmount) }}"
+                       data-sheet-amount="{{ $sheetAmount }}"
                        class="w-full border px-3 py-2 rounded text-sm">
                 <p class="text-[11px] text-gray-500 mt-1">
-                    Taken from the {{ $periodLabel }} bank sheet. Change it only if the letter must say something else.
+                    Leave blank to use the {{ $periodLabel }} bank sheet total
+                    (Rs.{{ number_format($sheetAmount) }}). Fill it in only if the
+                    letter must say something else.
                 </p>
             </div>
 
@@ -258,7 +262,13 @@
                 + String(cd.m).padStart(2, '0') + '/' + cd.y);
         }
 
-        const amount = parseFloat(document.getElementById('amount').value) || 0;
+        // An empty box means "whatever the bank sheet says", not zero.
+        const box = document.getElementById('amount');
+        const typed = box.value.trim();
+        const amount = typed === ''
+            ? parseFloat(box.dataset.sheetAmount) || 0
+            : parseFloat(typed) || 0;
+
         set('outAmount', fmt(amount));
         set('outAmount2', fmt(amount));
 
