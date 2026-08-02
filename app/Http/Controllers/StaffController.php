@@ -84,6 +84,7 @@ class StaffController extends Controller
     'salary' => 'required|numeric',
     'joining_date' => 'required|date',
     'role' => 'required|in:employee,manager,admin',
+    'tracks_attendance' => 'nullable|in:0,1',
 ]);
 
     // AUTO GENERATE EMPLOYEE CODE
@@ -96,7 +97,8 @@ class StaffController extends Controller
         'email' => $request->email,
         'employee_code' => $employeeCode,
         'password' => \Hash::make($password),
-        'force_password_change' => true
+        'force_password_change' => true,
+        'tracks_attendance' => $request->input('tracks_attendance', '1') === '0' ? false : true,
     ]);
 
     $user->role = $request->role;
@@ -195,6 +197,7 @@ class StaffController extends Controller
         'salary_category' => 'nullable|in:teacher,staff',
         'bank_account_no' => 'nullable|string|max:50',
         'bank_payee_id'   => 'nullable|exists:users,id',
+        'tracks_attendance' => 'nullable|in:0,1',
     ]);
 
     /*
@@ -218,6 +221,9 @@ class StaffController extends Controller
             : $request->bank_payee_id,
 
         'can_manage_salary' => $request->boolean('can_manage_salary'),
+
+        // Payroll-only employees stay out of the attendance reports
+        'tracks_attendance' => $request->input('tracks_attendance', '1') === '0' ? false : true,
 
         // 🔓 Allow Anywhere Attendance
         'allow_anywhere_attendance' => $request->has('allow_anywhere_attendance'),
@@ -287,6 +293,29 @@ class StaffController extends Controller
         ]);
 
         return back();
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Bulk Attendance Tracking
+    |--------------------------------------------------------------------------
+    | Turns the selected staff into payroll-only records (or back again) in one
+    | go, for the usual case where a whole group never marks attendance.
+    */
+    public function bulkTracking(Request $request)
+    {
+        if (!$request->staff_ids) {
+            return back()->with('error', 'No staff selected.');
+        }
+
+        $tracks = $request->input('tracks') === '1';
+
+        $userIds = Staff::whereIn('id', $request->staff_ids)->pluck('user_id');
+
+        User::whereIn('id', $userIds)->update(['tracks_attendance' => $tracks]);
+
+        return back()->with('success', $userIds->count().' employee(s) set to '.
+            ($tracks ? 'attendance tracking.' : 'payroll only.'));
     }
 
     /*

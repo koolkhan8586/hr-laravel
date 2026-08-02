@@ -45,6 +45,9 @@
                        name="month"
                        value="{{ $month }}"
                        class="border rounded px-3 py-2">
+                @if($includePayrollOnly ?? false)
+                    <input type="hidden" name="include_payroll_only" value="1">
+                @endif
                 <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
                     Filter
                 </button>
@@ -56,7 +59,7 @@
                 Print
             </button>
 
-            <a href="{{ route('admin.reports.late.export', ['month' => $month]) }}"
+            <a href="{{ route('admin.reports.late.export', ['month' => $month, 'include_payroll_only' => ($includePayrollOnly ?? false) ? 1 : null]) }}"
                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
                 Export Excel
             </a>
@@ -77,6 +80,8 @@
             <div class="text-2xl font-bold text-yellow-700">{{ $staffWithLate }}</div>
         </div>
     </div>
+
+    @include('admin.partials.payroll-only-note')
 
     <div class="bg-white shadow rounded overflow-x-auto">
         <table class="w-full text-sm min-w-[900px]">

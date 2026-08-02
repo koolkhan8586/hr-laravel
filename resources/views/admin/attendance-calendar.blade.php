@@ -11,6 +11,10 @@ name="month"
 value="{{ $month }}"
 class="border rounded p-2">
 
+@if($includePayrollOnly ?? false)
+<input type="hidden" name="include_payroll_only" value="1">
+@endif
+
 <button class="bg-blue-600 text-white px-4 py-2 rounded">
 View
 </button>
@@ -22,6 +26,8 @@ Print / Export
 </button>
 
 </form>
+
+@include('admin.partials.payroll-only-note')
 
 {{-- Legend --}}
 

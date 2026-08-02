@@ -24,8 +24,9 @@ class MarkAbsent extends Command
 
         $today = $now->toDateString();
 
-        // Get all users (adjust if you have role system)
-        $users = User::all();
+        // Payroll-only staff are paid but never mark attendance, so writing an
+        // absent row for them every day is what filled the reports with noise.
+        $users = User::tracked()->get();
 
         foreach ($users as $user) {
 

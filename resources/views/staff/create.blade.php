@@ -95,6 +95,21 @@
                 </select>
             </div>
 
+            <div>
+                <label class="block font-semibold mb-1">Attendance Tracking</label>
+                <select name="tracks_attendance" class="w-full border p-2 rounded">
+                    <option value="1" {{ old('tracks_attendance', '1') === '1' ? 'selected' : '' }}>
+                        Marks attendance
+                    </option>
+                    <option value="0" {{ old('tracks_attendance') === '0' ? 'selected' : '' }}>
+                        Payroll only &mdash; no attendance
+                    </option>
+                </select>
+                <p class="text-xs text-gray-500 mt-1">
+                    Payroll only keeps them off the absence, late and leave reports.
+                </p>
+            </div>
+
         </div>
 
         <div class="mt-8">

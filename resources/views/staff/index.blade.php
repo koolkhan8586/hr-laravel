@@ -53,13 +53,48 @@
         </div>
     @endif
 
-    {{-- BULK DELETE --}}
-    <form method="POST" action="{{ route('admin.staff.bulk.delete') }}">
-        @csrf
+    @if(session('error'))
+        <div class="bg-red-100 text-red-700 p-3 mb-4 rounded">
+            {{ session('error') }}
+        </div>
+    @endif
 
-        <button class="bg-red-700 text-white px-4 py-2 rounded mb-3">
+    {{-- BULK ACTIONS --}}
+    {{-- The form is kept empty and outside the table. The checkboxes and the
+         buttons join it through the form attribute, so the per-row forms below
+         are not nested inside it. --}}
+    <form method="POST" action="{{ route('admin.staff.bulk.delete') }}" id="bulkForm">
+        @csrf
+    </form>
+
+    <div class="flex flex-wrap gap-2 mb-3 items-center">
+        <span class="text-sm text-gray-500">With selected:</span>
+
+        <button form="bulkForm"
+                formaction="{{ route('admin.staff.bulk.tracking') }}"
+                name="tracks" value="0"
+                class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded text-sm">
+            Payroll Only
+        </button>
+
+        <button form="bulkForm"
+                formaction="{{ route('admin.staff.bulk.tracking') }}"
+                name="tracks" value="1"
+                class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded text-sm">
+            Mark Attendance
+        </button>
+
+        <button form="bulkForm"
+                onclick="return confirm('Delete the selected staff? This cannot be undone.')"
+                class="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded text-sm">
             Bulk Delete
         </button>
+    </div>
+
+    <p class="text-xs text-gray-500 mb-3">
+        Payroll only means the employee is paid each month but never marks
+        attendance, so they stay off the absence, late and leave reports.
+    </p>
 
         <table class="w-full bg-white shadow rounded text-sm">
             <thead class="bg-gray-100">
@@ -70,6 +105,7 @@
                     <th class="p-3"><a href="{{ $sortLink('department') }}" class="hover:underline">Department{{ $arrow('department') }}</a></th>
                     <th class="p-3"><a href="{{ $sortLink('designation') }}" class="hover:underline">Designation{{ $arrow('designation') }}</a></th>
                     <th class="p-3"><a href="{{ $sortLink('salary') }}" class="hover:underline">Salary{{ $arrow('salary') }}</a></th>
+                    <th class="p-3">Attendance</th>
                     <th class="p-3"><a href="{{ $sortLink('status') }}" class="hover:underline">Status{{ $arrow('status') }}</a></th>
                     <th class="p-3">Actions</th>
                 </tr>
@@ -79,7 +115,7 @@
                 @foreach($staff as $item)
                 <tr class="border-t">
                     <td class="p-3">
-                        <input type="checkbox" name="staff_ids[]" value="{{ $item->id }}">
+                        <input type="checkbox" form="bulkForm" name="staff_ids[]" value="{{ $item->id }}">
                     </td>
                     <td class="p-3">{{ $item->employee_id }}</td>
                     <td class="p-3">{{ $item->user->name }}</td>
@@ -87,6 +123,17 @@
                     <td class="p-3">{{ $item->designation }}</td>
                     <td class="p-3 text-green-700">
                         Rs {{ number_format($item->salary,2) }}
+                    </td>
+                    <td class="p-3">
+                        @if($item->user && !$item->user->tracksAttendance())
+                            <span class="bg-amber-100 text-amber-800 px-2 py-1 rounded text-xs">
+                                Payroll only
+                            </span>
+                        @else
+                            <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">
+                                Tracked
+                            </span>
+                        @endif
                     </td>
                     <td class="p-3">
                         <form method="POST"
@@ -107,7 +154,8 @@
                               action="{{ route('admin.staff.destroy', $item->id) }}">
                             @csrf
                             @method('DELETE')
-                            <button class="bg-red-600 text-white px-3 py-1 rounded text-xs">
+                            <button onclick="return confirm('Delete {{ addslashes($item->user->name ?? 'this employee') }}?')"
+                                    class="bg-red-600 text-white px-3 py-1 rounded text-xs">
                                 Delete
                             </button>
                         </form>
@@ -116,7 +164,13 @@
                 @endforeach
             </tbody>
         </table>
-    </form>
 
 </div>
+
+<script>
+    document.getElementById('selectAll')?.addEventListener('change', function () {
+        document.querySelectorAll('input[name="staff_ids[]"]')
+            .forEach(box => { box.checked = this.checked; });
+    });
+</script>
 </x-app-layout>
