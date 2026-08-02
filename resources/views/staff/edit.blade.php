@@ -157,6 +157,25 @@
             </div>
 
             <div>
+                <label class="block font-semibold mb-1">Attendance Tracking</label>
+                <select name="tracks_attendance" class="w-full border p-2 rounded">
+                    <option value="1"
+                        {{ old('tracks_attendance', $staff->user->tracksAttendance() ? '1' : '0') === '1' ? 'selected' : '' }}>
+                        Marks attendance
+                    </option>
+                    <option value="0"
+                        {{ old('tracks_attendance', $staff->user->tracksAttendance() ? '1' : '0') === '0' ? 'selected' : '' }}>
+                        Payroll only &mdash; no attendance
+                    </option>
+                </select>
+                <p class="text-xs text-gray-500 mt-1">
+                    Payroll only means they are paid each month but never mark
+                    attendance, so they are left out of the absence, late and
+                    leave reports instead of showing absent every working day.
+                </p>
+            </div>
+
+            <div>
                 <label class="block font-semibold mb-1">Salary Access</label>
                 <label class="flex items-center gap-2 mt-2">
                     <input type="checkbox" name="can_manage_salary" value="1"

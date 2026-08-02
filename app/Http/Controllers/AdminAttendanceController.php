@@ -158,6 +158,7 @@ $absentEmployees = collect();
 if(!$isWeekend){
 
 $absentEmployees = User::where('role','employee')
+    ->tracked()
     ->whereNotIn('id',$attendanceUsers)
     ->whereNotIn('id',$leaveUsers)
     ->whereNotIn('id',$wfhUsers)
@@ -410,6 +411,7 @@ $isWeekend = \Carbon\Carbon::parse($today)->isWeekend();
 if(!$isWeekend){
 
 $records = User::where('role','employee')
+->tracked()
 ->whereNotIn('id',$attendanceUsers)
 ->whereNotIn('id',$leaveUsers)
 ->whereNotIn('id',$wfhUsers)
@@ -571,7 +573,12 @@ public function attendanceCalendar(Request $request)
     |--------------------------------------------------------------------------
     */
 
+    // Payroll-only staff never mark attendance, so a calendar of theirs would
+    // be a wall of crosses. They come back with ?include_payroll_only=1.
+    $includePayrollOnly = $request->boolean('include_payroll_only');
+
     $users = \App\Models\User::where('role','employee')
+        ->when(!$includePayrollOnly, fn ($q) => $q->tracked())
         ->orderBy('name','asc')
         ->get();
 
@@ -582,8 +589,11 @@ public function attendanceCalendar(Request $request)
     */
 
     $allEmployees = \App\Models\User::where('role','employee')
+        ->when(!$includePayrollOnly, fn ($q) => $q->tracked())
         ->orderBy('name','asc')
         ->get();
+
+    $payrollOnlyCount = \App\Models\User::where('role','employee')->payrollOnly()->count();
 
     /*
     |--------------------------------------------------------------------------
@@ -645,7 +655,9 @@ public function attendanceCalendar(Request $request)
         'wfhData',
         'start',
         'end',
-        'month'
+        'month',
+        'includePayrollOnly',
+        'payrollOnlyCount'
     ));
 }
 
@@ -671,9 +683,14 @@ $end   = \Carbon\Carbon::parse($month.'-01')->endOfMonth();
 
 /* Employees */
 
+$includePayrollOnly = $request->boolean('include_payroll_only');
+
 $users = \App\Models\User::where('role','employee')
+->when(!$includePayrollOnly, fn ($q) => $q->tracked())
 ->orderBy('name','asc')
 ->get();
+
+$payrollOnlyCount = \App\Models\User::where('role','employee')->payrollOnly()->count();
 
 $data = [];
 
@@ -725,7 +742,9 @@ $data[] = [
 
 return view('admin.monthly-summary',compact(
 'data',
-'month'
+'month',
+'includePayrollOnly',
+'payrollOnlyCount'
 ));
 
 }
@@ -737,14 +756,20 @@ return view('admin.monthly-summary',compact(
 */
 public function staffLateReport(Request $request)
 {
-    $report = $this->buildStaffLateReport($request->month ?? now()->format('Y-m'));
+    $report = $this->buildStaffLateReport(
+        $request->month ?? now()->format('Y-m'),
+        $request->boolean('include_payroll_only')
+    );
 
     return view('admin.reports.staff-late', $report);
 }
 
 public function exportStaffLateReport(Request $request)
 {
-    $report = $this->buildStaffLateReport($request->month ?? now()->format('Y-m'));
+    $report = $this->buildStaffLateReport(
+        $request->month ?? now()->format('Y-m'),
+        $request->boolean('include_payroll_only')
+    );
 
     $rows = [];
     foreach ($report['data'] as $index => $row) {
@@ -785,14 +810,20 @@ public function exportStaffLateReport(Request $request)
 */
 public function staffAbsentReport(Request $request)
 {
-    $report = $this->buildStaffAbsentReport($request->month ?? now()->format('Y-m'));
+    $report = $this->buildStaffAbsentReport(
+        $request->month ?? now()->format('Y-m'),
+        $request->boolean('include_payroll_only')
+    );
 
     return view('admin.reports.staff-absent', $report);
 }
 
 public function exportStaffAbsentReport(Request $request)
 {
-    $report = $this->buildStaffAbsentReport($request->month ?? now()->format('Y-m'));
+    $report = $this->buildStaffAbsentReport(
+        $request->month ?? now()->format('Y-m'),
+        $request->boolean('include_payroll_only')
+    );
 
     $rows = [];
     foreach ($report['data'] as $index => $row) {
@@ -828,14 +859,20 @@ public function exportStaffAbsentReport(Request $request)
 */
 public function staffLeaveReport(Request $request)
 {
-    $report = $this->buildStaffLeaveReport($request->month ?? now()->format('Y-m'));
+    $report = $this->buildStaffLeaveReport(
+        $request->month ?? now()->format('Y-m'),
+        $request->boolean('include_payroll_only')
+    );
 
     return view('admin.reports.staff-leave', $report);
 }
 
 public function exportStaffLeaveReport(Request $request)
 {
-    $report = $this->buildStaffLeaveReport($request->month ?? now()->format('Y-m'));
+    $report = $this->buildStaffLeaveReport(
+        $request->month ?? now()->format('Y-m'),
+        $request->boolean('include_payroll_only')
+    );
 
     $rows = [];
     foreach ($report['data'] as $index => $row) {
@@ -870,15 +907,35 @@ public function exportStaffLeaveReport(Request $request)
     );
 }
 
-protected function buildStaffLateReport(string $month): array
+/**
+ * Employees an attendance report should cover.
+ *
+ * Payroll-only staff are left out unless they are asked for, so they stop
+ * filling the reports with absences they were never expected to avoid.
+ */
+protected function reportRoster(bool $includePayrollOnly = false)
+{
+    $query = User::where('role', 'employee')->with('staff');
+
+    if (!$includePayrollOnly) {
+        $query->tracked();
+    }
+
+    return $query->orderBy('name')->get();
+}
+
+/** How many employees the payroll-only filter is currently hiding. */
+protected function payrollOnlyCount(): int
+{
+    return User::where('role', 'employee')->payrollOnly()->count();
+}
+
+protected function buildStaffLateReport(string $month, bool $includePayrollOnly = false): array
 {
     $start = Carbon::parse($month.'-01')->startOfMonth();
     $end   = Carbon::parse($month.'-01')->endOfMonth();
 
-    $users = User::where('role', 'employee')
-        ->with('staff')
-        ->orderBy('name')
-        ->get();
+    $users = $this->reportRoster($includePayrollOnly);
 
     $lateRecords = Attendance::with('user')
         ->whereBetween('date', [$start, $end])
@@ -909,10 +966,12 @@ protected function buildStaffLateReport(string $month): array
         'month' => $month,
         'totalLate' => $totalLate,
         'staffWithLate' => collect($data)->where('count', '>', 0)->count(),
+        'includePayrollOnly' => $includePayrollOnly,
+        'payrollOnlyCount' => $this->payrollOnlyCount(),
     ];
 }
 
-protected function buildStaffAbsentReport(string $month): array
+protected function buildStaffAbsentReport(string $month, bool $includePayrollOnly = false): array
 {
     $start = Carbon::parse($month.'-01')->startOfMonth();
     $end   = Carbon::parse($month.'-01')->endOfMonth();
@@ -923,14 +982,17 @@ protected function buildStaffAbsentReport(string $month): array
         $rangeEnd = now()->copy()->startOfDay();
     }
 
-    $users = User::where('role', 'employee')
-        ->with('staff')
-        ->orderBy('name')
-        ->get();
+    $users = $this->reportRoster($includePayrollOnly);
 
     $employeeIds = $users->pluck('id');
 
-    $attendanceByUserDate = Attendance::whereBetween('date', [$start, $rangeEnd])
+    // Compare plain dates. Handing a datetime to a date column makes the first
+    // of the month fall outside the range on some drivers, which then reads as
+    // an absence for everybody.
+    $attendanceByUserDate = Attendance::whereBetween('date', [
+            $start->toDateString(),
+            $rangeEnd->toDateString(),
+        ])
         ->whereIn('user_id', $employeeIds)
         ->get()
         ->groupBy(fn ($row) => $row->user_id.'_'.Carbon::parse($row->date)->toDateString());
@@ -1051,18 +1113,17 @@ protected function buildStaffAbsentReport(string $month): array
         'month' => $month,
         'totalAbsent' => $totalAbsent,
         'staffWithAbsent' => collect($data)->where('count', '>', 0)->count(),
+        'includePayrollOnly' => $includePayrollOnly,
+        'payrollOnlyCount' => $this->payrollOnlyCount(),
     ];
 }
 
-protected function buildStaffLeaveReport(string $month): array
+protected function buildStaffLeaveReport(string $month, bool $includePayrollOnly = false): array
 {
     $start = Carbon::parse($month.'-01')->startOfMonth();
     $end   = Carbon::parse($month.'-01')->endOfMonth();
 
-    $users = User::where('role', 'employee')
-        ->with('staff')
-        ->orderBy('name')
-        ->get();
+    $users = $this->reportRoster($includePayrollOnly);
 
     $leaves = Leave::with('user')
         ->where('status', 'approved')
@@ -1120,6 +1181,8 @@ protected function buildStaffLeaveReport(string $month): array
         'totalDays' => $totalDays,
         'totalApplications' => $totalApplications,
         'staffOnLeave' => collect($data)->where('count', '>', 0)->count(),
+        'includePayrollOnly' => $includePayrollOnly,
+        'payrollOnlyCount' => $this->payrollOnlyCount(),
     ];
 }
 

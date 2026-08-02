@@ -33,6 +33,7 @@ class User extends Authenticatable
         'office_location_id',
         'allow_anywhere_attendance',
         'attendance_override_until',
+        'tracks_attendance',
 
         // Payroll / salary sheet details
         'salary_category',
@@ -78,7 +79,45 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'tracks_attendance' => 'boolean',
         ];
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Attendance tracking
+    |--------------------------------------------------------------------------
+    |
+    | Payroll-only employees are paid every month but never mark attendance
+    | and never apply for leave here, so they must stay out of the attendance
+    | figures instead of showing up absent for every working day.
+    |
+    */
+
+    /**
+     * Employees whose attendance is actually followed.
+     *
+     * Rows written before the flag existed have no value at all, so a null
+     * has to read as "tracked" - the default for everybody.
+     */
+    public function scopeTracked($query)
+    {
+        return $query->where(function ($q) {
+            $q->where('tracks_attendance', true)
+              ->orWhereNull('tracks_attendance');
+        });
+    }
+
+    public function scopePayrollOnly($query)
+    {
+        return $query->where('tracks_attendance', false);
+    }
+
+    public function tracksAttendance(): bool
+    {
+        return $this->tracks_attendance === null
+            ? true
+            : (bool) $this->tracks_attendance;
     }
 
     /*

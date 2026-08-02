@@ -158,6 +158,7 @@ Route::middleware(['auth', 'admin'])
     Route::post('/staff/reset-password/{id}', [StaffController::class, 'resetPassword'])->name('staff.reset.password');
     Route::get('/staff/sample', [StaffController::class,'downloadSample'])->name('staff.sample');
     Route::post('/staff/bulk-delete',[StaffController::class,'bulkDelete'])->name('staff.bulk.delete');
+    Route::post('/staff/bulk-tracking',[StaffController::class,'bulkTracking'])->name('staff.bulk.tracking');
     Route::post('/staff/bulk-email',[StaffController::class,'bulkEmail'])->name('staff.bulk.email');
     Route::post('/staff/toggle/{id}',[StaffController::class,'toggleStatus'])->name('staff.toggle');
     Route::get('/staff/{id}/view',[StaffController::class,'view'])->name('staff.view');
