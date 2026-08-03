@@ -27,6 +27,18 @@
         ]);
     };
     $arrow = fn ($key) => $sort === $key ? ($dir === 'asc' ? ' ▲' : ' ▼') : '';
+
+    // Amounts read as figures, not as raw database decimals: 35,000 rather
+    // than 35000.00. Paisa are only shown when there actually are any.
+    $money = function ($value) {
+        if ($value === null || $value === '') {
+            return '';
+        }
+
+        $n = (float) $value;
+
+        return number_format($n, fmod($n, 1) == 0.0 ? 0 : 2);
+    };
 @endphp
 
 <div class="max-w-full mx-auto py-6 px-4 print-area">
@@ -295,16 +307,16 @@
             {{-- EARNINGS --}}
             @foreach(['basic_salary','extra_load','invigilation'] as $field)
             <td class="border p-0">
-                <input type="number" step="0.01" min="0" data-col="{{ $field }}"
-                       name="rows[{{ $i }}][{{ $field }}]" value="{{ $row->$field ?? '' }}" {{ $ro }}
+                <input type="text" inputmode="decimal" data-col="{{ $field }}"
+                       name="rows[{{ $i }}][{{ $field }}]" value="{{ $money($row->$field ?? null) }}" {{ $ro }}
                        class="earning w-24 p-1 text-right border-0 {{ $roCls }}">
             </td>
             @endforeach
 
             @if($showTPayment)
             <td class="border p-0">
-                <input type="number" step="0.01" min="0" data-col="t_payment"
-                       name="rows[{{ $i }}][t_payment]" value="{{ $row->t_payment ?? '' }}" {{ $ro }}
+                <input type="text" inputmode="decimal" data-col="t_payment"
+                       name="rows[{{ $i }}][t_payment]" value="{{ $money($row->t_payment ?? null) }}" {{ $ro }}
                        class="earning w-24 p-1 text-right border-0 {{ $roCls }}">
             </td>
             @else
@@ -313,17 +325,17 @@
 
             @foreach(['eidi','increment'] as $field)
             <td class="border p-0">
-                <input type="number" step="0.01" min="0" data-col="{{ $field }}"
-                       name="rows[{{ $i }}][{{ $field }}]" value="{{ $row->$field ?? '' }}" {{ $ro }}
+                <input type="text" inputmode="decimal" data-col="{{ $field }}"
+                       name="rows[{{ $i }}][{{ $field }}]" value="{{ $money($row->$field ?? null) }}" {{ $ro }}
                        class="earning w-24 p-1 text-right border-0 {{ $roCls }}">
             </td>
             @endforeach
 
             @foreach($earningColumns as $col)
             <td class="border p-0">
-                <input type="number" step="0.01" min="0" data-col="custom_{{ $col->id }}"
+                <input type="text" inputmode="decimal" data-col="custom_{{ $col->id }}"
                        name="rows[{{ $i }}][custom][{{ $col->id }}]"
-                       value="{{ $row && $row->customValue($col->id) != 0 ? $row->customValue($col->id) : '' }}" {{ $ro }}
+                       value="{{ $row && $row->customValue($col->id) != 0 ? $money($row->customValue($col->id)) : '' }}" {{ $ro }}
                        class="earning w-24 p-1 text-right border-0 {{ $roCls }}">
             </td>
             @endforeach
@@ -332,30 +344,30 @@
 
             {{-- DEDUCTIONS --}}
             <td class="border p-0">
-                <input type="number" step="0.01" min="0" data-col="extra_leaves"
-                       name="rows[{{ $i }}][extra_leaves]" value="{{ $row->extra_leaves ?? '' }}" {{ $ro }}
+                <input type="text" inputmode="decimal" data-col="extra_leaves"
+                       name="rows[{{ $i }}][extra_leaves]" value="{{ $money($row->extra_leaves ?? null) }}" {{ $ro }}
                        class="deduction w-24 p-1 text-right border-0 {{ $roCls }}">
             </td>
 
             <td class="border p-0">
-                <input type="number" step="0.01" min="0" data-col="income_tax"
-                       name="rows[{{ $i }}][income_tax]" value="{{ $row->income_tax ?? '' }}" {{ $ro }}
+                <input type="text" inputmode="decimal" data-col="income_tax"
+                       name="rows[{{ $i }}][income_tax]" value="{{ $money($row->income_tax ?? null) }}" {{ $ro }}
                        class="deduction tax-input w-24 p-1 text-right border-0 {{ $roCls }}">
             </td>
 
             @foreach(['loan_deduction','insurance','other_deductions'] as $field)
             <td class="border p-0">
-                <input type="number" step="0.01" min="0" data-col="{{ $field }}"
-                       name="rows[{{ $i }}][{{ $field }}]" value="{{ $row->$field ?? '' }}" {{ $ro }}
+                <input type="text" inputmode="decimal" data-col="{{ $field }}"
+                       name="rows[{{ $i }}][{{ $field }}]" value="{{ $money($row->$field ?? null) }}" {{ $ro }}
                        class="deduction w-24 p-1 text-right border-0 {{ $roCls }}">
             </td>
             @endforeach
 
             @foreach($deductionColumns as $col)
             <td class="border p-0">
-                <input type="number" step="0.01" min="0" data-col="custom_{{ $col->id }}"
+                <input type="text" inputmode="decimal" data-col="custom_{{ $col->id }}"
                        name="rows[{{ $i }}][custom][{{ $col->id }}]"
-                       value="{{ $row && $row->customValue($col->id) != 0 ? $row->customValue($col->id) : '' }}" {{ $ro }}
+                       value="{{ $row && $row->customValue($col->id) != 0 ? $money($row->customValue($col->id)) : '' }}" {{ $ro }}
                        class="deduction w-24 p-1 text-right border-0 {{ $roCls }}">
             </td>
             @endforeach
@@ -365,8 +377,8 @@
             <td class="border p-1 text-right font-bold bg-blue-50 net-salary">0</td>
 
             <td class="border p-0">
-                <input type="number" step="0.01" min="0" data-col="cheque_amount"
-                       name="rows[{{ $i }}][cheque_amount]" value="{{ $row->cheque_amount ?? '' }}" {{ $ro }}
+                <input type="text" inputmode="decimal" data-col="cheque_amount"
+                       name="rows[{{ $i }}][cheque_amount]" value="{{ $money($row->cheque_amount ?? null) }}" {{ $ro }}
                        class="cheque w-24 p-1 text-right border-0 bg-yellow-50"
                        title="Leave blank if paid through the bank">
             </td>
@@ -515,10 +527,52 @@
     const fmt = n => (Math.round(n * 100) / 100)
         .toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
+    /* ---------- Amounts are typed and shown as figures ----------
+       The boxes are text, not number, so they can carry thousands
+       separators. Everything that reads a box goes through num(), and the
+       commas come off again before the sheet is submitted. */
+
     const num = el => {
-        const v = parseFloat(el.value);
+        const v = parseFloat(String(el.value).replace(/,/g, ''));
         return isNaN(v) ? 0 : v;
     };
+
+    // 35000 -> "35,000", 1234.5 -> "1,234.50", blank stays blank
+    const money = value => {
+        const s = String(value).trim();
+        if (s === '') return '';
+
+        const n = parseFloat(s.replace(/,/g, ''));
+        if (isNaN(n)) return '';
+
+        return n.toLocaleString('en-US', {
+            minimumFractionDigits: Number.isInteger(n) ? 0 : 2,
+            maximumFractionDigits: 2,
+        });
+    };
+
+    const moneyBoxes = () => document.querySelectorAll('#salarySheet input[data-col]');
+
+    function formatBoxes() {
+        moneyBoxes().forEach(el => { el.value = money(el.value); });
+    }
+
+    // Editing is easier without the commas in the way, so they come off while
+    // the box has focus and go back on when it is left.
+    document.addEventListener('focusin', e => {
+        const el = e.target;
+        if (el.matches('#salarySheet input[data-col]')) {
+            el.value = String(el.value).replace(/,/g, '');
+            el.select?.();
+        }
+    });
+
+    document.addEventListener('focusout', e => {
+        const el = e.target;
+        if (el.matches('#salarySheet input[data-col]')) {
+            el.value = money(el.value);
+        }
+    });
 
     function recalc() {
 
@@ -603,7 +657,7 @@
                     el.value = '';
                 }
             } else if (el.dataset.zeroed === '1') {
-                el.value = 0;
+                el.value = '0';
                 delete el.dataset.zeroed;
             }
         });
@@ -670,9 +724,23 @@
         hideBox.addEventListener('change', applyHideEmpty);
     }
 
-    document.querySelectorAll('#salarySheet input[type=number]')
-        .forEach(el => el.addEventListener('input', () => { recalc(); applyHideEmpty(); markEmptyRows(); }));
+    moneyBoxes().forEach(el => el.addEventListener('input', () => {
+        recalc();
+        applyHideEmpty();
+        markEmptyRows();
+    }));
 
+    // Send plain numbers, whatever is on screen.
+    const sheetForm = document.getElementById('salarySheet')?.closest('form');
+    if (sheetForm) {
+        sheetForm.addEventListener('submit', () => {
+            moneyBoxes().forEach(el => {
+                el.value = String(el.value).replace(/,/g, '');
+            });
+        });
+    }
+
+    formatBoxes();
     applyHideZeros();
     recalc();
     applyHideEmpty();
