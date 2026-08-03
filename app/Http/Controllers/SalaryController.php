@@ -240,6 +240,10 @@ public function employeeIndex()
         $taxSlabs  = \App\Models\TaxSlab::activeSlabs();
         $taxBasis  = \App\Models\TaxSlab::basis();
 
+        // What each employee still owes, so the Loan column can show who has a
+        // balance and how much is left to take.
+        $loanBalances = $this->loanBalances($users->pluck('id'));
+
         // Anyone on the payroll who won't appear above, so a missing employee
         // can be explained rather than silently dropped.
         $shownIds = $users->pluck('id');
@@ -269,7 +273,8 @@ public function employeeIndex()
             'taxBasis',
             'sort',
             'dir',
-            'missing'
+            'missing',
+            'loanBalances'
         ));
     }
 
@@ -436,6 +441,14 @@ public function employeeIndex()
 
         if ($drafts->isEmpty()) {
             return back()->with('error', 'There are no draft salaries to post for this sheet.');
+        }
+
+        // A loan deduction with nothing left to repay used to be taken off the
+        // pay and never reach the ledger. Stop the whole sheet and name the
+        // rows to correct rather than post something that cannot be recorded.
+        if ($problems = $this->loanDeductionProblems($drafts)) {
+            return back()->with('error',
+                'Nothing was posted. Fix the Loan column first: '.implode(' ', $problems));
         }
 
         $posted = 0;
@@ -1223,11 +1236,15 @@ public function employeeIndex()
     */
     public function post($id)
 {
-    $salary = Salary::findOrFail($id);
+    $salary = Salary::with('user')->findOrFail($id);
 
     // prevent double posting
     if ($salary->is_posted) {
         return back()->with('error','Salary already posted');
+    }
+
+    if ($problems = $this->loanDeductionProblems(collect([$salary]))) {
+        return back()->with('error', 'Not posted. '.implode(' ', $problems));
     }
 
     $this->processLoanDeductionAndPost($salary);
@@ -1273,26 +1290,7 @@ public function show($id)
     // RESTORE LOAN
     // ==========================
 
-    $ledger = \App\Models\LoanLedger::where('salary_id',$salary->id)->first();
-
-    if($ledger){
-
-        $loan = \App\Models\Loan::find($ledger->loan_id);
-
-        if($loan){
-
-            $loan->remaining_balance += $ledger->amount;
-
-            if($loan->remaining_balance > 0){
-                $loan->status = 'approved';
-            }
-
-            $loan->save();
-        }
-
-        // remove ledger
-        $ledger->delete();
-    }
+    $this->reverseLoanLedger($salary);
 
     // mark salary draft
     $salary->update([
@@ -1315,7 +1313,14 @@ public function show($id)
         return back()->with('error', 'No salaries selected');
     }
 
-    $salaries = Salary::whereIn('id', $request->salary_ids)->get();
+    $salaries = Salary::with('user')->whereIn('id', $request->salary_ids)->get();
+
+    $pending = $salaries->reject(fn ($s) => $s->is_posted);
+
+    if ($problems = $this->loanDeductionProblems($pending)) {
+        return back()->with('error',
+            'Nothing was posted. Fix the Loan column first: '.implode(' ', $problems));
+    }
 
     foreach ($salaries as $salary) {
 
@@ -1356,25 +1361,7 @@ public function show($id)
             continue;
         }
 
-        $ledger = \App\Models\LoanLedger::where('salary_id',$salary->id)->first();
-
-        if($ledger){
-
-            $loan = \App\Models\Loan::find($ledger->loan_id);
-
-            if($loan){
-
-                $loan->remaining_balance += $ledger->amount;
-
-                if($loan->remaining_balance > 0){
-                    $loan->status = 'approved';
-                }
-
-                $loan->save();
-            }
-
-            $ledger->delete();
-        }
+        $this->reverseLoanLedger($salary);
 
         $salary->update([
             'is_posted' => 0,
@@ -1434,7 +1421,12 @@ public function show($id)
     */
     public function postAllDrafts()
     {
-        $drafts = Salary::where('is_posted', false)->get();
+        $drafts = Salary::with('user')->where('is_posted', false)->get();
+
+        if ($problems = $this->loanDeductionProblems($drafts)) {
+            return back()->with('error',
+                'Nothing was posted. Fix the Loan column first: '.implode(' ', $problems));
+        }
 
         foreach ($drafts as $salary) {
             $this->processLoanDeductionAndPost($salary);
@@ -1652,38 +1644,54 @@ public function destroy($id)
     */
     private function processLoanDeductionAndPost(Salary $salary)
     {
-        $loan = \App\Models\Loan::where('user_id', $salary->user_id)
-            ->where('remaining_balance', '>', 0)
-            ->first();
+        $deduction = round((float) $salary->loan_deduction, 2);
 
-        if ($loan && $salary->loan_deduction > 0) {
-            $ledgerExists = \App\Models\LoanLedger::where('salary_id', $salary->id)->exists();
+        if ($deduction > 0 && !\App\Models\LoanLedger::where('salary_id', $salary->id)->exists()) {
 
-            if (!$ledgerExists) {
-                $deduction = $salary->loan_deduction;
+            // Oldest first, so a second loan is only touched once the first is
+            // clear. Anything deducted has to land on a loan; money taken off
+            // someone's pay must never disappear without a ledger entry.
+            $loans = $this->activeLoans($salary->user_id);
 
-                // prevent over deduction
-                if ($loan->remaining_balance < $deduction) {
-                    $deduction = $loan->remaining_balance;
+            $left = $deduction;
+
+            foreach ($loans as $loan) {
+
+                if ($left <= 0) {
+                    break;
                 }
 
-                // update loan balance
-                $loan->remaining_balance -= $deduction;
+                $take = min($left, (float) $loan->remaining_balance);
 
-                // auto close loan
+                $loan->remaining_balance = round($loan->remaining_balance - $take, 2);
+
                 if ($loan->remaining_balance <= 0) {
+                    $loan->remaining_balance = 0;
                     $loan->status = 'closed';
                 }
 
                 $loan->save();
 
-                // insert ledger entry
                 \App\Models\LoanLedger::create([
-                    'loan_id' => $loan->id,
+                    'loan_id'   => $loan->id,
                     'salary_id' => $salary->id,
-                    'amount' => $deduction,
-                    'type' => 'deduction',
-                    'remarks' => 'Salary deduction '.$salary->month.'/'.$salary->year
+                    'amount'    => $take,
+                    'type'      => 'deduction',
+                    'remarks'   => 'Salary deduction '.$salary->month.'/'.$salary->year,
+                ]);
+
+                $left = round($left - $take, 2);
+            }
+
+            // Nothing outstanding to put it against. Posting is blocked before
+            // it gets this far, so reaching here means something is wrong and
+            // it must be recorded rather than quietly pocketed.
+            if ($left > 0) {
+                \Log::error('Loan deduction with nothing to repay', [
+                    'salary_id' => $salary->id,
+                    'user_id'   => $salary->user_id,
+                    'deducted'  => $deduction,
+                    'unapplied' => $left,
                 ]);
             }
         }
@@ -1693,5 +1701,103 @@ public function destroy($id)
             'status' => 'posted',
             'posted_at' => now()
         ]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Loans still being repaid
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Undo whatever a salary took off an employee's loans.
+     *
+     * A single month can touch more than one loan, so every ledger row for the
+     * salary is put back, not just the first.
+     */
+    private function reverseLoanLedger(Salary $salary): void
+    {
+        $entries = \App\Models\LoanLedger::where('salary_id', $salary->id)->get();
+
+        foreach ($entries as $entry) {
+
+            $loan = \App\Models\Loan::find($entry->loan_id);
+
+            if ($loan) {
+                $loan->remaining_balance = round($loan->remaining_balance + $entry->amount, 2);
+
+                if ($loan->remaining_balance > 0) {
+                    $loan->status = 'approved';
+                }
+
+                $loan->save();
+            }
+
+            $entry->delete();
+        }
+    }
+
+    /** An employee's outstanding loans, oldest first. */
+    private function activeLoans(int $userId)
+    {
+        return \App\Models\Loan::where('user_id', $userId)
+            ->where('remaining_balance', '>', 0)
+            ->orderBy('id')
+            ->get();
+    }
+
+    /** Outstanding loan balance per user, for every user id given. */
+    private function loanBalances($userIds): array
+    {
+        return \App\Models\Loan::whereIn('user_id', $userIds)
+            ->where('remaining_balance', '>', 0)
+            ->selectRaw('user_id, SUM(remaining_balance) as balance')
+            ->groupBy('user_id')
+            ->pluck('balance', 'user_id')
+            ->map(fn ($b) => round((float) $b, 2))
+            ->all();
+    }
+
+    /**
+     * Salaries whose loan deduction cannot be repaid.
+     *
+     * Returns one readable line per problem row, so posting can stop and say
+     * exactly which employees to fix.
+     */
+    private function loanDeductionProblems($salaries): array
+    {
+        $problems = [];
+
+        $balances = $this->loanBalances($salaries->pluck('user_id')->unique());
+
+        foreach ($salaries as $salary) {
+
+            $deduction = round((float) $salary->loan_deduction, 2);
+
+            if ($deduction <= 0) {
+                continue;
+            }
+
+            // Already recorded on a previous post, so it is not double counted.
+            if (\App\Models\LoanLedger::where('salary_id', $salary->id)->exists()) {
+                continue;
+            }
+
+            $balance = $balances[$salary->user_id] ?? 0.0;
+            $name    = $salary->user->name ?? ('User #'.$salary->user_id);
+
+            if ($balance <= 0) {
+                $problems[] = $name.' has Rs '.number_format($deduction).
+                    ' in the Loan column but no loan left to repay.';
+                continue;
+            }
+
+            if ($deduction > $balance) {
+                $problems[] = $name.' has Rs '.number_format($deduction).
+                    ' in the Loan column but only Rs '.number_format($balance).' is outstanding.';
+            }
+        }
+
+        return $problems;
     }
 }

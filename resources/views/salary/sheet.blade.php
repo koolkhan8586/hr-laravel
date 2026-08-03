@@ -7,6 +7,7 @@
     $sort    = $sort    ?? 'code';
     $dir     = $dir     ?? 'asc';
     $missing = $missing ?? collect();
+    $loanBalances = $loanBalances ?? [];
 
     $monthName  = \Carbon\Carbon::create()->month($month)->format('F');
     $sheetLabel = match($category) { 'teacher' => 'Teachers', 'all' => 'All Employees', default => 'Staff' };
@@ -208,7 +209,19 @@
             {{ $postedCount }} row(s) already posted.
         </span>
 
+        @php $withLoans = collect($loanBalances)->filter(fn ($b) => $b > 0)->count(); @endphp
+        @if($withLoans)
+        <span class="text-xs text-amber-800 bg-amber-50 border border-amber-200 px-2 py-1 rounded">
+            {{ $withLoans }} employee(s) still owe on a loan &mdash; their
+            <strong>Loan</strong> box is shaded and shows the balance left.
+        </span>
+        @endif
+
     </div>
+
+    <div id="loanWarning"
+         class="bg-red-100 border border-red-300 text-red-800 text-sm p-3 rounded mb-4 no-print"
+         style="display:none"></div>
 
     {{-- ================= PRINT LETTERHEAD ================= --}}
     <div class="sheet-header text-center mb-3">
@@ -355,7 +368,23 @@
                        class="deduction tax-input w-24 p-1 text-right border-0 {{ $roCls }}">
             </td>
 
-            @foreach(['loan_deduction','insurance','other_deductions'] as $field)
+            {{-- LOAN: tinted while there is still something to repay, with the
+                 outstanding balance shown so the amount to take is a choice --}}
+            @php $loanLeft = $loanBalances[$user->id] ?? 0; @endphp
+            <td class="border p-0">
+                <input type="text" inputmode="decimal" data-col="loan_deduction"
+                       name="rows[{{ $i }}][loan_deduction]"
+                       value="{{ $money($row->loan_deduction ?? null) }}" {{ $ro }}
+                       data-loan-balance="{{ $loanLeft }}"
+                       placeholder="{{ $loanLeft > 0 ? number_format($loanLeft) : '' }}"
+                       title="{{ $loanLeft > 0
+                            ? 'Rs '.number_format($loanLeft).' still to repay'
+                            : 'No loan outstanding' }}"
+                       class="deduction loan-input w-24 p-1 text-right border-0 {{ $roCls }}
+                              {{ $loanLeft > 0 ? 'has-loan' : '' }}">
+            </td>
+
+            @foreach(['insurance','other_deductions'] as $field)
             <td class="border p-0">
                 <input type="text" inputmode="decimal" data-col="{{ $field }}"
                        name="rows[{{ $i }}][{{ $field }}]" value="{{ $money($row->$field ?? null) }}" {{ $ro }}
@@ -503,6 +532,16 @@
     #salarySheet tbody tr.salary-row { counter-increment: salaryRow; }
     #salarySheet tbody tr.salary-row .sr-cell::before { content: counter(salaryRow); }
 
+    /* Loan boxes: tinted while there is a balance, warned when the figure
+       typed is more than the employee actually owes. */
+    #salarySheet input.loan-input.has-loan { background: #fff7e6; }
+    #salarySheet input.loan-input.loan-over {
+        background: #fee2e2;
+        color: #991b1b;
+        font-weight: 600;
+    }
+    #salarySheet input.loan-input::placeholder { color: #b45309; opacity: .55; }
+
 @media print {
     .sheet-header { display: block !important; }
     .sign-off { display: flex !important; }
@@ -630,6 +669,42 @@
         document.getElementById('recBank').textContent   = fmt(grandNet - grandCheque);
     }
 
+    /* ---------- Loan boxes ----------
+       Taking more than the employee owes cannot be recorded against the loan,
+       so it is flagged here rather than being discovered at posting time. */
+
+    function checkLoans() {
+        let over = 0;
+
+        document.querySelectorAll('#salarySheet input.loan-input').forEach(el => {
+            const balance = parseFloat(el.dataset.loanBalance) || 0;
+            const wanted  = num(el);
+            const bad     = wanted > 0 && wanted > balance + 0.005;
+
+            el.classList.toggle('loan-over', bad);
+
+            if (bad) {
+                over++;
+                el.title = balance > 0
+                    ? 'Only Rs ' + balance.toLocaleString('en-US') + ' is left to repay'
+                    : 'This employee has no loan outstanding';
+            } else if (balance > 0) {
+                el.title = 'Rs ' + balance.toLocaleString('en-US') + ' still to repay';
+            } else {
+                el.title = 'No loan outstanding';
+            }
+        });
+
+        const note = document.getElementById('loanWarning');
+        if (note) {
+            note.textContent = over
+                ? over + ' loan deduction(s) are more than the employee owes. '
+                  + 'The sheet will not post until they are corrected.'
+                : '';
+            note.style.display = over ? '' : 'none';
+        }
+    }
+
     /* ---------- Rows with no salary are left off the printout ---------- */
 
     function markEmptyRows() {
@@ -728,6 +803,7 @@
         recalc();
         applyHideEmpty();
         markEmptyRows();
+        checkLoans();
     }));
 
     // Send plain numbers, whatever is on screen.
@@ -745,6 +821,7 @@
     recalc();
     applyHideEmpty();
     markEmptyRows();
+    checkLoans();
 })();
 </script>
 
