@@ -223,6 +223,33 @@
          class="bg-red-100 border border-red-300 text-red-800 text-sm p-3 rounded mb-4 no-print"
          style="display:none"></div>
 
+    <details class="bg-white border border-gray-200 rounded text-sm mb-4 no-print">
+        <summary class="cursor-pointer px-3 py-2 text-gray-700">
+            Using formulas in a cell
+        </summary>
+        <div class="px-3 pb-3 text-gray-600 space-y-1">
+            <p>Start a cell with <code class="bg-gray-100 px-1">=</code> to work the figure out instead of typing it:</p>
+            <ul class="list-disc ml-6">
+                <li><code class="bg-gray-100 px-1">=6*87</code> &mdash; arithmetic with <code>+ - * /</code> and brackets</li>
+                <li><code class="bg-gray-100 px-1">=(50000+5000)/2</code></li>
+                <li><code class="bg-gray-100 px-1">=wages*0.1</code> &mdash; a column on the same employee's row</li>
+                <li><code class="bg-gray-100 px-1">=tax+loan</code></li>
+            </ul>
+            <p>
+                Column names are the headings above &mdash; Salary &amp; Wages, Extra Load,
+                Invigilation, T.Payment, Eidi, Increment, Extra Leaves, Tax, Loan,
+                Insurance, Cheque Amount and any you have added yourself. Spacing and
+                capitals do not matter, and <em>wages</em>, <em>tax</em>, <em>loan</em>
+                and <em>cheque</em> are accepted as short forms.
+            </p>
+            <p>
+                The cell shows the answer with a small blue corner. Click into it to see
+                the formula again, and it is still there next time the sheet is opened.
+                A formula that cannot be worked out turns red and leaves the cell empty.
+            </p>
+        </div>
+    </details>
+
     {{-- ================= PRINT LETTERHEAD ================= --}}
     <div class="sheet-header text-center mb-3">
         <div class="flex items-center justify-center gap-3">
@@ -321,6 +348,7 @@
             @foreach(['basic_salary','extra_load','invigilation'] as $field)
             <td class="border p-0">
                 <input type="text" inputmode="decimal" data-col="{{ $field }}"
+                       data-formula="{{ $row?->formulaFor($field) }}"
                        name="rows[{{ $i }}][{{ $field }}]" value="{{ $money($row->$field ?? null) }}" {{ $ro }}
                        class="earning w-24 p-1 text-right border-0 {{ $roCls }}">
             </td>
@@ -329,6 +357,7 @@
             @if($showTPayment)
             <td class="border p-0">
                 <input type="text" inputmode="decimal" data-col="t_payment"
+                       data-formula="{{ $row?->formulaFor('t_payment') }}"
                        name="rows[{{ $i }}][t_payment]" value="{{ $money($row->t_payment ?? null) }}" {{ $ro }}
                        class="earning w-24 p-1 text-right border-0 {{ $roCls }}">
             </td>
@@ -339,6 +368,7 @@
             @foreach(['eidi','increment'] as $field)
             <td class="border p-0">
                 <input type="text" inputmode="decimal" data-col="{{ $field }}"
+                       data-formula="{{ $row?->formulaFor($field) }}"
                        name="rows[{{ $i }}][{{ $field }}]" value="{{ $money($row->$field ?? null) }}" {{ $ro }}
                        class="earning w-24 p-1 text-right border-0 {{ $roCls }}">
             </td>
@@ -347,6 +377,8 @@
             @foreach($earningColumns as $col)
             <td class="border p-0">
                 <input type="text" inputmode="decimal" data-col="custom_{{ $col->id }}"
+                       data-col-name="{{ $col->name }}"
+                       data-formula="{{ $row?->formulaFor('custom_'.$col->id) }}"
                        name="rows[{{ $i }}][custom][{{ $col->id }}]"
                        value="{{ $row && $row->customValue($col->id) != 0 ? $money($row->customValue($col->id)) : '' }}" {{ $ro }}
                        class="earning w-24 p-1 text-right border-0 {{ $roCls }}">
@@ -358,12 +390,14 @@
             {{-- DEDUCTIONS --}}
             <td class="border p-0">
                 <input type="text" inputmode="decimal" data-col="extra_leaves"
+                       data-formula="{{ $row?->formulaFor('extra_leaves') }}"
                        name="rows[{{ $i }}][extra_leaves]" value="{{ $money($row->extra_leaves ?? null) }}" {{ $ro }}
                        class="deduction w-24 p-1 text-right border-0 {{ $roCls }}">
             </td>
 
             <td class="border p-0">
                 <input type="text" inputmode="decimal" data-col="income_tax"
+                       data-formula="{{ $row?->formulaFor('income_tax') }}"
                        name="rows[{{ $i }}][income_tax]" value="{{ $money($row->income_tax ?? null) }}" {{ $ro }}
                        class="deduction tax-input w-24 p-1 text-right border-0 {{ $roCls }}">
             </td>
@@ -373,6 +407,7 @@
             @php $loanLeft = $loanBalances[$user->id] ?? 0; @endphp
             <td class="border p-0">
                 <input type="text" inputmode="decimal" data-col="loan_deduction"
+                       data-formula="{{ $row?->formulaFor('loan_deduction') }}"
                        name="rows[{{ $i }}][loan_deduction]"
                        value="{{ $money($row->loan_deduction ?? null) }}" {{ $ro }}
                        data-loan-balance="{{ $loanLeft }}"
@@ -387,6 +422,7 @@
             @foreach(['insurance','other_deductions'] as $field)
             <td class="border p-0">
                 <input type="text" inputmode="decimal" data-col="{{ $field }}"
+                       data-formula="{{ $row?->formulaFor($field) }}"
                        name="rows[{{ $i }}][{{ $field }}]" value="{{ $money($row->$field ?? null) }}" {{ $ro }}
                        class="deduction w-24 p-1 text-right border-0 {{ $roCls }}">
             </td>
@@ -395,6 +431,8 @@
             @foreach($deductionColumns as $col)
             <td class="border p-0">
                 <input type="text" inputmode="decimal" data-col="custom_{{ $col->id }}"
+                       data-col-name="{{ $col->name }}"
+                       data-formula="{{ $row?->formulaFor('custom_'.$col->id) }}"
                        name="rows[{{ $i }}][custom][{{ $col->id }}]"
                        value="{{ $row && $row->customValue($col->id) != 0 ? $money($row->customValue($col->id)) : '' }}" {{ $ro }}
                        class="deduction w-24 p-1 text-right border-0 {{ $roCls }}">
@@ -407,6 +445,7 @@
 
             <td class="border p-0">
                 <input type="text" inputmode="decimal" data-col="cheque_amount"
+                       data-formula="{{ $row?->formulaFor('cheque_amount') }}"
                        name="rows[{{ $i }}][cheque_amount]" value="{{ $money($row->cheque_amount ?? null) }}" {{ $ro }}
                        class="cheque w-24 p-1 text-right border-0 bg-yellow-50"
                        title="Leave blank if paid through the bank">
@@ -542,6 +581,16 @@
     }
     #salarySheet input.loan-input::placeholder { color: #b45309; opacity: .55; }
 
+    /* A figure worked out from a formula is marked with a small corner tick,
+       so it is obvious which cells carry workings. */
+    #salarySheet input.has-formula {
+        background-image: linear-gradient(225deg, #3b82f6 5px, transparent 5px);
+    }
+    #salarySheet input.formula-bad {
+        background: #fee2e2;
+        background-image: linear-gradient(225deg, #dc2626 5px, transparent 5px);
+    }
+
 @media print {
     .sheet-header { display: block !important; }
     .sign-off { display: flex !important; }
@@ -572,7 +621,16 @@
        commas come off again before the sheet is submitted. */
 
     const num = el => {
-        const v = parseFloat(String(el.value).replace(/,/g, ''));
+        const raw = String(el.value).trim();
+
+        // A box showing its own formula still counts as the figure it worked
+        // out, so the totals do not drop to zero while it is being edited.
+        if (raw.startsWith('=')) {
+            const computed = parseFloat(el.dataset.computed);
+            return isNaN(computed) ? 0 : computed;
+        }
+
+        const v = parseFloat(raw.replace(/,/g, ''));
         return isNaN(v) ? 0 : v;
     };
 
@@ -596,21 +654,204 @@
         moneyBoxes().forEach(el => { el.value = money(el.value); });
     }
 
-    // Editing is easier without the commas in the way, so they come off while
-    // the box has focus and go back on when it is left.
+    /* ---------- Formulas ----------
+       A cell may hold an expression instead of a figure: "=6*87", or
+       "=wages*0.1" to point at another column on the same employee's row.
+       The sheet shows the result; clicking into the cell shows the working. */
+
+    // Column names a formula may use, on top of each column's own heading.
+    const ALIASES = {
+        basic_salary:     ['salary', 'wages', 'basic', 'salarywages', 'salaryandwages'],
+        extra_load:       ['extraload'],
+        t_payment:        ['tpayment'],
+        extra_leaves:     ['extraleaves'],
+        income_tax:       ['tax'],
+        loan_deduction:   ['loan'],
+        other_deductions: ['other'],
+        cheque_amount:    ['cheque'],
+    };
+
+    // Names are matched loosely: "Salary & Wages", "salary_wages" and
+    // "SalaryWages" are all the same column.
+    const key = s => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    function rowColumns(row) {
+        const map = {};
+
+        row.querySelectorAll('input[data-col]').forEach(el => {
+            map[key(el.dataset.col)] = el;
+            if (el.dataset.colName) map[key(el.dataset.colName)] = el;
+        });
+
+        Object.keys(ALIASES).forEach(col => {
+            const el = map[key(col)];
+            if (el) ALIASES[col].forEach(name => { map[key(name)] = el; });
+        });
+
+        return map;
+    }
+
+    // A small reader for + - * / and brackets. Deliberately not eval(), so
+    // nothing but arithmetic and column names can ever run.
+    function evaluate(src, columns, seen) {
+
+        let i = 0;
+        const ws = () => { while (i < src.length && /\s/.test(src[i])) i++; };
+
+        function expression() {
+            let value = term();
+            ws();
+            while (src[i] === '+' || src[i] === '-') {
+                const op = src[i++];
+                const rhs = term();
+                value = op === '+' ? value + rhs : value - rhs;
+                ws();
+            }
+            return value;
+        }
+
+        function term() {
+            let value = factor();
+            ws();
+            while (src[i] === '*' || src[i] === '/') {
+                const op = src[i++];
+                const rhs = factor();
+                if (op === '/' && rhs === 0) throw new Error('divide by zero');
+                value = op === '*' ? value * rhs : value / rhs;
+                ws();
+            }
+            return value;
+        }
+
+        function factor() {
+            ws();
+
+            if (src[i] === '+') { i++; return factor(); }
+            if (src[i] === '-') { i++; return -factor(); }
+
+            if (src[i] === '(') {
+                i++;
+                const value = expression();
+                ws();
+                if (src[i] !== ')') throw new Error('missing )');
+                i++;
+                return value;
+            }
+
+            const number = /^\d*\.?\d+/.exec(src.slice(i));
+            if (number) { i += number[0].length; return parseFloat(number[0]); }
+
+            const name = /^[A-Za-z_][A-Za-z0-9_ &]*/.exec(src.slice(i));
+            if (name) { i += name[0].length; return column(name[0].trim(), columns, seen); }
+
+            throw new Error('cannot read "' + src.slice(i) + '"');
+        }
+
+        const value = expression();
+        ws();
+        if (i !== src.length) throw new Error('cannot read "' + src.slice(i) + '"');
+        return value;
+    }
+
+    function column(name, columns, seen) {
+        const el = columns[key(name)];
+        if (!el) throw new Error('no column called "' + name + '"');
+
+        const formula = el.dataset.formula || '';
+
+        if (formula.startsWith('=')) {
+            const col = el.dataset.col;
+            if (seen.has(col)) throw new Error('these cells refer to each other');
+
+            seen.add(col);
+            const value = evaluate(formula.slice(1), columns, seen);
+            seen.delete(col);
+            return value;
+        }
+
+        return num(el);
+    }
+
+    function applyFormulas() {
+        document.querySelectorAll('.salary-row').forEach(row => {
+
+            const columns = rowColumns(row);
+
+            row.querySelectorAll('input[data-formula]').forEach(el => {
+
+                const formula = el.dataset.formula || '';
+                if (!formula.startsWith('=')) return;
+
+                // Leave the box alone while it is being typed into.
+                if (document.activeElement === el) return;
+
+                let value;
+
+                try {
+                    value = evaluate(formula.slice(1), columns, new Set([el.dataset.col]));
+                } catch (err) {
+                    el.classList.add('formula-bad');
+                    el.title = formula + ' — ' + err.message;
+                    el.dataset.computed = '0';
+                    el.value = '';
+                    return;
+                }
+
+                if (!isFinite(value)) {
+                    el.classList.add('formula-bad');
+                    el.title = formula + ' — not a number';
+                    el.dataset.computed = '0';
+                    el.value = '';
+                    return;
+                }
+
+                value = Math.round(value * 100) / 100;
+
+                el.classList.remove('formula-bad');
+                el.classList.add('has-formula');
+                el.title = formula;
+                el.dataset.computed = String(value);
+                el.value = money(value);
+            });
+        });
+    }
+
+    // Editing is easier without the commas in the way, and a cell worked out
+    // from a formula shows that formula while it is being edited.
     document.addEventListener('focusin', e => {
         const el = e.target;
-        if (el.matches('#salarySheet input[data-col]')) {
-            el.value = String(el.value).replace(/,/g, '');
-            el.select?.();
-        }
+        if (!el.matches('#salarySheet input[data-col]')) return;
+
+        const formula = el.dataset.formula || '';
+
+        el.value = formula.startsWith('=')
+            ? formula
+            : String(el.value).replace(/,/g, '');
+
+        el.select?.();
     });
 
     document.addEventListener('focusout', e => {
         const el = e.target;
-        if (el.matches('#salarySheet input[data-col]')) {
-            el.value = money(el.value);
+        if (!el.matches('#salarySheet input[data-col]')) return;
+
+        const typed = String(el.value).trim();
+
+        if (typed.startsWith('=')) {
+            el.dataset.formula = typed;
+        } else {
+            delete el.dataset.formula;
+            el.classList.remove('has-formula', 'formula-bad');
+            el.title = '';
+            delete el.dataset.computed;
+            el.value = money(typed);
         }
+
+        applyFormulas();
+        recalc();
+        applyHideEmpty();
+        markEmptyRows();
+        checkLoans();
     });
 
     function recalc() {
@@ -806,10 +1047,42 @@
         checkLoans();
     }));
 
-    // Send plain numbers, whatever is on screen.
+    /* ---------- Submitting ----------
+       Amounts go up as plain numbers exactly as they always did. The workings
+       ride along beside them so the sheet reopens with the formulas intact. */
+
     const sheetForm = document.getElementById('salarySheet')?.closest('form');
+
     if (sheetForm) {
         sheetForm.addEventListener('submit', () => {
+
+            // Whatever is half-typed in the focused box is settled first.
+            document.activeElement?.blur?.();
+            applyFormulas();
+
+            sheetForm.querySelectorAll('input.formula-field').forEach(el => el.remove());
+
+            document.querySelectorAll('.salary-row').forEach(row => {
+
+                const owner = row.querySelector('input[name$="[user_id]"]');
+                if (!owner) return;
+
+                const index = owner.name.slice(owner.name.indexOf('[') + 1, owner.name.indexOf(']'));
+
+                row.querySelectorAll('input[data-col]').forEach(el => {
+
+                    const formula = el.dataset.formula || '';
+                    if (!formula.startsWith('=')) return;
+
+                    const hidden = document.createElement('input');
+                    hidden.type = 'hidden';
+                    hidden.className = 'formula-field';
+                    hidden.name = 'rows[' + index + '][formulas][' + el.dataset.col + ']';
+                    hidden.value = formula;
+                    sheetForm.appendChild(hidden);
+                });
+            });
+
             moneyBoxes().forEach(el => {
                 el.value = String(el.value).replace(/,/g, '');
             });
@@ -817,6 +1090,7 @@
     }
 
     formatBoxes();
+    applyFormulas();
     applyHideZeros();
     recalc();
     applyHideEmpty();

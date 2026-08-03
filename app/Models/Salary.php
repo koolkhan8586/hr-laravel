@@ -36,6 +36,7 @@ class Salary extends Model
         'net_salary',
         'cheque_amount',
         'custom_values',
+        'formulas',
 
         // Status
         'is_posted',
@@ -47,6 +48,7 @@ class Salary extends Model
         'is_posted'     => 'boolean',
         'posted_at'     => 'datetime',
         'custom_values' => 'array',
+        'formulas'      => 'array',
     ];
 
     protected static function boot()
@@ -115,6 +117,16 @@ class Salary extends Model
     public function customValue($columnId)
     {
         return (float) (($this->custom_values ?? [])[$columnId] ?? 0);
+    }
+
+    /**
+     * The expression a figure was worked out from, if one was used.
+     *
+     * Custom columns are keyed "custom_<id>", matching the sheet's own naming.
+     */
+    public function formulaFor(string $field): string
+    {
+        return (string) (($this->formulas ?? [])[$field] ?? '');
     }
 
     /**
