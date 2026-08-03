@@ -385,6 +385,10 @@ public function employeeIndex()
 
                 'cheque_amount'    => $row->cheque_amount,
                 'custom_values'    => $row->custom_values,
+
+                // Carry the workings over too, so a copied month can be
+                // adjusted rather than re-derived from scratch.
+                'formulas'         => $row->formulas,
             ];
 
             if ($target) {
@@ -505,6 +509,15 @@ public function employeeIndex()
             ->pluck('id')
             ->all();
 
+        // The cells a formula may be stored against: the fixed columns of the
+        // sheet plus whichever custom ones this category has.
+        $formulaFields = array_merge([
+            'basic_salary', 'extra_load', 'invigilation', 't_payment', 'eidi',
+            'increment', 'other_earnings',
+            'extra_leaves', 'income_tax', 'loan_deduction', 'insurance',
+            'other_deductions', 'cheque_amount',
+        ], array_map(fn ($id) => 'custom_'.$id, $columnIds));
+
         $saved   = 0;
         $skipped = 0;
 
@@ -553,12 +566,35 @@ public function employeeIndex()
                 }
             }
 
+            // How each figure was worked out, kept so "=6*87" is still there
+            // when the sheet is reopened. Only the expression is stored; the
+            // amount itself stays a plain number for everything downstream.
+            $formulas = [];
+
+            foreach (($row['formulas'] ?? []) as $field => $expression) {
+
+                $expression = trim((string) $expression);
+
+                if ($expression === '' || !str_starts_with($expression, '=')) {
+                    continue;
+                }
+
+                // Only the sheet's own columns, so nothing unexpected is kept.
+                if (!in_array($field, $formulaFields, true)) {
+                    continue;
+                }
+
+                $formulas[$field] = mb_substr($expression, 0, 200);
+            }
+
             // Skip untouched rows so blank employees don't create empty records.
-            if (!$existing && empty($custom) && collect($values)->every(fn ($v) => $v == 0)) {
+            if (!$existing && empty($custom) && empty($formulas)
+                && collect($values)->every(fn ($v) => $v == 0)) {
                 continue;
             }
 
             $values['custom_values'] = $custom ?: null;
+            $values['formulas']      = $formulas ?: null;
 
             if ($existing) {
                 $existing->update($values);
