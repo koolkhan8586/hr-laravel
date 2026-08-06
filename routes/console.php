@@ -53,6 +53,20 @@ Schedule::command('attendance:auto-clockout')
 
 /*
 |--------------------------------------------------------------------------
+| WhatsApp Attendance Reminder (WAHA)
+|--------------------------------------------------------------------------
+| Runs every minute. Sends a reminder 1 hour after each employee's
+| shift start if they have not clocked in and have not applied leave.
+*/
+
+Schedule::command('attendance:whatsapp-reminder')
+    ->everyMinute()
+    ->timezone('Asia/Karachi')
+    ->withoutOverlapping();
+
+
+/*
+|--------------------------------------------------------------------------
 | Daily Attendance Summary
 |--------------------------------------------------------------------------
 */

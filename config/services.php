@@ -35,4 +35,22 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | WAHA (WhatsApp HTTP API)
+    |--------------------------------------------------------------------------
+    |
+    | Used to send attendance reminders via WhatsApp.
+    | Docs: https://waha.devlike.pro/docs/how-to/send-messages/
+    |
+    */
+    'waha' => [
+        'enabled' => env('WAHA_ENABLED', false),
+        'base_url' => env('WAHA_BASE_URL'),
+        'api_key' => env('WAHA_API_KEY'),
+        'session' => env('WAHA_SESSION', 'default'),
+        'default_country_code' => env('WAHA_DEFAULT_COUNTRY_CODE', '92'),
+        'timeout' => env('WAHA_TIMEOUT', 20),
+    ],
+
 ];
