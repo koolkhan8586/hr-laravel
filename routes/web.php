@@ -19,6 +19,8 @@ use App\Http\Controllers\OfficeLocationController;
 use App\Http\Controllers\LeaveApprovalEmailController;
 use App\Http\Controllers\LeaveApprovalWhatsappController;
 use App\Http\Controllers\SalarySettingController;
+use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\AnnouncementController;
 
 
 /*
@@ -383,6 +385,20 @@ Route::delete('/leave-approval-emails/{id}', [LeaveApprovalEmailController::clas
 Route::get('/leave-approval-whatsapp', [LeaveApprovalWhatsappController::class, 'index'])->name('leave.approval.whatsapp.index');
 Route::post('/leave-approval-whatsapp', [LeaveApprovalWhatsappController::class, 'store'])->name('leave.approval.whatsapp.store');
 Route::delete('/leave-approval-whatsapp/{id}', [LeaveApprovalWhatsappController::class, 'destroy'])->name('leave.approval.whatsapp.destroy');
+
+/*
+|--------------------------------------------------------------------------
+| Settings & Announcements
+|--------------------------------------------------------------------------
+*/
+Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+Route::post('/settings/daily-numbers', [SettingsController::class, 'storeDailyNumber'])->name('settings.daily-numbers.store');
+Route::post('/settings/daily-numbers/{id}/toggle', [SettingsController::class, 'toggleDailyNumber'])->name('settings.daily-numbers.toggle');
+Route::delete('/settings/daily-numbers/{id}', [SettingsController::class, 'destroyDailyNumber'])->name('settings.daily-numbers.destroy');
+Route::post('/settings/test-email', [SettingsController::class, 'sendTestEmail'])->name('settings.test.email');
+
+Route::get('/announcements', [AnnouncementController::class, 'index'])->name('announcements.index');
+Route::post('/announcements/send', [AnnouncementController::class, 'send'])->name('announcements.send');
 
     // Loan Management moved to separate role group below
 

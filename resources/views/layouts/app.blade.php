@@ -290,7 +290,28 @@ Approval WhatsApp Numbers
 </div>
 </div>
 
-<!-- SALARY -->
+<!-- COMMUNICATIONS -->
+
+<div x-data="{open:false}">
+<button @click="open=!open"
+class="w-full text-left px-3 py-2 rounded hover:bg-gray-200 font-semibold">
+Communications
+</button>
+
+<div x-show="open" class="pl-4 space-y-1">
+
+<a href="{{ route('admin.settings.index') }}" class="block py-1 hover:text-blue-600">
+Settings
+</a>
+
+<a href="{{ route('admin.announcements.index') }}" class="block py-1 hover:text-blue-600">
+Announcements
+</a>
+
+</div>
+</div>
+
+<!-- WFH -->
 
 <div x-data="{open:false}">
 <button @click="open=!open"
