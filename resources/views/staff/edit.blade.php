@@ -44,6 +44,18 @@
             </div>
 
             <div>
+                <label class="block font-semibold mb-1">Mobile Number</label>
+                <input type="text"
+                       name="mobile"
+                       value="{{ old('mobile', $staff->user->mobile) }}"
+                       placeholder="03001234567"
+                       class="w-full border p-2 rounded">
+                <p class="text-xs text-gray-500 mt-1">
+                    Used for WhatsApp attendance reminders (e.g. 03001234567 or 923001234567).
+                </p>
+            </div>
+
+            <div>
     <label class="block font-semibold mb-1">Employee Code</label>
 
     <!-- SHOW (readonly) -->
