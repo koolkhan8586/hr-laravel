@@ -78,6 +78,7 @@ class StaffController extends Controller
     $request->validate([
     'name' => 'required',
     'email' => 'required|email|unique:users,email',
+    'mobile' => 'nullable|string|max:20',
     'employee_code' => 'required|unique:staff,employee_id',
     'department' => 'required',
     'designation' => 'required',
@@ -95,6 +96,7 @@ class StaffController extends Controller
     $user = User::create([
         'name' => $request->name,
         'email' => $request->email,
+        'mobile' => $request->mobile,
         'employee_code' => $employeeCode,
         'password' => \Hash::make($password),
         'force_password_change' => true,
@@ -188,6 +190,7 @@ class StaffController extends Controller
     $request->validate([
         'name'          => 'required',
         'email'         => 'required|email|unique:users,email,' . $staff->user->id,
+        'mobile'        => 'nullable|string|max:20',
         'employee_code' => 'required|unique:users,employee_code,' . $staff->user->id,
         'department'    => 'required',
         'designation'   => 'required',
@@ -208,6 +211,7 @@ class StaffController extends Controller
     $staff->user->update([
         'name'          => $request->name,
         'email'         => $request->email,
+        'mobile'        => $request->mobile,
         'employee_code' => strtoupper($request->employee_code),
         'office_location_id' => $request->office_location_id,
 
