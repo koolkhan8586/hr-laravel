@@ -67,6 +67,20 @@ Schedule::command('attendance:whatsapp-reminder')
 
 /*
 |--------------------------------------------------------------------------
+| Daily WhatsApp Attendance Report (WAHA)
+|--------------------------------------------------------------------------
+| At 11:38 AM sends Absent / Late / Leave employee lists to numbers
+| configured in WAHA_DAILY_REPORT_MOBILES.
+*/
+
+Schedule::command('attendance:whatsapp-daily-report')
+    ->dailyAt('11:38')
+    ->timezone('Asia/Karachi')
+    ->withoutOverlapping();
+
+
+/*
+|--------------------------------------------------------------------------
 | Daily Attendance Summary
 |--------------------------------------------------------------------------
 */

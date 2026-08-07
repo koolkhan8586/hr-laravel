@@ -17,6 +17,7 @@ use App\Http\Controllers\WorkFromHomeController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\OfficeLocationController;
 use App\Http\Controllers\LeaveApprovalEmailController;
+use App\Http\Controllers\LeaveApprovalWhatsappController;
 use App\Http\Controllers\SalarySettingController;
 
 
@@ -378,6 +379,10 @@ Route::post('/leave/bulk-allocation',[LeaveController::class, 'bulkAllocate'])->
 Route::get('/leave-approval-emails', [LeaveApprovalEmailController::class, 'index'])->name('leave.approval.emails.index');
 Route::post('/leave-approval-emails', [LeaveApprovalEmailController::class, 'store'])->name('leave.approval.emails.store');
 Route::delete('/leave-approval-emails/{id}', [LeaveApprovalEmailController::class, 'destroy'])->name('leave.approval.emails.destroy');
+
+Route::get('/leave-approval-whatsapp', [LeaveApprovalWhatsappController::class, 'index'])->name('leave.approval.whatsapp.index');
+Route::post('/leave-approval-whatsapp', [LeaveApprovalWhatsappController::class, 'store'])->name('leave.approval.whatsapp.store');
+Route::delete('/leave-approval-whatsapp/{id}', [LeaveApprovalWhatsappController::class, 'destroy'])->name('leave.approval.whatsapp.destroy');
 
     // Loan Management moved to separate role group below
 

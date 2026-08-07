@@ -8,6 +8,7 @@ use App\Models\LeaveTransaction;
 use App\Models\LeaveBalance;
 use App\Models\LeaveApprovalEmail;
 use App\Mail\LeaveApplicationSubmitted;
+use App\Services\LeaveWhatsAppNotifier;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
@@ -163,6 +164,9 @@ public function store(Request $request)
         foreach($recipients as $recipientEmail){
             Mail::to($recipientEmail)->send(new LeaveApplicationSubmitted($leave, $recipientEmail));
         }
+
+        // WhatsApp notify to configured leave-approval numbers (with approve/reject links)
+        app(LeaveWhatsAppNotifier::class)->notifyApprovers($leave);
     }
 
     if(auth()->user()->role === 'admin'){
@@ -260,6 +264,7 @@ public function store(Request $request)
 
         $leave = Leave::with('user')->findOrFail($id);
         $approverEmail = $request->query('email');
+        $decidedVia = $request->query('via') === 'whatsapp' ? 'whatsapp' : 'email';
 
         if ($leave->status !== 'pending') {
             return view('leave.email-decision-result', [
@@ -280,7 +285,7 @@ public function store(Request $request)
 
             $leave->update([
                 'status' => 'approved',
-                'decided_via' => 'email',
+                'decided_via' => $decidedVia,
                 'decided_by_email' => $approverEmail,
             ]);
 
@@ -294,7 +299,7 @@ public function store(Request $request)
 
         $leave->update([
             'status' => 'rejected',
-            'decided_via' => 'email',
+            'decided_via' => $decidedVia,
             'decided_by_email' => $approverEmail,
         ]);
 

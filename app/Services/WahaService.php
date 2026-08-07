@@ -108,4 +108,35 @@ class WahaService
 
         return $this->sendText($chatId, $text);
     }
+
+    /**
+     * Parse a comma/space/newline separated list of mobiles from config or input.
+     *
+     * @return array<int, string>
+     */
+    public function parseMobileList(?string $raw): array
+    {
+        if (!filled($raw)) {
+            return [];
+        }
+
+        $parts = preg_split('/[\s,;]+/', $raw) ?: [];
+
+        return collect($parts)
+            ->map(fn ($m) => trim($m))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Mobiles configured for the daily Absent/Late/Leave WhatsApp report.
+     *
+     * @return array<int, string>
+     */
+    public function dailyReportMobiles(): array
+    {
+        return $this->parseMobileList(config('services.waha.daily_report_mobiles'));
+    }
 }

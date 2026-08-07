@@ -51,6 +51,8 @@ return [
         'session' => env('WAHA_SESSION', 'default'),
         'default_country_code' => env('WAHA_DEFAULT_COUNTRY_CODE', '92'),
         'timeout' => env('WAHA_TIMEOUT', 20),
+        // Comma-separated mobiles for the 11:38 daily Absent/Late/Leave report
+        'daily_report_mobiles' => env('WAHA_DAILY_REPORT_MOBILES', ''),
     ],
 
 ];
