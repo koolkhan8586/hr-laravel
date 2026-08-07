@@ -283,6 +283,10 @@ Leave Transactions
 Approval Notification Emails
 </a>
 
+<a href="{{ route('admin.leave.approval.whatsapp.index') }}" class="block py-1 hover:text-blue-600">
+Approval WhatsApp Numbers
+</a>
+
 </div>
 </div>
 
