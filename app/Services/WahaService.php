@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\DailyReportWhatsappNumber;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -48,15 +49,8 @@ class WahaService
         return $digits . '@c.us';
     }
 
-    public function sendText(string $chatId, string $text): bool
+    protected function headers(): array
     {
-        if (!$this->enabled()) {
-            Log::warning('WAHA is disabled or base URL is missing.');
-            return false;
-        }
-
-        $url = rtrim(config('services.waha.base_url'), '/') . '/api/sendText';
-
         $headers = [
             'Accept' => 'application/json',
             'Content-Type' => 'application/json',
@@ -67,8 +61,20 @@ class WahaService
             $headers['X-Api-Key'] = $apiKey;
         }
 
+        return $headers;
+    }
+
+    public function sendText(string $chatId, string $text): bool
+    {
+        if (!$this->enabled()) {
+            Log::warning('WAHA is disabled or base URL is missing.');
+            return false;
+        }
+
+        $url = rtrim(config('services.waha.base_url'), '/') . '/api/sendText';
+
         try {
-            $response = Http::withHeaders($headers)
+            $response = Http::withHeaders($this->headers())
                 ->timeout((int) config('services.waha.timeout', 20))
                 ->post($url, [
                     'session' => config('services.waha.session', 'default'),
@@ -110,6 +116,61 @@ class WahaService
     }
 
     /**
+     * Check WAHA session status via GET /api/sessions/{session}.
+     *
+     * @return array{connected: bool, status: string, detail: string, me: ?string}
+     */
+    public function connectionStatus(): array
+    {
+        if (!$this->enabled()) {
+            return [
+                'connected' => false,
+                'status' => 'DISABLED',
+                'detail' => 'WAHA is disabled or WAHA_BASE_URL is missing in .env.',
+                'me' => null,
+            ];
+        }
+
+        $session = config('services.waha.session', 'default');
+        $url = rtrim(config('services.waha.base_url'), '/') . '/api/sessions/' . rawurlencode($session);
+
+        try {
+            $response = Http::withHeaders($this->headers())
+                ->timeout((int) config('services.waha.timeout', 20))
+                ->get($url);
+
+            if (!$response->successful()) {
+                return [
+                    'connected' => false,
+                    'status' => 'ERROR',
+                    'detail' => 'HTTP '.$response->status().': '.$response->body(),
+                    'me' => null,
+                ];
+            }
+
+            $data = $response->json() ?? [];
+            $status = strtoupper((string) ($data['status'] ?? 'UNKNOWN'));
+            $me = $data['me']['id'] ?? $data['me']['pushName'] ?? null;
+
+            return [
+                'connected' => $status === 'WORKING',
+                'status' => $status,
+                'detail' => $status === 'WORKING'
+                    ? 'Session is working and ready to send messages.'
+                    : 'Session status is '.$status.'. Scan QR or restart the session if needed.',
+                'me' => $me,
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'connected' => false,
+                'status' => 'UNREACHABLE',
+                'detail' => $e->getMessage(),
+                'me' => null,
+            ];
+        }
+    }
+
+    /**
      * Parse a comma/space/newline separated list of mobiles from config or input.
      *
      * @return array<int, string>
@@ -131,12 +192,26 @@ class WahaService
     }
 
     /**
-     * Mobiles configured for the daily Absent/Late/Leave WhatsApp report.
+     * Mobiles for the daily Absent/Late/Leave WhatsApp report.
+     * Prefers active DB numbers from Settings; also merges any env fallback.
      *
      * @return array<int, string>
      */
     public function dailyReportMobiles(): array
     {
-        return $this->parseMobileList(config('services.waha.daily_report_mobiles'));
+        $fromDb = DailyReportWhatsappNumber::query()
+            ->where('is_active', true)
+            ->pluck('mobile')
+            ->all();
+
+        $fromEnv = $this->parseMobileList(config('services.waha.daily_report_mobiles'));
+
+        return collect($fromDb)
+            ->merge($fromEnv)
+            ->map(fn ($m) => trim((string) $m))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
     }
 }
