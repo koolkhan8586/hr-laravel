@@ -311,7 +311,7 @@ Announcements
 </div>
 </div>
 
-<!-- WFH -->
+<!-- SALARY -->
 
 <div x-data="{open:false}">
 <button @click="open=!open"
