@@ -15,6 +15,8 @@
                     <th class="p-2 border">End</th>
                     <th class="p-2 border">Days</th>
                     <th class="p-2 border">Status</th>
+                    <th class="p-2 border">Decided By</th>
+                    <th class="p-2 border">Decided At</th>
                 </tr>
             </thead>
             <tbody>
@@ -33,10 +35,23 @@
                             <span class="text-red-600 font-bold">Rejected</span>
                         @endif
                     </td>
+                    <td class="p-2 border">
+                        @if($leave->status !== 'pending' && $leave->decidedByLabel())
+                            {{ $leave->decidedByLabel() }}
+                            @if($leave->decidedViaLabel())
+                                <span class="text-xs text-gray-500">({{ $leave->decidedViaLabel() }})</span>
+                            @endif
+                        @else
+                            —
+                        @endif
+                    </td>
+                    <td class="p-2 border">
+                        {{ $leave->status !== 'pending' && $leave->decided_at ? $leave->decided_at->format('d M Y h:i A') : '—' }}
+                    </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="5" class="p-4 text-center text-gray-500">
+                    <td colspan="7" class="p-4 text-center text-gray-500">
                         No leave records found.
                     </td>
                 </tr>
