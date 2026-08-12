@@ -69,6 +69,7 @@
                     <th class="p-3 text-left hidden md:table-cell">Duration</th>
                     <th class="p-3 text-left">Days</th>
                     <th class="p-3 text-left">Status</th>
+                    <th class="p-3 text-left">Decided By</th>
                 </tr>
             </thead>
 
@@ -112,10 +113,24 @@
                         @endif
                     </td>
 
+                    <td class="p-3">
+                        @if($leave->status !== 'pending' && ($leave->decidedByLabel() || $leave->decided_at))
+                            <div class="font-medium">{{ $leave->decidedByLabel() ?? '—' }}</div>
+                            @if($leave->decided_at)
+                                <div class="text-xs text-gray-500">{{ $leave->decided_at->format('d M Y h:i A') }}</div>
+                            @endif
+                            @if($leave->decidedViaLabel())
+                                <div class="text-xs text-gray-500">via {{ $leave->decidedViaLabel() }}</div>
+                            @endif
+                        @else
+                            <span class="text-gray-400 text-xs">—</span>
+                        @endif
+                    </td>
+
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6" class="text-center p-6 text-gray-500">
+                    <td colspan="7" class="text-center p-6 text-gray-500">
                         No leave records found.
                     </td>
                 </tr>

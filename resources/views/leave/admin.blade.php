@@ -70,6 +70,8 @@
                     <th class="p-3 text-left">Days</th>
                     <th class="p-3 text-left">Applied On</th>
                     <th class="p-3 text-left">Status</th>
+                    <th class="p-3 text-left">Decided By</th>
+                    <th class="p-3 text-left">Decided At</th>
                     <th class="p-3 text-left">WhatsApp</th>
                     <th class="p-3 text-left">Actions</th>
                 </tr>
@@ -120,6 +122,28 @@
                             <span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-semibold">
                                 Rejected
                             </span>
+                        @endif
+                    </td>
+
+                    {{-- Decided By --}}
+                    <td class="p-3">
+                        @if($leave->status !== 'pending' && $leave->decidedByLabel())
+                            <div class="font-medium">{{ $leave->decidedByLabel() }}</div>
+                            @if($leave->decidedViaLabel())
+                                <div class="text-xs text-gray-500">via {{ $leave->decidedViaLabel() }}</div>
+                            @endif
+                        @else
+                            <span class="text-gray-400 text-xs">—</span>
+                        @endif
+                    </td>
+
+                    {{-- Decided At --}}
+                    <td class="p-3 whitespace-nowrap">
+                        @if($leave->status !== 'pending' && $leave->decided_at)
+                            {{ $leave->decided_at->format('d M Y') }}
+                            <div class="text-xs text-gray-500">{{ $leave->decided_at->format('h:i A') }}</div>
+                        @else
+                            <span class="text-gray-400 text-xs">—</span>
                         @endif
                     </td>
 
@@ -218,7 +242,7 @@
 
                 @empty
                 <tr>
-                    <td colspan="8" class="p-6 text-center text-gray-500">
+                    <td colspan="10" class="p-6 text-center text-gray-500">
                         No Leave Records Found
                     </td>
                 </tr>
