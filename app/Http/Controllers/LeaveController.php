@@ -380,6 +380,29 @@ public function store(Request $request)
 
 /*
 |--------------------------------------------------------------------------
+| RESEND WHATSAPP (when WAHA was disconnected at apply time)
+|--------------------------------------------------------------------------
+*/
+
+    public function resendWhatsApp($id)
+    {
+        $leave = Leave::with('user')->findOrFail($id);
+
+        if ($leave->status !== 'pending') {
+            return back()->with('error', 'WhatsApp can only be resent for pending leave applications.');
+        }
+
+        $result = app(LeaveWhatsAppNotifier::class)->notifyApprovers($leave);
+
+        if ($result['ok']) {
+            return back()->with('success', $result['message']);
+        }
+
+        return back()->with('error', $result['message']);
+    }
+
+/*
+|--------------------------------------------------------------------------
 | REJECT
 |--------------------------------------------------------------------------
 */

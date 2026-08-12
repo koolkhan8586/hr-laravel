@@ -20,6 +20,8 @@ class Leave extends Model
         'status',
         'decided_via',
         'decided_by_email',
+        'whatsapp_notify_status',
+        'whatsapp_notified_at',
     ];
 
     protected $casts = [
@@ -27,6 +29,7 @@ class Leave extends Model
         'end_date' => 'date',
         'days' => 'float',
         'calculated_days' => 'float',
+        'whatsapp_notified_at' => 'datetime',
     ];
 
     // ✅ ADD THIS

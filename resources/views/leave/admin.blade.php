@@ -12,10 +12,16 @@
         </a>
     </div>
 
-    {{-- SUCCESS MESSAGE --}}
+    {{-- FLASH MESSAGES --}}
     @if(session('success'))
         <div class="bg-green-100 text-green-700 p-3 rounded mb-4">
             {{ session('success') }}
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="bg-red-100 text-red-700 p-3 rounded mb-4">
+            {{ session('error') }}
         </div>
     @endif
 
@@ -64,6 +70,7 @@
                     <th class="p-3 text-left">Days</th>
                     <th class="p-3 text-left">Applied On</th>
                     <th class="p-3 text-left">Status</th>
+                    <th class="p-3 text-left">WhatsApp</th>
                     <th class="p-3 text-left">Actions</th>
                 </tr>
             </thead>
@@ -116,6 +123,32 @@
                         @endif
                     </td>
 
+                    {{-- WhatsApp notify status --}}
+                    <td class="p-3">
+                        @php
+                            $waStatus = $leave->whatsapp_notify_status;
+                        @endphp
+                        @if($waStatus === 'sent')
+                            <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-semibold" title="{{ optional($leave->whatsapp_notified_at)->format('d M Y H:i') }}">
+                                Sent
+                            </span>
+                        @elseif($waStatus === 'partial')
+                            <span class="bg-orange-100 text-orange-700 px-2 py-1 rounded text-xs font-semibold">
+                                Partial
+                            </span>
+                        @elseif($waStatus === 'failed')
+                            <span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-semibold">
+                                Failed
+                            </span>
+                        @elseif($waStatus === 'skipped')
+                            <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs font-semibold">
+                                Skipped
+                            </span>
+                        @else
+                            <span class="text-gray-400 text-xs">—</span>
+                        @endif
+                    </td>
+
                     {{-- ACTIONS --}}
                     <td class="p-3">
                         <div class="flex flex-wrap gap-2">
@@ -136,6 +169,15 @@
                                     @csrf
                                     <button class="bg-red-600 text-white px-3 py-1 rounded text-xs">
                                         Reject
+                                    </button>
+                                </form>
+
+                                <form method="POST"
+                                      action="{{ route('admin.leave.resend.whatsapp', $leave->id) }}">
+                                    @csrf
+                                    <button class="bg-teal-600 hover:bg-teal-700 text-white px-3 py-1 rounded text-xs"
+                                            title="Send leave approval WhatsApp again (use after WAHA reconnects)">
+                                        {{ in_array($waStatus, ['sent', 'partial'], true) ? 'Resend WhatsApp' : 'Send WhatsApp' }}
                                     </button>
                                 </form>
 
@@ -176,7 +218,7 @@
 
                 @empty
                 <tr>
-                    <td colspan="7" class="p-6 text-center text-gray-500">
+                    <td colspan="8" class="p-6 text-center text-gray-500">
                         No Leave Records Found
                     </td>
                 </tr>
