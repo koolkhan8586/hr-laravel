@@ -35,6 +35,17 @@
 <p style="color:#4b5563;">
 This leave application has already been marked as <strong>{{ $leave->status }}</strong>. No further action was taken.
 </p>
+@if($leave->decidedByLabel() || $leave->decided_at)
+<p style="color:#6b7280; font-size:14px; margin-top:12px;">
+@if($leave->decidedByLabel())
+Decided by <strong>{{ $leave->decidedByLabel() }}</strong>
+@if($leave->decidedViaLabel()) (via {{ $leave->decidedViaLabel() }})@endif
+@endif
+@if($leave->decided_at)
+<br>on {{ $leave->decided_at->format('d M Y h:i A') }}
+@endif
+</p>
+@endif
 @endif
 
 </div>

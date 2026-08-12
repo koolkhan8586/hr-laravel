@@ -20,6 +20,7 @@ class Leave extends Model
         'status',
         'decided_via',
         'decided_by_email',
+        'decided_at',
         'whatsapp_notify_status',
         'whatsapp_notified_at',
     ];
@@ -29,6 +30,7 @@ class Leave extends Model
         'end_date' => 'date',
         'days' => 'float',
         'calculated_days' => 'float',
+        'decided_at' => 'datetime',
         'whatsapp_notified_at' => 'datetime',
     ];
 
@@ -36,5 +38,55 @@ class Leave extends Model
     public function user()
     {
         return $this->belongsTo(\App\Models\User::class);
+    }
+
+    /**
+     * Human-readable who decided this leave (name if known, else email/mobile).
+     */
+    public function decidedByLabel(): ?string
+    {
+        if (!filled($this->decided_by_email)) {
+            return null;
+        }
+
+        $identity = trim((string) $this->decided_by_email);
+        $key = strtolower($identity);
+
+        static $cache = null;
+
+        if ($cache === null) {
+            $cache = [];
+            foreach (User::query()->get(['name', 'email', 'mobile']) as $user) {
+                if (filled($user->email)) {
+                    $cache[strtolower((string) $user->email)] = $user->name;
+                }
+                if (filled($user->mobile)) {
+                    $digits = preg_replace('/\D+/', '', (string) $user->mobile);
+                    $cache[strtolower((string) $user->mobile)] = $user->name;
+                    if ($digits) {
+                        $cache[$digits] = $user->name;
+                    }
+                }
+            }
+        }
+
+        $identityDigits = preg_replace('/\D+/', '', $identity);
+
+        return $cache[$key]
+            ?? ($identityDigits ? ($cache[$identityDigits] ?? null) : null)
+            ?? $identity;
+    }
+
+    /**
+     * Channel used for the decision: Dashboard / Email / WhatsApp.
+     */
+    public function decidedViaLabel(): ?string
+    {
+        return match ($this->decided_via) {
+            'dashboard' => 'Dashboard',
+            'email' => 'Email',
+            'whatsapp' => 'WhatsApp',
+            default => $this->decided_via ? ucfirst($this->decided_via) : null,
+        };
     }
 }

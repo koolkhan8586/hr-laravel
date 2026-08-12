@@ -144,6 +144,9 @@ public function store(Request $request)
         'calculated_days'=> $days,
         'reason'         => $request->reason,
         'status'         => auth()->user()->role === 'admin' ? 'approved' : 'pending',
+        'decided_via'    => auth()->user()->role === 'admin' ? 'dashboard' : null,
+        'decided_by_email' => auth()->user()->role === 'admin' ? auth()->user()->email : null,
+        'decided_at'     => auth()->user()->role === 'admin' ? now() : null,
     ]);
 
     /*
@@ -245,6 +248,7 @@ public function store(Request $request)
             'status' => 'approved',
             'decided_via' => 'dashboard',
             'decided_by_email' => auth()->user()->email,
+            'decided_at' => now(),
         ]);
 
         $this->notifyLeaveOwner($leave, 'approved');
@@ -287,6 +291,7 @@ public function store(Request $request)
                 'status' => 'approved',
                 'decided_via' => $decidedVia,
                 'decided_by_email' => $approverEmail,
+                'decided_at' => now(),
             ]);
 
             $this->notifyLeaveOwner($leave, 'approved');
@@ -301,6 +306,7 @@ public function store(Request $request)
             'status' => 'rejected',
             'decided_via' => $decidedVia,
             'decided_by_email' => $approverEmail,
+            'decided_at' => now(),
         ]);
 
         $this->notifyLeaveOwner($leave, 'rejected');
@@ -415,6 +421,7 @@ public function store(Request $request)
             'status' => 'rejected',
             'decided_via' => 'dashboard',
             'decided_by_email' => auth()->user()->email,
+            'decided_at' => now(),
         ]);
 
         $this->notifyLeaveOwner($leave, 'rejected');
@@ -444,7 +451,12 @@ public function store(Request $request)
             }
         }
 
-        $leave->update(['status'=>'pending']);
+        $leave->update([
+            'status' => 'pending',
+            'decided_via' => null,
+            'decided_by_email' => null,
+            'decided_at' => null,
+        ]);
 
         return back()->with('success','Leave Reverted');
     }
