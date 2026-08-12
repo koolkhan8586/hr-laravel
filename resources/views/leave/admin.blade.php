@@ -253,6 +253,28 @@
 
     </div>
 
+    <div class="mt-4 flex justify-between items-center text-sm text-gray-600">
+        <div>
+            Showing {{ $leaves->firstItem() ?? 0 }}–{{ $leaves->lastItem() ?? 0 }}
+            of {{ $leaves->total() }}
+        </div>
+        <div class="flex gap-2">
+            @if ($leaves->onFirstPage())
+                <span class="px-3 py-1 rounded border text-gray-400">Prev</span>
+            @else
+                <a href="{{ $leaves->previousPageUrl() }}" class="px-3 py-1 rounded border hover:bg-gray-50">Prev</a>
+            @endif
+
+            <span class="px-3 py-1">Page {{ $leaves->currentPage() }} / {{ $leaves->lastPage() }}</span>
+
+            @if ($leaves->hasMorePages())
+                <a href="{{ $leaves->nextPageUrl() }}" class="px-3 py-1 rounded border hover:bg-gray-50">Next</a>
+            @else
+                <span class="px-3 py-1 rounded border text-gray-400">Next</span>
+            @endif
+        </div>
+    </div>
+
 </div>
 
 </x-app-layout>

@@ -63,7 +63,7 @@
 </div>
 
 <p style="color:#9ca3af; font-size:12px; margin-top:24px; margin-bottom:0;">
-This link is valid for 72 hours and can only be used once. You can also review this application by logging into the HR portal.
+Links open a confirmation page first (to prevent automatic approval by email scanners). Valid for 72 hours. You can also review this application in the HR portal.
 </p>
 
 </div>
