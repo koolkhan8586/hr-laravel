@@ -47,6 +47,10 @@ Route::get('/leave/email-decision/{id}/{decision}', [LeaveController::class, 'em
     ->name('leave.email.decision')
     ->middleware('signed');
 
+Route::post('/leave/email-decision/{id}/{decision}', [LeaveController::class, 'emailDecisionSubmit'])
+    ->name('leave.email.decision.submit')
+    ->middleware('signed');
+
 /*|                                                                          |
 | -------------------------------------------------------------------------- |
 | Dashboard                                                                  |

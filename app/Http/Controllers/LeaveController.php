@@ -14,6 +14,8 @@ use Carbon\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\LeaveTransactionsExport;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Log;
 
 class LeaveController extends Controller
 {
@@ -164,12 +166,44 @@ public function store(Request $request)
             ->unique()
             ->values();
 
+        $mailFailed = 0;
         foreach($recipients as $recipientEmail){
-            Mail::to($recipientEmail)->send(new LeaveApplicationSubmitted($leave, $recipientEmail));
+            try {
+                Mail::to($recipientEmail)->send(new LeaveApplicationSubmitted($leave, $recipientEmail));
+            } catch (\Throwable $e) {
+                $mailFailed++;
+                Log::error('Leave approval email failed', [
+                    'leave_id' => $leave->id,
+                    'email' => $recipientEmail,
+                    'message' => $e->getMessage(),
+                ]);
+            }
         }
 
-        // WhatsApp notify to configured leave-approval numbers (with approve/reject links)
-        app(LeaveWhatsAppNotifier::class)->notifyApprovers($leave);
+        // WhatsApp must run even if email SMTP fails
+        $waResult = ['ok' => false, 'message' => 'WhatsApp not attempted'];
+        try {
+            $waResult = app(LeaveWhatsAppNotifier::class)->notifyApprovers($leave);
+        } catch (\Throwable $e) {
+            Log::error('Leave approval WhatsApp failed', [
+                'leave_id' => $leave->id,
+                'message' => $e->getMessage(),
+            ]);
+            $waResult = ['ok' => false, 'message' => $e->getMessage()];
+        }
+
+        $hints = [];
+        if ($mailFailed > 0) {
+            $hints[] = "Email failed for {$mailFailed} recipient(s)";
+        }
+        if (!$waResult['ok']) {
+            $hints[] = $waResult['message'] ?? 'WhatsApp notification failed';
+        }
+
+        if (!empty($hints)) {
+            return back()->with('success', 'Leave Created Successfully')
+                ->with('error', implode(' | ', $hints).'. You can Resend WhatsApp from Leave Management.');
+        }
     }
 
     if(auth()->user()->role === 'admin'){
@@ -218,8 +252,8 @@ public function store(Request $request)
                   ->whereYear('start_date',$month->year);
         }
 
-        $leaves = $query->get();
-        $employees = User::where('role','employee')->get();
+        $leaves = $query->paginate(50)->withQueryString();
+        $employees = User::where('role','employee')->orderBy('name')->get(['id', 'name']);
 
         return view('leave.admin', compact('leaves','employees'));
     }
@@ -258,13 +292,42 @@ public function store(Request $request)
 
 /*
 |--------------------------------------------------------------------------
-| APPROVE / REJECT VIA EMAIL LINK (NO LOGIN REQUIRED)
+| APPROVE / REJECT VIA EMAIL / WHATSAPP LINK (CONFIRMATION REQUIRED)
 |--------------------------------------------------------------------------
+| GET only shows a confirmation page. WhatsApp/email link-preview bots
+| fetch GET URLs and must NOT be able to approve/reject leave.
+| Actual decision happens on POST (emailDecisionSubmit).
 */
 
     public function emailDecision(Request $request, $id, $decision)
     {
-        abort_unless(in_array($decision, ['approve', 'reject']), 404);
+        abort_unless(in_array($decision, ['approve', 'reject'], true), 404);
+
+        $leave = Leave::with('user')->findOrFail($id);
+        $approverEmail = $request->query('email');
+        $via = $request->query('via') === 'whatsapp' ? 'whatsapp' : 'email';
+
+        $confirmUrl = URL::temporarySignedRoute(
+            'leave.email.decision.submit',
+            now()->addHours(72),
+            [
+                'id' => $leave->id,
+                'decision' => $decision,
+                'email' => $approverEmail,
+                'via' => $via,
+            ]
+        );
+
+        return view('leave.email-decision-confirm', [
+            'leave' => $leave,
+            'decision' => $decision,
+            'confirmUrl' => $confirmUrl,
+        ]);
+    }
+
+    public function emailDecisionSubmit(Request $request, $id, $decision)
+    {
+        abort_unless(in_array($decision, ['approve', 'reject'], true), 404);
 
         $leave = Leave::with('user')->findOrFail($id);
         $approverEmail = $request->query('email');

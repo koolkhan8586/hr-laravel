@@ -36,27 +36,6 @@ class LeaveWhatsAppNotifier
             return $result;
         }
 
-        $connection = $this->waha->connectionStatus();
-        if (!$connection['connected']) {
-            $result = [
-                'ok' => false,
-                'sent' => 0,
-                'failed' => 0,
-                'total' => 0,
-                'status' => 'failed',
-                'message' => 'WhatsApp is not connected ('.$connection['status'].'). Reconnect WAHA, then use Resend WhatsApp.',
-            ];
-            $this->persistStatus($leave, $result);
-
-            Log::warning('Leave approval WhatsApp skipped: WAHA not connected', [
-                'leave_id' => $leave->id,
-                'waha_status' => $connection['status'],
-                'detail' => $connection['detail'],
-            ]);
-
-            return $result;
-        }
-
         $leave->loadMissing('user');
 
         $numbers = LeaveApprovalWhatsappNumber::query()
@@ -103,6 +82,16 @@ class LeaveWhatsAppNotifier
         $total = $numbers->count();
         $allSent = $sent > 0 && $failed === 0;
 
+        if ($failed > 0 && $sent === 0) {
+            // Helpful reason when every send failed (often WAHA session / number format)
+            $connection = $this->waha->connectionStatus();
+            $extra = $connection['connected']
+                ? 'Check approval WhatsApp numbers and WAHA logs.'
+                : 'WAHA status: '.$connection['status'].'. '.$connection['detail'];
+        } else {
+            $extra = '';
+        }
+
         $result = [
             'ok' => $allSent,
             'sent' => $sent,
@@ -113,7 +102,7 @@ class LeaveWhatsAppNotifier
                 ? "WhatsApp sent to {$sent} approver(s)."
                 : ($sent > 0
                     ? "WhatsApp sent to {$sent}/{$total} approver(s); {$failed} failed."
-                    : 'WhatsApp notification failed for all approvers. Check WAHA connection and try again.'),
+                    : trim('WhatsApp notification failed for all approvers. '.$extra)),
         ];
 
         $this->persistStatus($leave, $result);
@@ -138,6 +127,8 @@ class LeaveWhatsAppNotifier
     {
         $expiresAt = now()->addHours(72);
 
+        // Links open a confirmation page (GET). Decision only happens after POST,
+        // so WhatsApp link-preview crawlers cannot auto-approve leave.
         $approveUrl = URL::temporarySignedRoute('leave.email.decision', $expiresAt, [
             'id' => $leave->id,
             'decision' => 'approve',
@@ -160,7 +151,7 @@ class LeaveWhatsAppNotifier
         $reason = filled($leave->reason) ? $leave->reason : '-';
 
         $lines = [
-            '📋 New Leave Application',
+            'New Leave Application',
             '',
             'Employee: '.$employee,
             'Type: '.$type,
@@ -177,14 +168,14 @@ class LeaveWhatsAppNotifier
         }
 
         $lines[] = '';
-        $lines[] = '✅ Approve:';
+        $lines[] = 'Approve (opens confirm page):';
         $lines[] = $approveUrl;
         $lines[] = '';
-        $lines[] = '❌ Reject:';
+        $lines[] = 'Reject (opens confirm page):';
         $lines[] = $rejectUrl;
         $lines[] = '';
-        $lines[] = 'Links expire in 72 hours.';
-        $lines[] = '— LSAF HR';
+        $lines[] = 'Tap the link, then press Confirm. Links expire in 72 hours.';
+        $lines[] = '- LSAF HR';
 
         return implode("\n", $lines);
     }
