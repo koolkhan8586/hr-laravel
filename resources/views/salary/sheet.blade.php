@@ -72,7 +72,7 @@
                 Bank Sheet
             </a>
 
-            <a href="{{ route('admin.salary.medical', ['month' => $month, 'year' => $year, 'category' => $category]) }}"
+            <a href="{{ route('admin.salary.medical', ['year' => $year, 'category' => $category]) }}"
                class="bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded text-sm">
                 Medical Insurance
             </a>
@@ -188,7 +188,7 @@
             Open Tax Sheet
         </a>
 
-        <a href="{{ route('admin.salary.medical', ['month' => $month, 'year' => $year, 'category' => $category]) }}"
+        <a href="{{ route('admin.salary.medical', ['year' => $year, 'category' => $category]) }}"
            class="bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded text-sm">
             Open Medical Insurance
         </a>
@@ -231,7 +231,7 @@
         @php $withInsurance = collect($insurancePortions)->filter(fn ($b) => $b > 0)->count(); @endphp
         @if($withInsurance)
         <span class="text-xs text-gray-700 bg-gray-100 border border-gray-300 px-2 py-1 rounded">
-            {{ $withInsurance }} employee(s) have a medical insurance portion &mdash; their
+            {{ $withInsurance }} employee(s) have a monthly medical insurance portion &mdash; their
             <strong>Insurance</strong> box is grey and will not print until you enter it.
         </span>
         @endif
@@ -438,8 +438,9 @@
                               {{ $loanLeft > 0 ? 'has-loan' : '' }}">
             </td>
 
-            {{-- INSURANCE: grey hint of the employee medical-insurance half.
-                 Placeholder only, so it stays off the printout until typed. --}}
+            {{-- INSURANCE: grey hint of the monthly employee portion
+                 (yearly half ÷ 12). Placeholder only, so it stays off
+                 the printout until typed. --}}
             @php $insuranceDue = $insurancePortions[$user->id] ?? 0; @endphp
             <td class="border p-0">
                 <input type="text" inputmode="decimal" data-col="insurance"
@@ -449,8 +450,8 @@
                        data-insurance-portion="{{ $insuranceDue }}"
                        placeholder="{{ $insuranceDue > 0 ? number_format($insuranceDue) : '' }}"
                        title="{{ $insuranceDue > 0
-                            ? 'Employee medical insurance portion Rs '.number_format($insuranceDue).' — type it to deduct. It will not print until entered.'
-                            : 'No medical insurance portion for this month' }}"
+                            ? 'Monthly medical insurance Rs '.number_format($insuranceDue).' (employee half ÷ 12) — type it to deduct. It will not print until entered.'
+                            : 'No medical insurance portion for this year' }}"
                        class="deduction insurance-input w-24 p-1 text-right border-0 {{ $roCls }}
                               {{ $insuranceDue > 0 ? 'has-insurance' : '' }}
                               {{ $row && (float) $row->insurance != 0 ? 'entered' : '' }}">
@@ -1020,10 +1021,10 @@
 
             el.title = due > 0
                 ? (entered
-                    ? 'Employee medical insurance portion Rs ' + due.toLocaleString('en-US')
-                    : 'Employee medical insurance portion Rs ' + due.toLocaleString('en-US')
-                      + ' — type it to deduct. It will not print until entered.')
-                : 'No medical insurance portion for this month';
+                    ? 'Monthly medical insurance Rs ' + due.toLocaleString('en-US')
+                    : 'Monthly medical insurance Rs ' + due.toLocaleString('en-US')
+                      + ' (employee half ÷ 12) — type it to deduct. It will not print until entered.')
+                : 'No medical insurance portion for this year';
         });
     }
 

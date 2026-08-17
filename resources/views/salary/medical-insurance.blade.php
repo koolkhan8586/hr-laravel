@@ -3,32 +3,17 @@
 @php
     $sort     = $sort ?? 'code';
     $dir      = $dir ?? 'asc';
-    $existing = $existing ?? collect();
-    $deducted = $deducted ?? [];
-    $postedIds = $postedIds ?? [];
+    $orgName  = \App\Models\AppSetting::get('org_name', 'The University of Lahore (City Campus)');
+    $sheetLabel = match($category) { 'teacher' => 'Teachers', 'staff' => 'Staff', default => 'All Employees' };
 
-    $monthName  = \Carbon\Carbon::create()->month($month)->format('F');
-    $sheetLabel = match($category) { 'teacher' => 'Teachers', 'all' => 'All Employees', default => 'Staff' };
-    $orgName    = \App\Models\AppSetting::get('org_name', 'The University of Lahore (City Campus)');
-
-    $sortLink = function ($key) use ($month, $year, $category, $sort, $dir) {
+    $sortLink = function ($key) use ($year, $category, $sort, $dir) {
         $next = ($sort === $key && $dir === 'asc') ? 'desc' : 'asc';
         return route('admin.salary.medical', [
-            'month' => $month, 'year' => $year, 'category' => $category,
-            'sort'  => $key,   'dir'  => $next,
+            'year' => $year, 'category' => $category,
+            'sort' => $key,  'dir' => $next,
         ]);
     };
     $arrow = fn ($key) => $sort === $key ? ($dir === 'asc' ? ' ▲' : ' ▼') : '';
-
-    $money = function ($value) {
-        if ($value === null || $value === '') {
-            return '';
-        }
-
-        $n = (float) $value;
-
-        return number_format($n, fmod($n, 1) == 0.0 ? 0 : 2);
-    };
 @endphp
 
 <div class="max-w-full mx-auto py-6 px-4 print-area">
@@ -38,13 +23,13 @@
         <div>
             <h2 class="text-2xl font-bold text-gray-800">Medical Insurance</h2>
             <p class="text-sm text-gray-500 mt-1">
-                Enter the total premium. LSAF and the employee each pay half.
-                The employee half appears as a grey hint on the salary sheet until you type it there.
+                Yearly working. Enter the total; LSAF and the employee each take half,
+                then the employee half is divided by 12 for the salary sheet.
             </p>
         </div>
 
         <div class="flex gap-2 flex-wrap">
-            <a href="{{ route('admin.salary.sheet', ['month' => $month, 'year' => $year, 'category' => $category]) }}"
+            <a href="{{ route('admin.salary.sheet', ['year' => $year, 'category' => $category]) }}"
                class="bg-gray-700 text-white px-3 py-2 rounded text-sm">
                 Salary Sheet
             </a>
@@ -71,17 +56,6 @@
     <form method="GET" class="flex gap-3 mb-4 items-end flex-wrap bg-white p-4 rounded shadow no-print">
 
         <div>
-            <label class="block text-xs text-gray-500 mb-1">Month</label>
-            <select name="month" class="border px-3 py-2 rounded text-sm">
-                @for($m = 1; $m <= 12; $m++)
-                <option value="{{ $m }}" {{ $month == $m ? 'selected' : '' }}>
-                    {{ \Carbon\Carbon::create()->month($m)->format('F') }}
-                </option>
-                @endfor
-            </select>
-        </div>
-
-        <div>
             <label class="block text-xs text-gray-500 mb-1">Year</label>
             <input type="number" name="year" value="{{ $year }}"
                    class="border px-3 py-2 rounded text-sm w-28">
@@ -90,9 +64,9 @@
         <div>
             <label class="block text-xs text-gray-500 mb-1">Sheet</label>
             <select name="category" class="border px-3 py-2 rounded text-sm">
+                <option value="all" {{ $category == 'all' ? 'selected' : '' }}>All</option>
                 <option value="teacher" {{ $category == 'teacher' ? 'selected' : '' }}>Teachers</option>
                 <option value="staff" {{ $category == 'staff' ? 'selected' : '' }}>Staff</option>
-                <option value="all" {{ $category == 'all' ? 'selected' : '' }}>All</option>
             </select>
         </div>
 
@@ -113,14 +87,14 @@
             </select>
         </div>
 
-        <button class="bg-blue-600 text-white px-4 py-2 rounded text-sm">Load Sheet</button>
+        <button class="bg-blue-600 text-white px-4 py-2 rounded text-sm">Load</button>
 
     </form>
 
-    @if($users->isEmpty())
+    @if($rows->isEmpty())
 
     <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded">
-        No employees found for <strong>{{ $sheetLabel }}</strong>.
+        No employees to show for this selection.
     </div>
 
     @else
@@ -128,37 +102,29 @@
     <div class="flex gap-2 mb-4 flex-wrap items-center no-print">
 
         <form method="POST" action="{{ route('admin.salary.medical.copy') }}"
-              onsubmit="return confirm('Copy last month\'s premiums into {{ $monthName }} {{ $year }}?');">
+              onsubmit="return confirm('Copy last year\'s premiums into {{ $year }}?');">
             @csrf
-            <input type="hidden" name="month" value="{{ $month }}">
             <input type="hidden" name="year" value="{{ $year }}">
             <input type="hidden" name="category" value="{{ $category }}">
             <button class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm">
-                Copy Last Month
+                Copy Previous Year
             </button>
         </form>
 
         <span class="text-xs text-gray-500 max-w-xl">
-            Deducted fills in automatically when that month's salary sheet is posted,
-            so you can see how much was actually taken from pay.
+            Save stores every employee on this sheet for the year.
+            Month columns fill from posted salary Insurance figures.
         </span>
 
     </div>
 
     <div class="sheet-header text-center mb-3">
-        <div class="flex items-center justify-center gap-3">
-            <img src="{{ asset('uol-logo.png') }}" alt="" style="height:46px" onerror="this.style.display='none'">
-            <div>
-                <div class="font-bold text-lg">{{ $orgName }}</div>
-                <div class="text-sm">Medical Insurance {{ $monthName }} {{ $year }} &mdash; {{ $sheetLabel }}</div>
-            </div>
-        </div>
+        <div class="font-bold text-lg">{{ $orgName }}</div>
+        <div class="text-sm">Medical Insurance {{ $year }} &mdash; {{ $sheetLabel }}</div>
     </div>
 
     <form method="POST" action="{{ route('admin.salary.medical.store') }}">
     @csrf
-
-    <input type="hidden" name="month" value="{{ $month }}">
     <input type="hidden" name="year" value="{{ $year }}">
     <input type="hidden" name="category" value="{{ $category }}">
     <input type="hidden" name="sort" value="{{ $sort }}">
@@ -169,63 +135,66 @@
     <table class="min-w-full text-xs border" id="medicalSheet">
 
         <thead>
+            <tr class="bg-gray-300">
+                <th class="border p-1" colspan="6"></th>
+                <th class="border p-1 text-center" colspan="14">Deducted (posted salaries)</th>
+            </tr>
             <tr class="bg-gray-200">
-                <th class="border p-2">Sr.</th>
                 <th class="border p-2 text-left">
                     <a href="{{ $sortLink('code') }}" class="hover:underline no-print-link">Employee Code{{ $arrow('code') }}</a>
                 </th>
                 <th class="border p-2 text-left">
                     <a href="{{ $sortLink('name') }}" class="hover:underline no-print-link">Employee Name{{ $arrow('name') }}</a>
                 </th>
-                <th class="border p-2 bg-blue-50">Total Amount</th>
-                <th class="border p-2 bg-green-50">LSAF Portion</th>
-                <th class="border p-2 bg-amber-50">Employee Portion</th>
-                <th class="border p-2 bg-slate-100">Deducted<br><span class="font-normal text-[10px]">from posted salary</span></th>
+                <th class="border p-2 bg-blue-50">Total Amount<br><span class="font-normal text-[10px]">yearly</span></th>
+                <th class="border p-2 bg-green-50">LSAF Portion<br><span class="font-normal text-[10px]">&divide; 2</span></th>
+                <th class="border p-2 bg-amber-50">Employee Portion<br><span class="font-normal text-[10px]">&divide; 2</span></th>
+                <th class="border p-2 bg-red-100 font-bold">Monthly<br><span class="font-normal text-[10px]">employee &divide; 12</span></th>
+                @for($m = 1; $m <= 12; $m++)
+                <th class="border p-1 bg-slate-50 text-[10px]">
+                    {{ \Carbon\Carbon::create()->month($m)->format('M') }}
+                </th>
+                @endfor
+                <th class="border p-2 bg-slate-100 font-bold">Deducted</th>
+                <th class="border p-2 bg-slate-100 font-bold">Balance<br><span class="font-normal text-[10px]">employee &minus; deducted</span></th>
             </tr>
         </thead>
 
         <tbody>
 
-        @foreach($users as $i => $user)
-        @php
-            $row      = $existing[$user->id] ?? null;
-            $taken    = (float) ($deducted[$user->id] ?? 0);
-            $isPosted = in_array($user->id, $postedIds);
-        @endphp
-
-        <tr class="medical-row">
-
-            <td class="border p-1 text-center sr-cell"></td>
+        @foreach($rows as $i => $row)
+        <tr class="medical-row" data-paid="{{ $row['paid'] }}">
 
             <td class="border p-1">
-                {{ $user->employee_code ?? '-' }}
-                <input type="hidden" name="rows[{{ $i }}][user_id]" value="{{ $user->id }}">
+                {{ $row['user']->employee_code ?? '-' }}
+                <input type="hidden" name="rows[{{ $i }}][user_id]" value="{{ $row['user']->id }}">
             </td>
 
-            <td class="border p-1 whitespace-nowrap">
-                {{ $user->name }}
-                @if($isPosted)
-                <span class="text-[10px] text-white bg-gray-500 px-1 rounded no-print">POSTED</span>
-                @endif
-            </td>
+            <td class="border p-1 whitespace-nowrap">{{ $row['user']->name }}</td>
 
             <td class="border p-0">
-                <input type="text" inputmode="decimal" class="total-amount w-28 p-1 text-right border-0"
+                <input type="text" inputmode="decimal"
                        name="rows[{{ $i }}][total_amount]"
-                       value="{{ $money($row && $row->total_amount != 0 ? $row->total_amount : null) }}">
+                       value="{{ $row['total'] != 0 ? number_format($row['total'], fmod($row['total'], 1) == 0.0 ? 0 : 2) : '' }}"
+                       class="total-amount w-28 p-1 text-right border-0">
             </td>
 
-            <td class="border p-1 text-right bg-green-50 lsaf-portion">
-                {{ $money($row && $row->lsaf_portion != 0 ? $row->lsaf_portion : null) }}
+            <td class="border p-1 text-right bg-green-50 lsaf-portion"></td>
+            <td class="border p-1 text-right bg-amber-50 employee-portion"></td>
+            <td class="border p-1 text-right font-bold bg-red-50 monthly-portion"></td>
+
+            @for($m = 1; $m <= 12; $m++)
+            @php $paidThisMonth = $row['paid_by_month'][$m] ?? null; @endphp
+            <td class="border p-1 text-right text-[10px] bg-slate-50 month-paid" data-month="{{ $m }}">
+                {{ $paidThisMonth ? number_format($paidThisMonth) : '' }}
+            </td>
+            @endfor
+
+            <td class="border p-1 text-right font-bold bg-slate-100 deducted">
+                {{ $row['paid'] ? number_format($row['paid']) : '' }}
             </td>
 
-            <td class="border p-1 text-right bg-amber-50 employee-portion">
-                {{ $money($row && $row->employee_portion != 0 ? $row->employee_portion : null) }}
-            </td>
-
-            <td class="border p-1 text-right bg-slate-50 deducted {{ $taken > 0 ? 'font-semibold' : '' }}">
-                {{ $taken > 0 ? $money($taken) : '' }}
-            </td>
+            <td class="border p-1 text-right bg-slate-100 balance"></td>
 
         </tr>
         @endforeach
@@ -234,11 +203,19 @@
 
         <tfoot class="bg-gray-100 font-bold">
             <tr>
-                <td class="border p-2 text-right" colspan="3">TOTAL</td>
+                <td class="border p-2 text-right" colspan="2">TOTAL</td>
                 <td class="border p-2 text-right" id="sumTotal">0</td>
                 <td class="border p-2 text-right bg-green-100" id="sumLsaf">0</td>
                 <td class="border p-2 text-right bg-amber-100" id="sumEmployee">0</td>
-                <td class="border p-2 text-right bg-slate-100" id="sumDeducted">0</td>
+                <td class="border p-2 text-right bg-red-100" id="sumMonthly">0</td>
+                @for($m = 1; $m <= 12; $m++)
+                @php $colTotal = $rows->sum(fn ($r) => $r['paid_by_month'][$m] ?? 0); @endphp
+                <td class="border p-1 text-right text-[10px]">
+                    {{ $colTotal ? number_format($colTotal) : '' }}
+                </td>
+                @endfor
+                <td class="border p-2 text-right" id="sumDeducted">{{ number_format($rows->sum('paid')) }}</td>
+                <td class="border p-2 text-right" id="sumBalance">0</td>
             </tr>
         </tfoot>
 
@@ -246,18 +223,13 @@
 
     </div>
 
-    <div class="sign-off justify-between mt-10 text-sm">
-        <div>Prepared By: _______________</div>
-        <div>Checked By: _______________</div>
-        <div>Approved By: _______________</div>
-    </div>
-
     <div class="mt-5 no-print">
         <button class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded">
             Save Medical Insurance
         </button>
         <span class="text-xs text-gray-500 ml-3">
-            Total is split in half on save. Deducted comes from posted salaries, not from this form.
+            Every employee on this sheet is stored for the year. Monthly is the employee half &divide; 12
+            and shows grey on the salary sheet until you type it.
         </span>
     </div>
 
@@ -269,24 +241,14 @@
 
 <style>
     .sheet-header { display: none; }
-    .sign-off { display: none; }
-
-    #medicalSheet tbody { counter-reset: medicalRow; }
-    #medicalSheet tbody tr.medical-row { counter-increment: medicalRow; }
-    #medicalSheet tbody tr.medical-row .sr-cell::before { content: counter(medicalRow); }
 
 @media print {
     .sheet-header { display: block !important; }
-    .sign-off { display: flex !important; }
-
-    @page { size: A4 landscape; margin: 8mm; }
-
-    #medicalSheet { font-size: 8px !important; }
-    #medicalSheet th, #medicalSheet td { padding: 2px !important; }
-    #medicalSheet input { width: auto !important; font-size: 8px !important; text-align: right; }
-
+    @page { size: A4 landscape; margin: 6mm; }
+    #medicalSheet { font-size: 6.5pt !important; }
+    #medicalSheet th, #medicalSheet td { padding: 1px !important; }
+    #medicalSheet input { width: auto !important; font-size: 8pt !important; text-align: right; }
     .no-print-link { text-decoration: none !important; color: #000 !important; }
-
     #medicalSheet tbody tr.row-empty { display: none !important; }
 }
 </style>
@@ -316,43 +278,52 @@
     };
 
     const put = (cell, v) => {
+        if (!cell) return;
         cell.textContent = v === 0 ? '' : fmt(v);
     };
 
     function split(total) {
         const employee = Math.round((total / 2) * 100) / 100;
         const lsaf     = Math.round((total - employee) * 100) / 100;
-        return { lsaf, employee };
+        const monthly  = Math.round((employee / 12) * 100) / 100;
+        return { lsaf, employee, monthly };
     }
 
     function recalc() {
 
-        let tTotal = 0, tLsaf = 0, tEmp = 0, tDed = 0;
+        let tTotal = 0, tLsaf = 0, tEmp = 0, tMonthly = 0, tBalance = 0;
 
         document.querySelectorAll('.medical-row').forEach(row => {
 
             const total = num(row.querySelector('.total-amount'));
             const parts = split(total);
+            const paid  = parseFloat(row.dataset.paid || 0) || 0;
+            const balance = Math.round((parts.employee - paid) * 100) / 100;
 
             put(row.querySelector('.lsaf-portion'), parts.lsaf);
             put(row.querySelector('.employee-portion'), parts.employee);
+            put(row.querySelector('.monthly-portion'), parts.monthly);
 
-            const deductedText = row.querySelector('.deducted').textContent.replace(/,/g, '');
-            const deducted = parseFloat(deductedText);
-            const taken = isNaN(deducted) ? 0 : deducted;
+            const balCell = row.querySelector('.balance');
+            if (balCell) {
+                balCell.textContent = balance !== 0 ? fmt(balance) : '';
+                balCell.classList.toggle('text-red-600', balance < 0);
+            }
 
-            tTotal += total;
-            tLsaf  += parts.lsaf;
-            tEmp   += parts.employee;
-            tDed   += taken;
+            tTotal   += total;
+            tLsaf    += parts.lsaf;
+            tEmp     += parts.employee;
+            tMonthly += parts.monthly;
+            tBalance += balance;
 
-            row.classList.toggle('row-empty', total === 0 && taken === 0);
+            row.classList.toggle('row-empty', total === 0 && paid === 0);
         });
 
         document.getElementById('sumTotal').textContent    = fmt(tTotal);
         document.getElementById('sumLsaf').textContent     = fmt(tLsaf);
         document.getElementById('sumEmployee').textContent = fmt(tEmp);
-        document.getElementById('sumDeducted').textContent = fmt(tDed);
+        document.getElementById('sumMonthly').textContent  = fmt(tMonthly);
+        document.getElementById('sumBalance').textContent  = fmt(tBalance);
     }
 
     document.querySelectorAll('#medicalSheet input.total-amount').forEach(el => {

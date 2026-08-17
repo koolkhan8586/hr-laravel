@@ -27,9 +27,9 @@ class MedicalInsuranceSheetTest extends TestCase
     private function employee(array $attrs = []): User
     {
         return User::factory()->create(array_merge([
-            'role'             => 'employee',
-            'salary_category'  => 'staff',
-            'employee_code'    => 'EMP001',
+            'role'            => 'employee',
+            'salary_category' => 'staff',
+            'employee_code'   => 'EMP001',
         ], $attrs));
     }
 
@@ -44,7 +44,8 @@ class MedicalInsuranceSheetTest extends TestCase
             ->assertSee('Medical Insurance')
             ->assertSee('Employee Code')
             ->assertSee('LSAF Portion')
-            ->assertSee('Employee Portion');
+            ->assertSee('Employee Portion')
+            ->assertSee('Monthly');
     }
 
     public function test_employees_cannot_open_the_medical_insurance_sheet(): void
@@ -56,20 +57,27 @@ class MedicalInsuranceSheetTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_saving_the_sheet_splits_the_total_in_half(): void
+    public function test_saving_the_sheet_stores_a_yearly_record_for_every_employee(): void
     {
-        $admin    = $this->admin();
-        $employee = $this->employee();
+        $admin     = $this->admin();
+        $employee  = $this->employee();
+        $other     = $this->employee([
+            'employee_code' => 'EMP002',
+            'email'         => 'other@example.com',
+        ]);
 
         $this->actingAs($admin)
             ->post(route('admin.salary.medical.store'), [
-                'month'    => 8,
                 'year'     => 2026,
                 'category' => 'staff',
                 'rows'     => [
                     [
                         'user_id'      => $employee->id,
-                        'total_amount' => '2,000',
+                        'total_amount' => '12,000',
+                    ],
+                    [
+                        'user_id'      => $other->id,
+                        'total_amount' => '',
                     ],
                 ],
             ])
@@ -78,26 +86,32 @@ class MedicalInsuranceSheetTest extends TestCase
 
         $this->assertDatabaseHas('medical_insurances', [
             'user_id'          => $employee->id,
-            'month'            => 8,
             'year'             => 2026,
-            'total_amount'     => 2000,
-            'lsaf_portion'     => 1000,
-            'employee_portion' => 1000,
+            'total_amount'     => 12000,
+            'lsaf_portion'     => 6000,
+            'employee_portion' => 6000,
         ]);
+
+        $this->assertDatabaseHas('medical_insurances', [
+            'user_id'      => $other->id,
+            'year'         => 2026,
+            'total_amount' => 0,
+        ]);
+
+        $this->assertDatabaseCount('medical_insurances', 2);
     }
 
-    public function test_employee_portion_is_hinted_on_the_salary_sheet(): void
+    public function test_monthly_employee_portion_is_hinted_on_the_salary_sheet(): void
     {
         $admin    = $this->admin();
         $employee = $this->employee();
 
         MedicalInsurance::create([
             'user_id'          => $employee->id,
-            'month'            => 8,
             'year'             => 2026,
-            'total_amount'     => 2000,
-            'lsaf_portion'     => 1000,
-            'employee_portion' => 1000,
+            'total_amount'     => 12000,
+            'lsaf_portion'     => 6000,
+            'employee_portion' => 6000,
         ]);
 
         $html = $this->actingAs($admin)
@@ -108,14 +122,14 @@ class MedicalInsuranceSheetTest extends TestCase
             ]))
             ->assertOk()
             ->assertSee('has-insurance', false)
-            ->assertSee('data-insurance-portion="1000"', false)
+            ->assertSee('data-insurance-portion="500"', false)
             ->getContent();
 
-        $this->assertStringContainsString('placeholder="1,000"', $html);
+        $this->assertStringContainsString('placeholder="500"', $html);
         $this->assertStringContainsString('will not print until you enter it', $html);
     }
 
-    public function test_posted_insurance_shows_as_deducted_on_the_medical_tab(): void
+    public function test_posted_insurance_shows_in_that_month_on_the_yearly_sheet(): void
     {
         Mail::fake();
 
@@ -124,11 +138,10 @@ class MedicalInsuranceSheetTest extends TestCase
 
         MedicalInsurance::create([
             'user_id'          => $employee->id,
-            'month'            => 8,
             'year'             => 2026,
-            'total_amount'     => 2000,
-            'lsaf_portion'     => 1000,
-            'employee_portion' => 1000,
+            'total_amount'     => 12000,
+            'lsaf_portion'     => 6000,
+            'employee_portion' => 6000,
         ]);
 
         $salary = Salary::create([
@@ -136,7 +149,7 @@ class MedicalInsuranceSheetTest extends TestCase
             'month'        => 8,
             'year'         => 2026,
             'basic_salary' => 50000,
-            'insurance'    => 1000,
+            'insurance'    => 500,
             'status'       => 'draft',
         ]);
 
@@ -147,31 +160,28 @@ class MedicalInsuranceSheetTest extends TestCase
 
         $this->actingAs($admin)
             ->get(route('admin.salary.medical', [
-                'month'    => 8,
                 'year'     => 2026,
                 'category' => 'staff',
             ]))
             ->assertOk()
-            ->assertSee('1,000');
+            ->assertSee('500');
     }
 
-    public function test_copy_last_month_copies_premiums(): void
+    public function test_copy_previous_year_copies_premiums(): void
     {
         $admin    = $this->admin();
         $employee = $this->employee();
 
         MedicalInsurance::create([
             'user_id'          => $employee->id,
-            'month'            => 7,
-            'year'             => 2026,
-            'total_amount'     => 2400,
-            'lsaf_portion'     => 1200,
-            'employee_portion' => 1200,
+            'year'             => 2025,
+            'total_amount'     => 12000,
+            'lsaf_portion'     => 6000,
+            'employee_portion' => 6000,
         ]);
 
         $this->actingAs($admin)
             ->post(route('admin.salary.medical.copy'), [
-                'month'    => 8,
                 'year'     => 2026,
                 'category' => 'staff',
             ])
@@ -180,11 +190,10 @@ class MedicalInsuranceSheetTest extends TestCase
 
         $this->assertDatabaseHas('medical_insurances', [
             'user_id'          => $employee->id,
-            'month'            => 8,
             'year'             => 2026,
-            'total_amount'     => 2400,
-            'lsaf_portion'     => 1200,
-            'employee_portion' => 1200,
+            'total_amount'     => 12000,
+            'lsaf_portion'     => 6000,
+            'employee_portion' => 6000,
         ]);
     }
 }
