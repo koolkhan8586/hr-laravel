@@ -7,13 +7,14 @@ use PHPUnit\Framework\TestCase;
 
 class MedicalInsuranceSplitTest extends TestCase
 {
-    public function test_even_total_splits_in_half(): void
+    public function test_even_total_splits_in_half_and_monthly_is_employee_over_twelve(): void
     {
         $this->assertSame([
-            'total_amount'     => 2000.0,
-            'lsaf_portion'     => 1000.0,
-            'employee_portion' => 1000.0,
-        ], MedicalInsurance::splitTotal(2000));
+            'total_amount'     => 12000.0,
+            'lsaf_portion'     => 6000.0,
+            'employee_portion' => 6000.0,
+            'monthly_portion'  => 500.0,
+        ], MedicalInsurance::splitTotal(12000));
     }
 
     public function test_odd_paisa_still_adds_back_to_total(): void
@@ -28,5 +29,9 @@ class MedicalInsuranceSplitTest extends TestCase
         );
         $this->assertSame(500.01, $split['employee_portion']);
         $this->assertSame(500.0, $split['lsaf_portion']);
+        $this->assertSame(
+            MedicalInsurance::monthlyPortion(500.01),
+            $split['monthly_portion']
+        );
     }
 }

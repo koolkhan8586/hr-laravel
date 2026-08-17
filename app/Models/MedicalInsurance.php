@@ -8,7 +8,6 @@ class MedicalInsurance extends Model
 {
     protected $fillable = [
         'user_id',
-        'month',
         'year',
         'total_amount',
         'lsaf_portion',
@@ -16,7 +15,6 @@ class MedicalInsurance extends Model
     ];
 
     protected $casts = [
-        'month'             => 'integer',
         'year'              => 'integer',
         'total_amount'      => 'float',
         'lsaf_portion'      => 'float',
@@ -29,12 +27,18 @@ class MedicalInsurance extends Model
     }
 
     /**
-     * Split a premium 50/50 between LSAF and the employee.
+     * Split a yearly premium 50/50 between LSAF and the employee.
      *
      * The two halves always add back to the total, even when the figure
-     * does not divide evenly into paisa.
+     * does not divide evenly into paisa. The monthly figure is the
+     * employee's half spread over 12 months, matching the tax sheet.
      *
-     * @return array{total_amount: float, lsaf_portion: float, employee_portion: float}
+     * @return array{
+     *   total_amount: float,
+     *   lsaf_portion: float,
+     *   employee_portion: float,
+     *   monthly_portion: float
+     * }
      */
     public static function splitTotal(float $total): array
     {
@@ -46,6 +50,13 @@ class MedicalInsurance extends Model
             'total_amount'     => $total,
             'lsaf_portion'     => $lsaf,
             'employee_portion' => $employee,
+            'monthly_portion'  => static::monthlyPortion($employee),
         ];
+    }
+
+    /** Employee half spread across the year, for the salary sheet. */
+    public static function monthlyPortion(float $employeeYearly): float
+    {
+        return round($employeeYearly / 12, 2);
     }
 }
