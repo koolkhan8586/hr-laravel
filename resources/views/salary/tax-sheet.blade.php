@@ -158,6 +158,45 @@
 
     </div>
 
+    {{-- ================= MONTHLY TAX DEDUCTION PRINT / DOWNLOAD ================= --}}
+    <div class="bg-white border border-slate-200 rounded p-4 mb-4 no-print">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+            <div>
+                <h3 class="text-sm font-semibold text-gray-800">Print / download tax deducted by month</h3>
+                <p class="text-xs text-gray-500">
+                    Opens the posted income-tax deductions for that month (Print or Download PDF).
+                </p>
+            </div>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            @for($m = 1; $m <= 12; $m++)
+                @php
+                    $monthLabel = \Carbon\Carbon::create($year, $m, 1)->format('M Y');
+                    $monthTotal = $rows->sum(fn ($r) => $r['paid_by_month'][$m] ?? 0);
+                @endphp
+                <a href="{{ route('admin.salary.tax.sheet.monthly', [
+                        'year' => $year,
+                        'month' => $m,
+                        'category' => $category,
+                        'sort' => $sort,
+                        'dir' => $dir,
+                    ]) }}"
+                   class="inline-flex items-center gap-1 px-3 py-1.5 rounded text-sm border
+                          {{ $monthTotal > 0
+                                ? 'bg-slate-800 text-white border-slate-800 hover:bg-slate-700'
+                                : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50' }}"
+                   title="{{ $monthTotal > 0
+                        ? 'Tax deducted in '.$monthLabel.': '.number_format($monthTotal)
+                        : 'No posted tax for '.$monthLabel.' yet' }}">
+                    {{ $monthLabel }}
+                    @if($monthTotal > 0)
+                        <span class="text-[10px] opacity-80">({{ number_format($monthTotal) }})</span>
+                    @endif
+                </a>
+            @endfor
+        </div>
+    </div>
+
     {{-- ================= PRINT LETTERHEAD ================= --}}
     <div class="sheet-header text-center mb-3">
         <div class="font-bold text-lg">{{ $orgName }}</div>
@@ -197,7 +236,17 @@
                 <th class="border p-2 bg-red-100 font-bold">Monthly Tax<br><span class="font-normal text-[10px]">&divide; 12</span></th>
                 @for($m = 1; $m <= 12; $m++)
                 <th class="border p-1 bg-slate-50 text-[10px]">
-                    {{ \Carbon\Carbon::create()->month($m)->format('M') }}
+                    <a href="{{ route('admin.salary.tax.sheet.monthly', [
+                            'year' => $year,
+                            'month' => $m,
+                            'category' => $category,
+                            'sort' => $sort,
+                            'dir' => $dir,
+                        ]) }}"
+                       class="hover:underline text-blue-700 no-print-link"
+                       title="Print / download tax deducted for {{ \Carbon\Carbon::create($year, $m, 1)->format('F Y') }}">
+                        {{ \Carbon\Carbon::create()->month($m)->format('M') }}
+                    </a>
                 </th>
                 @endfor
                 <th class="border p-2 bg-slate-100 font-bold">Tax Paid</th>

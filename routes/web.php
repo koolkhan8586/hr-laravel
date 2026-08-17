@@ -440,6 +440,12 @@ Route::middleware(['auth', 'salary'])
     Route::post('/tax-sheet', [SalaryController::class,'taxSheetStore'])->name('salary.tax.sheet.store');
     Route::post('/tax-sheet/apply', [SalaryController::class,'taxSheetApply'])->name('salary.tax.sheet.apply');
     Route::post('/tax-sheet/resync', [SalaryController::class,'taxSheetResync'])->name('salary.tax.sheet.resync');
+    Route::get('/tax-sheet/monthly/{year}/{month}', [SalaryController::class,'taxSheetMonthlyDeduction'])
+        ->name('salary.tax.sheet.monthly')
+        ->where(['year' => '[0-9]{4}', 'month' => '([1-9]|1[0-2])']);
+    Route::get('/tax-sheet/monthly/{year}/{month}/pdf', [SalaryController::class,'taxSheetMonthlyDeductionPdf'])
+        ->name('salary.tax.sheet.monthly.pdf')
+        ->where(['year' => '[0-9]{4}', 'month' => '([1-9]|1[0-2])']);
 
     Route::get('/bank-sheet', [SalaryController::class,'bankSheet'])->name('salary.bank.sheet');
     Route::get('/bank-sheet/export', [SalaryController::class,'bankSheetExport'])->name('salary.bank.sheet.export');
