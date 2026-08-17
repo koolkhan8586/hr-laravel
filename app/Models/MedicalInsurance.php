@@ -21,9 +21,37 @@ class MedicalInsurance extends Model
         'employee_portion'  => 'float',
     ];
 
+    /** First month this feature applies: August 2026 onward. */
+    public const START_YEAR  = 2026;
+    public const START_MONTH = 8;
+
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /** Calendar months shown on the yearly sheet (2026 starts in August). */
+    public static function monthsForYear(int $year): array
+    {
+        if ($year < self::START_YEAR) {
+            return [];
+        }
+
+        if ($year === self::START_YEAR) {
+            return range(self::START_MONTH, 12);
+        }
+
+        return range(1, 12);
+    }
+
+    /** Salary sheets before August 2026 do not carry medical insurance. */
+    public static function appliesToSalaryMonth(int $year, int $month): bool
+    {
+        if ($year > self::START_YEAR) {
+            return true;
+        }
+
+        return $year === self::START_YEAR && $month >= self::START_MONTH;
     }
 
     /**

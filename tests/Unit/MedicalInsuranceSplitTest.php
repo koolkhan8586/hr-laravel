@@ -34,4 +34,19 @@ class MedicalInsuranceSplitTest extends TestCase
             $split['monthly_portion']
         );
     }
+
+    public function test_sheet_months_start_in_august_2026_then_full_years(): void
+    {
+        $this->assertSame([], MedicalInsurance::monthsForYear(2025));
+        $this->assertSame([8, 9, 10, 11, 12], MedicalInsurance::monthsForYear(2026));
+        $this->assertSame(range(1, 12), MedicalInsurance::monthsForYear(2027));
+    }
+
+    public function test_salary_insurance_starts_august_2026(): void
+    {
+        $this->assertFalse(MedicalInsurance::appliesToSalaryMonth(2025, 12));
+        $this->assertFalse(MedicalInsurance::appliesToSalaryMonth(2026, 7));
+        $this->assertTrue(MedicalInsurance::appliesToSalaryMonth(2026, 8));
+        $this->assertTrue(MedicalInsurance::appliesToSalaryMonth(2027, 1));
+    }
 }

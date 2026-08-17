@@ -246,7 +246,7 @@ public function employeeIndex()
 
         // Employee monthly medical-insurance portion (yearly half ÷ 12), shown
         // as a grey hint on the Insurance column until someone types a figure.
-        $insurancePortions = $this->insurancePortions($users->pluck('id'), $year);
+        $insurancePortions = $this->insurancePortions($users->pluck('id'), $month, $year);
 
         // Anyone on the payroll who won't appear above, so a missing employee
         // can be explained rather than silently dropped.
@@ -1207,7 +1207,13 @@ public function employeeIndex()
     */
     public function medicalInsurance(Request $request)
     {
-        $year = (int) ($request->year ?? now()->year);
+        $year = (int) ($request->year ?? max(now()->year, \App\Models\MedicalInsurance::START_YEAR));
+
+        if ($year < \App\Models\MedicalInsurance::START_YEAR) {
+            $year = \App\Models\MedicalInsurance::START_YEAR;
+        }
+
+        $months = \App\Models\MedicalInsurance::monthsForYear($year);
 
         $category = in_array($request->category, ['teacher', 'staff', 'all'])
             ? $request->category
@@ -1230,8 +1236,15 @@ public function employeeIndex()
             ->keyBy('user_id');
 
         // Insurance actually taken off posted pay, keyed user → month → amount.
-        $deducted = Salary::where('year', $year)
-            ->where('status', 'posted')
+        // 2026 only counts August onward.
+        $deductedQuery = Salary::where('year', $year)
+            ->where('status', 'posted');
+
+        if ($year === \App\Models\MedicalInsurance::START_YEAR) {
+            $deductedQuery->where('month', '>=', \App\Models\MedicalInsurance::START_MONTH);
+        }
+
+        $deducted = $deductedQuery
             ->get()
             ->groupBy('user_id')
             ->map(fn ($rows) => $rows->pluck('insurance', 'month')
@@ -1261,6 +1274,7 @@ public function employeeIndex()
         return view('salary.medical-insurance', compact(
             'rows',
             'year',
+            'months',
             'category',
             'sort',
             'dir'
@@ -1270,7 +1284,7 @@ public function employeeIndex()
     public function medicalInsuranceStore(Request $request)
     {
         $request->validate([
-            'year'           => 'required|integer|min:2000|max:2100',
+            'year'           => 'required|integer|min:'.\App\Models\MedicalInsurance::START_YEAR.'|max:2100',
             'rows'           => 'required|array',
             'rows.*.user_id' => 'required|exists:users,id',
         ]);
@@ -1304,7 +1318,7 @@ public function employeeIndex()
     public function medicalInsuranceCopyPrevious(Request $request)
     {
         $request->validate([
-            'year'     => 'required|integer|min:2000|max:2100',
+            'year'     => 'required|integer|min:'.\App\Models\MedicalInsurance::START_YEAR.'|max:2100',
             'category' => 'required|in:teacher,staff,all',
         ]);
 
@@ -2089,9 +2103,13 @@ public function destroy($id)
             ->all();
     }
 
-    /** Monthly employee medical-insurance portion per user, for the given year. */
-    private function insurancePortions($userIds, int $year): array
+    /** Monthly employee medical-insurance portion per user, from Aug 2026 on. */
+    private function insurancePortions($userIds, int $month, int $year): array
     {
+        if (! \App\Models\MedicalInsurance::appliesToSalaryMonth($year, $month)) {
+            return [];
+        }
+
         return \App\Models\MedicalInsurance::whereIn('user_id', $userIds)
             ->where('year', $year)
             ->where('employee_portion', '>', 0)
