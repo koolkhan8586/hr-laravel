@@ -14,6 +14,7 @@
         ]);
     };
     $arrow = fn ($key) => $sort === $key ? ($dir === 'asc' ? ' ▲' : ' ▼') : '';
+    $months = $months ?? \App\Models\MedicalInsurance::monthsForYear((int) $year);
 @endphp
 
 <div class="max-w-full mx-auto py-6 px-4 print-area">
@@ -23,8 +24,9 @@
         <div>
             <h2 class="text-2xl font-bold text-gray-800">Medical Insurance</h2>
             <p class="text-sm text-gray-500 mt-1">
-                Yearly working. Enter the total; LSAF and the employee each take half,
-                then the employee half is divided by 12 for the salary sheet.
+                Yearly working from August 2026 onward. Enter the total; LSAF and the
+                employee each take half, then the employee half is divided by 12 for
+                the salary sheet.
             </p>
         </div>
 
@@ -57,7 +59,7 @@
 
         <div>
             <label class="block text-xs text-gray-500 mb-1">Year</label>
-            <input type="number" name="year" value="{{ $year }}"
+            <input type="number" name="year" value="{{ $year }}" min="2026"
                    class="border px-3 py-2 rounded text-sm w-28">
         </div>
 
@@ -113,6 +115,7 @@
 
         <span class="text-xs text-gray-500 max-w-xl">
             Save stores every employee on this sheet for the year.
+            2026 month columns start at August; later years are January–December.
             Month columns fill from posted salary Insurance figures.
         </span>
 
@@ -137,7 +140,7 @@
         <thead>
             <tr class="bg-gray-300">
                 <th class="border p-1" colspan="6"></th>
-                <th class="border p-1 text-center" colspan="14">Deducted (posted salaries)</th>
+                <th class="border p-1 text-center" colspan="{{ count($months) + 2 }}">Deducted (posted salaries)</th>
             </tr>
             <tr class="bg-gray-200">
                 <th class="border p-2 text-left">
@@ -150,11 +153,11 @@
                 <th class="border p-2 bg-green-50">LSAF Portion<br><span class="font-normal text-[10px]">&divide; 2</span></th>
                 <th class="border p-2 bg-amber-50">Employee Portion<br><span class="font-normal text-[10px]">&divide; 2</span></th>
                 <th class="border p-2 bg-red-100 font-bold">Monthly<br><span class="font-normal text-[10px]">employee &divide; 12</span></th>
-                @for($m = 1; $m <= 12; $m++)
+                @foreach($months as $m)
                 <th class="border p-1 bg-slate-50 text-[10px]">
                     {{ \Carbon\Carbon::create()->month($m)->format('M') }}
                 </th>
-                @endfor
+                @endforeach
                 <th class="border p-2 bg-slate-100 font-bold">Deducted</th>
                 <th class="border p-2 bg-slate-100 font-bold">Balance<br><span class="font-normal text-[10px]">employee &minus; deducted</span></th>
             </tr>
@@ -183,12 +186,12 @@
             <td class="border p-1 text-right bg-amber-50 employee-portion"></td>
             <td class="border p-1 text-right font-bold bg-red-50 monthly-portion"></td>
 
-            @for($m = 1; $m <= 12; $m++)
+            @foreach($months as $m)
             @php $paidThisMonth = $row['paid_by_month'][$m] ?? null; @endphp
             <td class="border p-1 text-right text-[10px] bg-slate-50 month-paid" data-month="{{ $m }}">
                 {{ $paidThisMonth ? number_format($paidThisMonth) : '' }}
             </td>
-            @endfor
+            @endforeach
 
             <td class="border p-1 text-right font-bold bg-slate-100 deducted">
                 {{ $row['paid'] ? number_format($row['paid']) : '' }}
@@ -208,12 +211,12 @@
                 <td class="border p-2 text-right bg-green-100" id="sumLsaf">0</td>
                 <td class="border p-2 text-right bg-amber-100" id="sumEmployee">0</td>
                 <td class="border p-2 text-right bg-red-100" id="sumMonthly">0</td>
-                @for($m = 1; $m <= 12; $m++)
+                @foreach($months as $m)
                 @php $colTotal = $rows->sum(fn ($r) => $r['paid_by_month'][$m] ?? 0); @endphp
                 <td class="border p-1 text-right text-[10px]">
                     {{ $colTotal ? number_format($colTotal) : '' }}
                 </td>
-                @endfor
+                @endforeach
                 <td class="border p-2 text-right" id="sumDeducted">{{ number_format($rows->sum('paid')) }}</td>
                 <td class="border p-2 text-right" id="sumBalance">0</td>
             </tr>

@@ -129,6 +129,69 @@ class MedicalInsuranceSheetTest extends TestCase
         $this->assertStringContainsString('will not print until you enter it', $html);
     }
 
+    public function test_july_2026_salary_sheet_has_no_insurance_hint(): void
+    {
+        $admin    = $this->admin();
+        $employee = $this->employee();
+
+        MedicalInsurance::create([
+            'user_id'          => $employee->id,
+            'year'             => 2026,
+            'total_amount'     => 12000,
+            'lsaf_portion'     => 6000,
+            'employee_portion' => 6000,
+        ]);
+
+        $html = $this->actingAs($admin)
+            ->get(route('admin.salary.sheet', [
+                'month'    => 7,
+                'year'     => 2026,
+                'category' => 'staff',
+            ]))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringNotContainsString('data-insurance-portion="500"', $html);
+        $this->assertStringNotContainsString('placeholder="500"', $html);
+    }
+
+    public function test_2026_sheet_shows_august_through_december_only(): void
+    {
+        $admin = $this->admin();
+        $this->employee();
+
+        $html = $this->actingAs($admin)
+            ->get(route('admin.salary.medical', [
+                'year'     => 2026,
+                'category' => 'staff',
+            ]))
+            ->assertOk()
+            ->assertSee('from August 2026', false)
+            ->getContent();
+
+        $this->assertStringContainsString('data-month="8"', $html);
+        $this->assertStringContainsString('data-month="12"', $html);
+        $this->assertStringNotContainsString('data-month="1"', $html);
+        $this->assertStringNotContainsString('data-month="7"', $html);
+    }
+
+    public function test_later_years_show_january_through_december(): void
+    {
+        $admin = $this->admin();
+        $this->employee();
+
+        $html = $this->actingAs($admin)
+            ->get(route('admin.salary.medical', [
+                'year'     => 2027,
+                'category' => 'staff',
+            ]))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('data-month="1"', $html);
+        $this->assertStringContainsString('data-month="12"', $html);
+    }
+
     public function test_posted_insurance_shows_in_that_month_on_the_yearly_sheet(): void
     {
         Mail::fake();
