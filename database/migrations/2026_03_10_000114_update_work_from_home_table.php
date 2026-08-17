@@ -8,10 +8,12 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (! Schema::hasColumn('work_from_home', 'date')) {
+            return;
+        }
+
         Schema::table('work_from_home', function (Blueprint $table) {
-
             $table->dropColumn('date');
-
         });
     }
 

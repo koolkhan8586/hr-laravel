@@ -8,6 +8,7 @@
     $dir     = $dir     ?? 'asc';
     $missing = $missing ?? collect();
     $loanBalances = $loanBalances ?? [];
+    $insurancePortions = $insurancePortions ?? [];
 
     $monthName  = \Carbon\Carbon::create()->month($month)->format('F');
     $sheetLabel = match($category) { 'teacher' => 'Teachers', 'all' => 'All Employees', default => 'Staff' };
@@ -69,6 +70,11 @@
             <a href="{{ route('admin.salary.bank.sheet', ['month' => $month, 'year' => $year]) }}"
                class="bg-gray-700 text-white px-3 py-2 rounded text-sm">
                 Bank Sheet
+            </a>
+
+            <a href="{{ route('admin.salary.medical', ['month' => $month, 'year' => $year, 'category' => $category]) }}"
+               class="bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded text-sm">
+                Medical Insurance
             </a>
 
             <button type="button" onclick="window.print()"
@@ -182,8 +188,13 @@
             Open Tax Sheet
         </a>
 
+        <a href="{{ route('admin.salary.medical', ['month' => $month, 'year' => $year, 'category' => $category]) }}"
+           class="bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded text-sm">
+            Open Medical Insurance
+        </a>
+
         <form method="POST" action="{{ route('admin.salary.sheet.post') }}"
-              onsubmit="return confirm('Post {{ $draftCount }} draft salary row(s)? This deducts loan instalments and emails each employee.');">
+              onsubmit="return confirm('Post {{ $draftCount }} draft salary row(s)? This deducts loan instalments, records medical insurance, and emails each employee.');">
             @csrf
             <input type="hidden" name="month" value="{{ $month }}">
             <input type="hidden" name="year" value="{{ $year }}">
@@ -214,6 +225,14 @@
         <span class="text-xs text-amber-800 bg-amber-50 border border-amber-200 px-2 py-1 rounded">
             {{ $withLoans }} employee(s) still owe on a loan &mdash; their
             <strong>Loan</strong> box is shaded and shows the balance left.
+        </span>
+        @endif
+
+        @php $withInsurance = collect($insurancePortions)->filter(fn ($b) => $b > 0)->count(); @endphp
+        @if($withInsurance)
+        <span class="text-xs text-gray-700 bg-gray-100 border border-gray-300 px-2 py-1 rounded">
+            {{ $withInsurance }} employee(s) have a medical insurance portion &mdash; their
+            <strong>Insurance</strong> box is grey and will not print until you enter it.
         </span>
         @endif
 
@@ -419,14 +438,30 @@
                               {{ $loanLeft > 0 ? 'has-loan' : '' }}">
             </td>
 
-            @foreach(['insurance','other_deductions'] as $field)
+            {{-- INSURANCE: grey hint of the employee medical-insurance half.
+                 Placeholder only, so it stays off the printout until typed. --}}
+            @php $insuranceDue = $insurancePortions[$user->id] ?? 0; @endphp
             <td class="border p-0">
-                <input type="text" inputmode="decimal" data-col="{{ $field }}"
-                       data-formula="{{ $row?->formulaFor($field) }}"
-                       name="rows[{{ $i }}][{{ $field }}]" value="{{ $money($row->$field ?? null) }}" {{ $ro }}
+                <input type="text" inputmode="decimal" data-col="insurance"
+                       data-formula="{{ $row?->formulaFor('insurance') }}"
+                       name="rows[{{ $i }}][insurance]"
+                       value="{{ $money($row->insurance ?? null) }}" {{ $ro }}
+                       data-insurance-portion="{{ $insuranceDue }}"
+                       placeholder="{{ $insuranceDue > 0 ? number_format($insuranceDue) : '' }}"
+                       title="{{ $insuranceDue > 0
+                            ? 'Employee medical insurance portion Rs '.number_format($insuranceDue).' — type it to deduct. It will not print until entered.'
+                            : 'No medical insurance portion for this month' }}"
+                       class="deduction insurance-input w-24 p-1 text-right border-0 {{ $roCls }}
+                              {{ $insuranceDue > 0 ? 'has-insurance' : '' }}
+                              {{ $row && (float) $row->insurance != 0 ? 'entered' : '' }}">
+            </td>
+
+            <td class="border p-0">
+                <input type="text" inputmode="decimal" data-col="other_deductions"
+                       data-formula="{{ $row?->formulaFor('other_deductions') }}"
+                       name="rows[{{ $i }}][other_deductions]" value="{{ $money($row->other_deductions ?? null) }}" {{ $ro }}
                        class="deduction w-24 p-1 text-right border-0 {{ $roCls }}">
             </td>
-            @endforeach
 
             @foreach($deductionColumns as $col)
             <td class="border p-0">
@@ -581,6 +616,18 @@
     }
     #salarySheet input.loan-input::placeholder { color: #b45309; opacity: .55; }
 
+    /* Insurance boxes: grey while a medical-insurance portion is waiting to
+       be typed, matching the loan hint so it stays off the printout. */
+    #salarySheet input.insurance-input.has-insurance {
+        background: #e5e7eb;
+        color: #4b5563;
+    }
+    #salarySheet input.insurance-input.has-insurance.entered {
+        background: #fff;
+        color: inherit;
+    }
+    #salarySheet input.insurance-input::placeholder { color: #6b7280; opacity: .7; }
+
     /* A figure worked out from a formula is marked with a small corner tick,
        so it is obvious which cells carry workings. */
     #salarySheet input.has-formula {
@@ -606,6 +653,17 @@
 
     /* Nobody with a blank Salary & Wages belongs on the printed sheet */
     #salarySheet tbody tr.row-no-salary { display: none !important; }
+
+    /* Loan / insurance hints are placeholders only — never print them */
+    #salarySheet input::placeholder {
+        color: transparent !important;
+        opacity: 0 !important;
+    }
+    #salarySheet input.insurance-input.has-insurance,
+    #salarySheet input.loan-input.has-loan {
+        background: transparent !important;
+        color: inherit !important;
+    }
 }
 </style>
 
@@ -667,6 +725,7 @@
         extra_leaves:     ['extraleaves'],
         income_tax:       ['tax'],
         loan_deduction:   ['loan'],
+        insurance:        ['medical', 'medicalinsurance'],
         other_deductions: ['other'],
         cheque_amount:    ['cheque'],
     };
@@ -852,6 +911,7 @@
         applyHideEmpty();
         markEmptyRows();
         checkLoans();
+        markInsuranceHints();
     });
 
     function recalc() {
@@ -944,6 +1004,27 @@
                 : '';
             note.style.display = over ? '' : 'none';
         }
+    }
+
+    /* Grey insurance hint stays until a figure is actually typed. */
+    function markInsuranceHints() {
+        document.querySelectorAll('#salarySheet input.insurance-input').forEach(el => {
+            const due     = parseFloat(el.dataset.insurancePortion) || 0;
+            const entered = num(el) !== 0 || String(el.value).trim().startsWith('=');
+            el.classList.toggle('has-insurance', due > 0);
+            el.classList.toggle('entered', entered);
+
+            if (el.classList.contains('has-formula') || el.classList.contains('formula-bad')) {
+                return;
+            }
+
+            el.title = due > 0
+                ? (entered
+                    ? 'Employee medical insurance portion Rs ' + due.toLocaleString('en-US')
+                    : 'Employee medical insurance portion Rs ' + due.toLocaleString('en-US')
+                      + ' — type it to deduct. It will not print until entered.')
+                : 'No medical insurance portion for this month';
+        });
     }
 
     /* ---------- Rows with no salary are left off the printout ---------- */
@@ -1045,6 +1126,7 @@
         applyHideEmpty();
         markEmptyRows();
         checkLoans();
+        markInsuranceHints();
     }));
 
     /* ---------- Submitting ----------
@@ -1096,6 +1178,7 @@
     applyHideEmpty();
     markEmptyRows();
     checkLoans();
+    markInsuranceHints();
 })();
 </script>
 
