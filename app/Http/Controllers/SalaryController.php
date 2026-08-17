@@ -244,6 +244,10 @@ public function employeeIndex()
         // balance and how much is left to take.
         $loanBalances = $this->loanBalances($users->pluck('id'));
 
+        // Employee half of this month's medical insurance premium, shown as a
+        // grey hint on the Insurance column until someone types a figure.
+        $insurancePortions = $this->insurancePortions($users->pluck('id'), $month, $year);
+
         // Anyone on the payroll who won't appear above, so a missing employee
         // can be explained rather than silently dropped.
         $shownIds = $users->pluck('id');
@@ -274,7 +278,8 @@ public function employeeIndex()
             'sort',
             'dir',
             'missing',
-            'loanBalances'
+            'loanBalances',
+            'insurancePortions'
         ));
     }
 
@@ -1193,6 +1198,169 @@ public function employeeIndex()
 
     /*
     |--------------------------------------------------------------------------
+    | MEDICAL INSURANCE
+    |--------------------------------------------------------------------------
+    | Monthly premium sheet. Enter the total; LSAF and the employee each take
+    | half. The employee half is hinted on the salary sheet Insurance column
+    | and is only deducted once someone types it there and posts the sheet.
+    */
+    public function medicalInsurance(Request $request)
+    {
+        $month    = (int) ($request->month ?? now()->month);
+        $year     = (int) ($request->year ?? now()->year);
+        $category = in_array($request->category, ['teacher', 'staff', 'all'])
+            ? $request->category
+            : 'staff';
+
+        [$sort, $dir] = $this->sheetSort($request);
+
+        $query = User::with('staff')->where('role', 'employee');
+
+        if ($category !== 'all') {
+            $query->where('salary_category', $category);
+        }
+
+        $this->applySheetSort($query, $sort, $dir);
+
+        $users = $query->get();
+
+        $existing = \App\Models\MedicalInsurance::where('month', $month)
+            ->where('year', $year)
+            ->get()
+            ->keyBy('user_id');
+
+        // What was actually taken off posted pay this month.
+        $deducted = Salary::where('month', $month)
+            ->where('year', $year)
+            ->where('status', 'posted')
+            ->get()
+            ->mapWithKeys(fn ($s) => [$s->user_id => round((float) $s->insurance, 2)]);
+
+        $postedIds = Salary::where('month', $month)
+            ->where('year', $year)
+            ->where('status', 'posted')
+            ->pluck('user_id')
+            ->all();
+
+        return view('salary.medical-insurance', compact(
+            'users',
+            'existing',
+            'deducted',
+            'postedIds',
+            'month',
+            'year',
+            'category',
+            'sort',
+            'dir'
+        ));
+    }
+
+    public function medicalInsuranceStore(Request $request)
+    {
+        $request->validate([
+            'month'          => 'required|integer|min:1|max:12',
+            'year'           => 'required|integer|min:2000|max:2100',
+            'rows'           => 'required|array',
+            'rows.*.user_id' => 'required|exists:users,id',
+        ]);
+
+        $month = (int) $request->month;
+        $year  = (int) $request->year;
+        $saved = 0;
+
+        foreach ($request->rows as $row) {
+
+            $total = round((float) str_replace(',', '', $row['total_amount'] ?? 0), 2);
+
+            $existing = \App\Models\MedicalInsurance::where('user_id', $row['user_id'])
+                ->where('month', $month)
+                ->where('year', $year)
+                ->first();
+
+            if (!$existing && $total == 0) {
+                continue;
+            }
+
+            $split = \App\Models\MedicalInsurance::splitTotal($total);
+
+            \App\Models\MedicalInsurance::updateOrCreate(
+                [
+                    'user_id' => $row['user_id'],
+                    'month'   => $month,
+                    'year'    => $year,
+                ],
+                $split
+            );
+
+            $saved++;
+        }
+
+        return redirect()->route('admin.salary.medical', [
+            'month'    => $month,
+            'year'     => $year,
+            'category' => $request->category,
+            'sort'     => $request->sort,
+            'dir'      => $request->dir,
+        ])->with('success', "Medical insurance sheet saved ({$saved} employees).");
+    }
+
+    public function medicalInsuranceCopyPrevious(Request $request)
+    {
+        $request->validate([
+            'month'    => 'required|integer|min:1|max:12',
+            'year'     => 'required|integer|min:2000|max:2100',
+            'category' => 'required|in:teacher,staff,all',
+        ]);
+
+        $month = (int) $request->month;
+        $year  = (int) $request->year;
+
+        $from = \Carbon\Carbon::create($year, $month, 1)->subMonth();
+
+        $userIds = User::where('role', 'employee')
+            ->when($request->category !== 'all',
+                fn ($q) => $q->where('salary_category', $request->category))
+            ->pluck('id');
+
+        $previous = \App\Models\MedicalInsurance::where('month', $from->month)
+            ->where('year', $from->year)
+            ->whereIn('user_id', $userIds)
+            ->get();
+
+        if ($previous->isEmpty()) {
+            return back()->with('error',
+                'Nothing to copy - there is no '.$from->format('F Y').' medical insurance sheet for this category.');
+        }
+
+        $copied = 0;
+
+        foreach ($previous as $row) {
+
+            \App\Models\MedicalInsurance::updateOrCreate(
+                [
+                    'user_id' => $row->user_id,
+                    'month'   => $month,
+                    'year'    => $year,
+                ],
+                [
+                    'total_amount'     => $row->total_amount,
+                    'lsaf_portion'     => $row->lsaf_portion,
+                    'employee_portion' => $row->employee_portion,
+                ]
+            );
+
+            $copied++;
+        }
+
+        return redirect()->route('admin.salary.medical', [
+            'month'    => $month,
+            'year'     => $year,
+            'category' => $request->category,
+        ])->with('success', "Copied {$copied} row(s) from ".$from->format('F Y').'.');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
     | BANK LETTER
     |--------------------------------------------------------------------------
     | Covering letter that goes to the bank with the annexure. Prints bare so
@@ -1927,6 +2095,18 @@ public function destroy($id)
             ->selectRaw('user_id, SUM(remaining_balance) as balance')
             ->groupBy('user_id')
             ->pluck('balance', 'user_id')
+            ->map(fn ($b) => round((float) $b, 2))
+            ->all();
+    }
+
+    /** Employee medical-insurance half per user, for the given month. */
+    private function insurancePortions($userIds, int $month, int $year): array
+    {
+        return \App\Models\MedicalInsurance::whereIn('user_id', $userIds)
+            ->where('month', $month)
+            ->where('year', $year)
+            ->where('employee_portion', '>', 0)
+            ->pluck('employee_portion', 'user_id')
             ->map(fn ($b) => round((float) $b, 2))
             ->all();
     }

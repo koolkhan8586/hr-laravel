@@ -337,6 +337,10 @@ Bank Sheet
 Bank Letter
 </a>
 
+<a href="{{ route('admin.salary.medical') }}" class="block py-1 hover:text-blue-600">
+Medical Insurance
+</a>
+
 <a href="{{ route('admin.salary.tax.sheet') }}" class="block py-1 hover:text-blue-600">
 Tax Sheet
 </a>
