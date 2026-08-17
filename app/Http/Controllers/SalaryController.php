@@ -966,7 +966,7 @@ public function employeeIndex()
         $period = \Carbon\Carbon::create($year, $month, 1)->format('F_Y');
 
         $pdf = Pdf::loadView('salary.tax-monthly-deduction-pdf', $data)
-            ->setPaper('a4', 'portrait');
+            ->setPaper('a4', 'landscape');
 
         return $pdf->download("Tax_Deducted_{$period}.pdf");
     }
@@ -974,7 +974,19 @@ public function employeeIndex()
     /**
      * Posted salary tax deductions for one calendar month.
      *
-     * @return array{rows: \Illuminate\Support\Collection, total: float, year: int, month: int, category: string, sort: string, dir: string}
+     * Rows match the Tax Sheet working columns, with Monthly Tax set to
+     * that month's posted deduction. Employees with 0 tax are excluded.
+     *
+     * @return array{
+     *   rows: \Illuminate\Support\Collection,
+     *   total: float,
+     *   year: int,
+     *   month: int,
+     *   category: string,
+     *   sort: string,
+     *   dir: string,
+     *   medicalDivisor: float
+     * }
      */
     private function monthlyTaxDeductionData(Request $request, int $year, int $month): array
     {
@@ -984,33 +996,83 @@ public function employeeIndex()
             ? $request->category
             : 'all';
 
-        $rows = Salary::with('user')
+        $medicalDivisor = (float) \App\Models\AppSetting::get('tax_medical_divisor', 1.1);
+
+        $salaries = Salary::with('user')
             ->where('year', $year)
             ->where('month', $month)
             ->where('status', 'posted')
+            ->where('income_tax', '>', 0)
             ->whereHas('user', function ($q) use ($category) {
                 $q->where('role', 'employee');
                 if ($category !== 'all') {
                     $q->where('salary_category', $category);
                 }
             })
+            ->get();
+
+        $sheets = \App\Models\TaxSheet::where('year', $year)
+            ->whereIn('user_id', $salaries->pluck('user_id'))
             ->get()
-            ->sortBy(function ($salary) use ($sort) {
-                $user = $salary->user;
-                if ($sort === 'name') {
-                    return strtolower((string) ($user->name ?? ''));
-                }
+            ->keyBy('user_id');
 
-                $code = trim((string) ($user->employee_code ?? ''));
+        $rows = $salaries->map(function ($salary) use ($sheets, $medicalDivisor) {
+            $user  = $salary->user;
+            $sheet = $sheets[$user->id] ?? null;
 
-                // Blank codes sink to the bottom, matching the tax sheet.
-                return $code === '' ? 'zzz_'.$user->name : strtolower($code);
-            }, SORT_REGULAR, $dir === 'desc')
-            ->values();
+            // Prefer the saved tax sheet yearly working; fall back to this
+            // month's basic × 12 when no sheet row exists yet.
+            $annual = $sheet
+                ? (float) $sheet->annual_salary
+                : round((float) ($salary->basic_salary ?? 0) * 12, 2);
 
-        $total = round((float) $rows->sum('income_tax'), 2);
+            $additional = (float) ($sheet->additional_income ?? 0);
+            $adjustment = (float) ($sheet->tax_adjustment ?? 0);
 
-        return compact('rows', 'total', 'year', 'month', 'category', 'sort', 'dir');
+            $taxable = ($medicalDivisor > 0 ? $annual / $medicalDivisor : $annual)
+                + $additional;
+            $taxable = round($taxable, 2);
+
+            $payable = \App\Models\TaxSlab::annualTaxFor($taxable);
+            $net     = round($payable - $adjustment, 2);
+
+            // That month's actual posted deduction (never the planned /12).
+            $monthlyDeducted = round((float) $salary->income_tax, 2);
+
+            return (object) [
+                'user'       => $user,
+                'annual'     => $annual,
+                'additional' => $additional,
+                'taxable'    => $taxable,
+                'payable'    => $payable,
+                'adjustment' => $adjustment,
+                'net'        => $net,
+                'monthly'    => $monthlyDeducted,
+                'income_tax' => $monthlyDeducted,
+            ];
+        })->sortBy(function ($row) use ($sort) {
+            $user = $row->user;
+            if ($sort === 'name') {
+                return strtolower((string) ($user->name ?? ''));
+            }
+
+            $code = trim((string) ($user->employee_code ?? ''));
+
+            return $code === '' ? 'zzz_'.$user->name : strtolower($code);
+        }, SORT_REGULAR, $dir === 'desc')->values();
+
+        $total = round((float) $rows->sum('monthly'), 2);
+
+        return compact(
+            'rows',
+            'total',
+            'year',
+            'month',
+            'category',
+            'sort',
+            'dir',
+            'medicalDivisor'
+        );
     }
 
     /**
