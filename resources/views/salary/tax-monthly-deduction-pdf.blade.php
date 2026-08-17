@@ -6,41 +6,49 @@
     <style>
         body {
             font-family: DejaVu Sans, sans-serif;
-            font-size: 11px;
+            font-size: 9px;
             color: #222;
             margin: 0;
-            padding: 18px;
+            padding: 14px;
         }
         .header {
             text-align: center;
             border-bottom: 2px solid #0f5132;
-            padding-bottom: 10px;
-            margin-bottom: 16px;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
         }
         .company-name {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: bold;
             color: #0f5132;
         }
         .sub-title {
-            font-size: 12px;
-            margin-top: 4px;
+            font-size: 11px;
+            margin-top: 3px;
         }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 8px;
+            margin-top: 6px;
         }
         th, td {
-            border: 1px solid #ccc;
-            padding: 5px 6px;
+            border: 1px solid #bbb;
+            padding: 3px 4px;
         }
         th {
-            background: #f3f4f6;
+            background: #e5e7eb;
+            font-size: 8px;
             text-align: left;
-            font-size: 10px;
         }
-        td.amount, th.amount {
+        th.amount, td.amount {
+            text-align: right;
+        }
+        th.monthly {
+            background: #fecaca;
+        }
+        td.monthly {
+            background: #fef2f2;
+            font-weight: bold;
             text-align: right;
         }
         tfoot td {
@@ -48,17 +56,25 @@
             background: #f3f4f6;
         }
         .meta {
-            font-size: 10px;
+            font-size: 9px;
             color: #555;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
+        }
+        .sub {
+            font-weight: normal;
+            font-size: 7px;
+            display: block;
         }
     </style>
 </head>
 <body>
 
 @php
-    $period = \Carbon\Carbon::create($year, $month, 1)->format('F Y');
-    $money  = fn ($n) => number_format((float) $n, 2);
+    $period  = \Carbon\Carbon::create($year, $month, 1)->format('F Y');
+    $divisor = $medicalDivisor ?: 1.1;
+    $money   = fn ($n) => ((float) $n) != 0
+        ? number_format((float) $n, 2)
+        : '';
 @endphp
 
 <div class="header">
@@ -71,32 +87,41 @@
 
 <div class="meta">
     Generated {{ now()->format('d M Y h:i A') }}
-    · {{ $rows->count() }} employee(s)
+    · {{ $rows->count() }} employee(s) with tax deducted
+    · Employees with 0 tax are excluded
 </div>
 
 <table>
     <thead>
         <tr>
-            <th style="width:36px;">#</th>
             <th>Employee ID</th>
             <th>Employee Name</th>
-            <th>Category</th>
-            <th class="amount">Income Tax Deducted</th>
+            <th class="amount">Salary &amp; Wages<span class="sub">yearly</span></th>
+            <th class="amount">Additional Income<span class="sub">yearly</span></th>
+            <th class="amount">Taxable Income<span class="sub">&divide; {{ $divisor }} (less medical)</span></th>
+            <th class="amount">Payable Tax<span class="sub">yearly</span></th>
+            <th class="amount">Tax Adjustment</th>
+            <th class="amount">Net Payable Tax</th>
+            <th class="amount monthly">Monthly Tax<span class="sub">{{ $period }}</span></th>
         </tr>
     </thead>
     <tbody>
-        @forelse($rows as $i => $row)
+        @forelse($rows as $row)
         <tr>
-            <td>{{ $i + 1 }}</td>
             <td>{{ $row->user->employee_code ?? '-' }}</td>
             <td>{{ $row->user->name }}</td>
-            <td style="text-transform: capitalize;">{{ $row->user->salary_category ?? '-' }}</td>
-            <td class="amount">{{ $money($row->income_tax) }}</td>
+            <td class="amount">{{ $money($row->annual) }}</td>
+            <td class="amount">{{ $money($row->additional) }}</td>
+            <td class="amount">{{ $money($row->taxable) }}</td>
+            <td class="amount">{{ $money($row->payable) }}</td>
+            <td class="amount">{{ $money($row->adjustment) }}</td>
+            <td class="amount">{{ $money($row->net) }}</td>
+            <td class="monthly">{{ number_format($row->monthly) }}</td>
         </tr>
         @empty
         <tr>
-            <td colspan="5" style="text-align:center; padding:16px;">
-                No posted salary tax deductions for this month.
+            <td colspan="9" style="text-align:center; padding:16px;">
+                No employees with tax deducted for this month.
             </td>
         </tr>
         @endforelse
@@ -104,8 +129,14 @@
     @if($rows->isNotEmpty())
     <tfoot>
         <tr>
-            <td colspan="4" style="text-align:right;">TOTAL</td>
-            <td class="amount">{{ $money($total) }}</td>
+            <td colspan="2" style="text-align:right;">TOTAL</td>
+            <td class="amount">{{ $money($rows->sum('annual')) }}</td>
+            <td class="amount">{{ $money($rows->sum('additional')) }}</td>
+            <td class="amount">{{ $money($rows->sum('taxable')) }}</td>
+            <td class="amount">{{ $money($rows->sum('payable')) }}</td>
+            <td class="amount">{{ $money($rows->sum('adjustment')) }}</td>
+            <td class="amount">{{ $money($rows->sum('net')) }}</td>
+            <td class="monthly">{{ number_format($total) }}</td>
         </tr>
     </tfoot>
     @endif
