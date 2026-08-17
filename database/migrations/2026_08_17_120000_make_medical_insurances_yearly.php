@@ -42,6 +42,13 @@ return new class extends Migration
             DB::table('medical_insurances')->whereIn('id', $idsToDelete)->delete();
         }
 
+        // MySQL may be using the (user_id, month, year) unique index to
+        // support the user_id foreign key, so that unique cannot be dropped
+        // until the FK is removed.
+        Schema::table('medical_insurances', function (Blueprint $table) {
+            $table->dropForeign(['user_id']);
+        });
+
         Schema::table('medical_insurances', function (Blueprint $table) {
             $table->dropUnique(['user_id', 'month', 'year']);
             $table->dropIndex(['year', 'month']);
@@ -53,6 +60,10 @@ return new class extends Migration
 
         Schema::table('medical_insurances', function (Blueprint $table) {
             $table->unique(['user_id', 'year']);
+            $table->foreign('user_id')
+                ->references('id')
+                ->on('users')
+                ->cascadeOnDelete();
         });
     }
 
@@ -67,6 +78,7 @@ return new class extends Migration
         }
 
         Schema::table('medical_insurances', function (Blueprint $table) {
+            $table->dropForeign(['user_id']);
             $table->dropUnique(['user_id', 'year']);
         });
 
@@ -77,6 +89,10 @@ return new class extends Migration
         Schema::table('medical_insurances', function (Blueprint $table) {
             $table->unique(['user_id', 'month', 'year']);
             $table->index(['year', 'month']);
+            $table->foreign('user_id')
+                ->references('id')
+                ->on('users')
+                ->cascadeOnDelete();
         });
     }
 };
