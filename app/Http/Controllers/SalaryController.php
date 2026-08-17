@@ -939,6 +939,81 @@ public function employeeIndex()
     }
 
     /**
+     * Printable page: income tax deducted for one month (from posted salaries).
+     */
+    public function taxSheetMonthlyDeduction(Request $request, int $year, int $month)
+    {
+        abort_unless($month >= 1 && $month <= 12, 404);
+
+        $data = $this->monthlyTaxDeductionData($request, $year, $month);
+
+        return view('salary.tax-monthly-deduction', $data);
+    }
+
+    /**
+     * Download PDF of income tax deducted for one month.
+     */
+    public function taxSheetMonthlyDeductionPdf(Request $request, int $year, int $month)
+    {
+        abort_unless($month >= 1 && $month <= 12, 404);
+
+        $data = $this->monthlyTaxDeductionData($request, $year, $month);
+        $data['orgName'] = \App\Models\AppSetting::get(
+            'org_name',
+            'The University of Lahore (City Campus)'
+        );
+
+        $period = \Carbon\Carbon::create($year, $month, 1)->format('F_Y');
+
+        $pdf = Pdf::loadView('salary.tax-monthly-deduction-pdf', $data)
+            ->setPaper('a4', 'portrait');
+
+        return $pdf->download("Tax_Deducted_{$period}.pdf");
+    }
+
+    /**
+     * Posted salary tax deductions for one calendar month.
+     *
+     * @return array{rows: \Illuminate\Support\Collection, total: float, year: int, month: int, category: string, sort: string, dir: string}
+     */
+    private function monthlyTaxDeductionData(Request $request, int $year, int $month): array
+    {
+        [$sort, $dir] = $this->sheetSort($request);
+
+        $category = in_array($request->category, ['teacher', 'staff', 'all'], true)
+            ? $request->category
+            : 'all';
+
+        $rows = Salary::with('user')
+            ->where('year', $year)
+            ->where('month', $month)
+            ->where('status', 'posted')
+            ->whereHas('user', function ($q) use ($category) {
+                $q->where('role', 'employee');
+                if ($category !== 'all') {
+                    $q->where('salary_category', $category);
+                }
+            })
+            ->get()
+            ->sortBy(function ($salary) use ($sort) {
+                $user = $salary->user;
+                if ($sort === 'name') {
+                    return strtolower((string) ($user->name ?? ''));
+                }
+
+                $code = trim((string) ($user->employee_code ?? ''));
+
+                // Blank codes sink to the bottom, matching the tax sheet.
+                return $code === '' ? 'zzz_'.$user->name : strtolower($code);
+            }, SORT_REGULAR, $dir === 'desc')
+            ->values();
+
+        $total = round((float) $rows->sum('income_tax'), 2);
+
+        return compact('rows', 'total', 'year', 'month', 'category', 'sort', 'dir');
+    }
+
+    /**
      * Monthly deduction the tax sheet works out for one employee.
      * Shared so the tax sheet and the salary sheet can never disagree.
      *
