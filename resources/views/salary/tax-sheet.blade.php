@@ -217,7 +217,7 @@
 
         <thead>
             <tr class="bg-gray-300">
-                <th class="border p-1" colspan="9"></th>
+                <th class="border p-1" colspan="10"></th>
                 <th class="border p-1 text-center" colspan="14">Tax Deducted (posted salaries)</th>
             </tr>
             <tr class="bg-gray-200">
@@ -227,6 +227,7 @@
                 <th class="border p-2 text-left">
                     <a href="{{ $sortLink('name') }}" class="hover:underline no-print-link">Employee Name{{ $arrow('name') }}</a>
                 </th>
+                <th class="border p-2 text-left">CNIC</th>
                 <th class="border p-2 bg-green-50">Salary &amp; Wages<br><span class="font-normal text-[10px]">yearly</span></th>
                 <th class="border p-2 bg-green-50 w-28">Additional<br>Income<br><span class="font-normal text-[10px]">yearly</span></th>
                 <th class="border p-2 bg-blue-50">Taxable Income<br><span class="font-normal text-[10px]">&divide; {{ $medicalDivisor }} (less medical)</span></th>
@@ -265,6 +266,10 @@
             </td>
 
             <td class="border p-1 whitespace-nowrap">{{ $row['user']->name }}</td>
+
+            <td class="border p-1 whitespace-nowrap text-[10px]">
+                {{ $row['user']->cnic ?: '—' }}
+            </td>
 
             <td class="border p-0 relative">
                 <input type="number" step="0.01" min="0"
@@ -320,7 +325,7 @@
 
         <tfoot class="bg-gray-100 font-bold">
             <tr>
-                <td class="border p-2 text-right" colspan="2">TOTAL</td>
+                <td class="border p-2 text-right" colspan="3">TOTAL</td>
                 <td class="border p-2 text-right" id="sumAnnual">0</td>
                 <td class="border p-2 text-right" id="sumAdditional">0</td>
                 <td class="border p-2 text-right" id="sumTaxable">0</td>
