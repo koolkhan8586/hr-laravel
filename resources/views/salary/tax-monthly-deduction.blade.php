@@ -63,6 +63,7 @@
                 <tr class="bg-gray-200">
                     <th class="border p-2 text-left">Employee ID</th>
                     <th class="border p-2 text-left">Employee Name</th>
+                    <th class="border p-2 text-left">CNIC</th>
                     <th class="border p-2 bg-green-50">Salary &amp; Wages<br><span class="font-normal text-[10px]">yearly</span></th>
                     <th class="border p-2 bg-green-50">Additional<br>Income<br><span class="font-normal text-[10px]">yearly</span></th>
                     <th class="border p-2 bg-blue-50">Taxable Income<br><span class="font-normal text-[10px]">&divide; {{ $divisor }} (less medical)</span></th>
@@ -77,6 +78,7 @@
                 <tr>
                     <td class="border p-1">{{ $row->user->employee_code ?? '-' }}</td>
                     <td class="border p-1 whitespace-nowrap">{{ $row->user->name }}</td>
+                    <td class="border p-1 whitespace-nowrap">{{ $row->user->cnic ?: '—' }}</td>
                     <td class="border p-1 text-right bg-green-50">{{ $money($row->annual) }}</td>
                     <td class="border p-1 text-right bg-green-50">{{ $money($row->additional) }}</td>
                     <td class="border p-1 text-right bg-blue-50">{{ $money($row->taxable) }}</td>
@@ -89,7 +91,7 @@
             </tbody>
             <tfoot class="bg-gray-100 font-bold">
                 <tr>
-                    <td class="border p-2 text-right" colspan="2">TOTAL</td>
+                    <td class="border p-2 text-right" colspan="3">TOTAL</td>
                     <td class="border p-2 text-right">{{ $money($rows->sum('annual')) }}</td>
                     <td class="border p-2 text-right">{{ $money($rows->sum('additional')) }}</td>
                     <td class="border p-2 text-right">{{ $money($rows->sum('taxable')) }}</td>

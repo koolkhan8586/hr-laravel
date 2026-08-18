@@ -96,6 +96,7 @@
         <tr>
             <th>Employee ID</th>
             <th>Employee Name</th>
+            <th>CNIC</th>
             <th class="amount">Salary &amp; Wages<span class="sub">yearly</span></th>
             <th class="amount">Additional Income<span class="sub">yearly</span></th>
             <th class="amount">Taxable Income<span class="sub">&divide; {{ $divisor }} (less medical)</span></th>
@@ -110,6 +111,7 @@
         <tr>
             <td>{{ $row->user->employee_code ?? '-' }}</td>
             <td>{{ $row->user->name }}</td>
+            <td>{{ $row->user->cnic ?: '—' }}</td>
             <td class="amount">{{ $money($row->annual) }}</td>
             <td class="amount">{{ $money($row->additional) }}</td>
             <td class="amount">{{ $money($row->taxable) }}</td>
@@ -120,7 +122,7 @@
         </tr>
         @empty
         <tr>
-            <td colspan="9" style="text-align:center; padding:16px;">
+            <td colspan="10" style="text-align:center; padding:16px;">
                 No employees with tax deducted for this month.
             </td>
         </tr>
@@ -129,7 +131,7 @@
     @if($rows->isNotEmpty())
     <tfoot>
         <tr>
-            <td colspan="2" style="text-align:right;">TOTAL</td>
+            <td colspan="3" style="text-align:right;">TOTAL</td>
             <td class="amount">{{ $money($rows->sum('annual')) }}</td>
             <td class="amount">{{ $money($rows->sum('additional')) }}</td>
             <td class="amount">{{ $money($rows->sum('taxable')) }}</td>

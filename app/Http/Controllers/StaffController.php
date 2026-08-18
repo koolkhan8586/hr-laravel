@@ -79,6 +79,7 @@ class StaffController extends Controller
     'name' => 'required',
     'email' => 'required|email|unique:users,email',
     'mobile' => 'nullable|string|max:20',
+    'cnic' => 'nullable|string|max:20',
     'employee_code' => 'required|unique:staff,employee_id',
     'department' => 'required',
     'designation' => 'required',
@@ -97,6 +98,7 @@ class StaffController extends Controller
         'name' => $request->name,
         'email' => $request->email,
         'mobile' => $request->mobile,
+        'cnic' => $this->normalizeCnic($request->cnic),
         'employee_code' => $employeeCode,
         'password' => \Hash::make($password),
         'force_password_change' => true,
@@ -191,6 +193,7 @@ class StaffController extends Controller
         'name'          => 'required',
         'email'         => 'required|email|unique:users,email,' . $staff->user->id,
         'mobile'        => 'nullable|string|max:20',
+        'cnic'          => 'nullable|string|max:20',
         'employee_code' => 'required|unique:users,employee_code,' . $staff->user->id,
         'department'    => 'required',
         'designation'   => 'required',
@@ -212,6 +215,7 @@ class StaffController extends Controller
         'name'          => $request->name,
         'email'         => $request->email,
         'mobile'        => $request->mobile,
+        'cnic'          => $this->normalizeCnic($request->cnic),
         'employee_code' => strtoupper($request->employee_code),
         'office_location_id' => $request->office_location_id,
 
@@ -343,5 +347,20 @@ class StaffController extends Controller
         }
 
         return back()->with('success', 'Selected staff deleted.');
+    }
+
+    /**
+     * Keep digits and optional dashes; blank becomes null.
+     */
+    private function normalizeCnic(?string $cnic): ?string
+    {
+        if (! filled($cnic)) {
+            return null;
+        }
+
+        $value = trim($cnic);
+        $value = preg_replace('/[^\d\-]/', '', $value);
+
+        return $value !== '' ? $value : null;
     }
 }

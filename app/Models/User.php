@@ -30,6 +30,7 @@ class User extends Authenticatable
         // Set by staff management. Without these the values are silently
         // dropped on save, because a non-empty fillable list wins over guarded.
         'employee_code',
+        'cnic',
         'office_location_id',
         'allow_anywhere_attendance',
         'attendance_override_until',

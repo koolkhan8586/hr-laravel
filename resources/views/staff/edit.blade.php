@@ -66,6 +66,19 @@
 </div>
 
             <div>
+                <label class="block font-semibold mb-1">CNIC Number</label>
+                <input type="text"
+                       name="cnic"
+                       value="{{ old('cnic', $staff->user->cnic) }}"
+                       placeholder="35202-1234567-1"
+                       class="w-full border p-2 rounded"
+                       maxlength="20">
+                <p class="text-xs text-gray-500 mt-1">
+                    Shown on the tax deduction sheet (e.g. 35202-1234567-1).
+                </p>
+            </div>
+
+            <div>
                 <label class="block font-semibold mb-1">Department</label>
                 <input type="text"
                        name="department"
