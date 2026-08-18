@@ -199,6 +199,18 @@
                 </p>
             </div>
 
+            <div>
+                <label class="block font-semibold mb-1">Loan Access</label>
+                <label class="flex items-center gap-2 mt-2">
+                    <input type="checkbox" name="can_manage_loan" value="1"
+                           {{ old('can_manage_loan', $staff->user->can_manage_loan) ? 'checked' : '' }}>
+                    <span class="text-sm">Can work on Loan Management</span>
+                </label>
+                <p class="text-xs text-gray-500 mt-1">
+                    Grants access to the loan screens without making them an admin.
+                </p>
+            </div>
+
             <div class="mt-3">
     <label class="block font-semibold mb-1">Office Location</label>
 

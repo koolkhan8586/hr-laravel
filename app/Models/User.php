@@ -41,6 +41,7 @@ class User extends Authenticatable
         'new_account_no',
         'bank_payee_id',
         'can_manage_salary',
+        'can_manage_loan',
     ];
 
     /*
@@ -80,6 +81,8 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'tracks_attendance' => 'boolean',
+            'can_manage_salary' => 'boolean',
+            'can_manage_loan' => 'boolean',
         ];
     }
 
@@ -203,5 +206,18 @@ class User extends Authenticatable
     public function isManager()
     {
         return $this->role === 'manager';
+    }
+
+    /** Admin, or staff granted Salary Management access. */
+    public function canManageSalary(): bool
+    {
+        return $this->role === 'admin' || (bool) $this->can_manage_salary;
+    }
+
+    /** Admin, manager, or staff granted Loan Management access. */
+    public function canManageLoans(): bool
+    {
+        return in_array($this->role, ['admin', 'manager'], true)
+            || (bool) $this->can_manage_loan;
     }
 }

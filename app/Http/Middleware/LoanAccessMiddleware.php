@@ -5,11 +5,11 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 
-class SalaryAccessMiddleware
+class LoanAccessMiddleware
 {
     /**
-     * Admins always get in; anyone else needs the salary permission
-     * granted on their staff record.
+     * Admins and managers always get in; anyone else needs the loan
+     * permission granted on their staff record.
      */
     public function handle(Request $request, Closure $next)
     {
@@ -17,8 +17,10 @@ class SalaryAccessMiddleware
             return redirect()->route('login');
         }
 
-        if (! auth()->user()->canManageSalary()) {
-            abort(403, 'You do not have access to salary management.');
+        $user = auth()->user();
+
+        if (! $user->canManageLoans()) {
+            abort(403, 'You do not have access to loan management.');
         }
 
         return $next($request);

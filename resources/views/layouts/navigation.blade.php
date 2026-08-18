@@ -44,7 +44,7 @@
                     Employee Directory
                     </a>
                     <!-- Loans Section -->
-                    @if(auth()->user()->role === 'admin' || auth()->user()->role === 'manager')
+                    @if(auth()->user()->canManageLoans())
 
                         <a href="{{ route('admin.loan.index') }}"
                            class="hover:text-green-700 transition">
@@ -67,12 +67,12 @@
 
 
                     <!-- Admin Dropdown -->
-                    @if(auth()->user()->role === 'admin')
+                    @if(auth()->user()->role === 'admin' || auth()->user()->canManageSalary() || auth()->user()->canManageLoans())
                     <div x-data="{ open: false }" class="relative">
 
                         <button @click="open = !open"
                                 class="hover:text-green-700 transition flex items-center space-x-1 focus:outline-none">
-                            <span>Admin</span>
+                            <span>{{ auth()->user()->role === 'admin' ? 'Admin' : 'Management' }}</span>
                             <span class="text-xs">▼</span>
                         </button>
 
@@ -81,6 +81,7 @@
                              x-transition
                              class="absolute left-0 mt-2 w-56 bg-white border rounded-md shadow-lg z-50">
 
+                            @if(auth()->user()->role === 'admin')
                             <a href="{{ route('admin.staff.index') }}"
                                class="block px-4 py-2 hover:bg-gray-100">
                                 Staff Management
@@ -140,16 +141,21 @@
                                class="block px-4 py-2 hover:bg-gray-100">
                                 Leave Transactions
                             </a>
+                            @endif
 
+                            @if(auth()->user()->canManageSalary())
                             <a href="{{ route('admin.salary.index') }}"
                                class="block px-4 py-2 hover:bg-gray-100">
                                 Salary Management
                             </a>
+                            @endif
 
+                            @if(auth()->user()->canManageLoans())
                             <a href="{{ route('admin.loan.index') }}"
                                class="block px-4 py-2 hover:bg-gray-100">
                                 Loan Management
                             </a>
+                            @endif
 
                         </div>
                     </div>

@@ -225,6 +225,7 @@ class StaffController extends Controller
             : $request->bank_payee_id,
 
         'can_manage_salary' => $request->boolean('can_manage_salary'),
+        'can_manage_loan'   => $request->boolean('can_manage_loan'),
 
         // Payroll-only employees stay out of the attendance reports
         'tracks_attendance' => $request->input('tracks_attendance', '1') === '0' ? false : true,
