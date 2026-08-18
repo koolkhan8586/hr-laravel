@@ -311,8 +311,28 @@ Announcements
 </div>
 </div>
 
-<!-- SALARY -->
+<!-- WORK FROM HOME -->
 
+<div x-data="{open:false}">
+<button @click="open=!open"
+class="w-full text-left px-3 py-2 rounded hover:bg-gray-200 font-semibold">
+Work From Home Management
+</button>
+
+<div x-show="open" class="pl-4 space-y-1">
+
+<a href="{{ route('admin.wfh.index') }}" class="block py-1 hover:text-blue-600">
+Manage WFH
+</a>
+
+</div>
+</div>
+@endif
+@endif
+{{-- ================= END ADMIN / MANAGER MENUS ================= --}}
+
+{{-- Salary Management: admins + staff with Salary Access checkbox --}}
+@if(Auth::user()->canManageSalary())
 <div x-data="{open:false}">
 <button @click="open=!open"
 class="w-full text-left px-3 py-2 rounded hover:bg-gray-200 font-semibold">
@@ -355,27 +375,10 @@ Sheet Columns
 
 </div>
 </div>
-
-<!-- WORK FROM HOME -->
-
-<div x-data="{open:false}">
-<button @click="open=!open"
-class="w-full text-left px-3 py-2 rounded hover:bg-gray-200 font-semibold">
-Work From Home Management
-</button>
-
-<div x-show="open" class="pl-4 space-y-1">
-
-<a href="{{ route('admin.wfh.index') }}" class="block py-1 hover:text-blue-600">
-Manage WFH
-</a>
-
-</div>
 @endif
 
-
-<!-- LOANS -->
-
+{{-- Loan Management: admins, managers, or staff with Loan Access checkbox --}}
+@if(Auth::user()->canManageLoans())
 <div x-data="{open:false}">
 <button @click="open=!open"
 class="w-full text-left px-3 py-2 rounded hover:bg-gray-200 font-semibold">
@@ -384,11 +387,9 @@ Loan Management
 
 <div x-show="open" class="pl-4 space-y-1">
 
-<li>
-<a href="{{ route('admin.loan.create') }}">
+<a href="{{ route('admin.loan.create') }}" class="block py-1 hover:text-blue-600">
 Loan Opening Balance
 </a>
-</li>
 
 <a href="{{ route('admin.loan.index') }}" class="block py-1 hover:text-blue-600">
 Loan Management
@@ -396,9 +397,7 @@ Loan Management
 
 </div>
 </div>
-
 @endif
-{{-- ================= END ADMIN MENUS ================= --}}
 
 {{-- ================= EMPLOYEE MENUS ================= --}}
 

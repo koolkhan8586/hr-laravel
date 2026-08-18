@@ -497,7 +497,7 @@ Route::middleware(['auth', 'salary'])
 | Loan Management (Admin & Manager Accounts)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'role:admin,manager'])
+Route::middleware(['auth', 'loan'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
