@@ -92,6 +92,24 @@
             <x-input-error class="mt-2" :messages="$errors->get('mobile')" />
         </div>
 
+        {{-- CNIC / ID Card --}}
+        <div>
+            <x-input-label for="cnic" :value="__('CNIC / ID Card Number')" />
+            <x-text-input
+                id="cnic"
+                name="cnic"
+                type="text"
+                class="mt-1 block w-full"
+                :value="old('cnic', $user->cnic)"
+                placeholder="35202-1234567-1"
+                maxlength="20"
+            />
+            <p class="mt-1 text-xs text-gray-500">
+                Your national ID card number. Used on the tax deduction sheet.
+            </p>
+            <x-input-error class="mt-2" :messages="$errors->get('cnic')" />
+        </div>
+
         <div class="flex items-center gap-4">
             <x-primary-button>{{ __('Save') }}</x-primary-button>
 

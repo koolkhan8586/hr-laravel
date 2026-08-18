@@ -32,6 +32,7 @@ class ProfileController extends Controller
         $user->name   = $request->name;
         $user->email  = $request->email;
         $user->mobile = $request->mobile;
+        $user->cnic   = $this->normalizeCnic($request->cnic);
 
         // If email changed, reset verification
         if ($user->isDirty('email')) {
@@ -42,6 +43,21 @@ class ProfileController extends Controller
 
         return Redirect::route('profile.edit')
             ->with('status', 'profile-updated');
+    }
+
+    /**
+     * Keep digits and optional dashes; blank becomes null.
+     */
+    private function normalizeCnic(?string $cnic): ?string
+    {
+        if (! filled($cnic)) {
+            return null;
+        }
+
+        $value = trim($cnic);
+        $value = preg_replace('/[^\d\-]/', '', $value);
+
+        return $value !== '' ? $value : null;
     }
 
     /**
