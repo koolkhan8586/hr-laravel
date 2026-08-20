@@ -1044,16 +1044,20 @@ public function employeeIndex()
             // That month's actual posted deduction (never the planned /12).
             $monthlyDeducted = round((float) $salary->income_tax, 2);
 
+            // Posted basic for this month (monthly salary on the salary sheet).
+            $monthlySalary = round((float) ($salary->basic_salary ?? 0), 2);
+
             return (object) [
-                'user'       => $user,
-                'annual'     => $annual,
-                'additional' => $additional,
-                'taxable'    => $taxable,
-                'payable'    => $payable,
-                'adjustment' => $adjustment,
-                'net'        => $net,
-                'monthly'    => $monthlyDeducted,
-                'income_tax' => $monthlyDeducted,
+                'user'           => $user,
+                'monthly_salary' => $monthlySalary,
+                'annual'         => $annual,
+                'additional'     => $additional,
+                'taxable'        => $taxable,
+                'payable'        => $payable,
+                'adjustment'     => $adjustment,
+                'net'            => $net,
+                'monthly'        => $monthlyDeducted,
+                'income_tax'     => $monthlyDeducted,
             ];
         })->sortBy(function ($row) use ($sort) {
             $user = $row->user;
@@ -1067,10 +1071,12 @@ public function employeeIndex()
         }, SORT_REGULAR, $dir === 'desc')->values();
 
         $total = round((float) $rows->sum('monthly'), 2);
+        $totalMonthlySalary = round((float) $rows->sum('monthly_salary'), 2);
 
         return compact(
             'rows',
             'total',
+            'totalMonthlySalary',
             'year',
             'month',
             'category',
