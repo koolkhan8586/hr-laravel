@@ -269,13 +269,17 @@ public function store(Request $request)
         $leave = Leave::findOrFail($id);
 
         if ($leave->status === 'approved') {
-            return back()->with('error','Already Approved');
+            return redirect()
+                ->route('admin.leave.index')
+                ->with('error', 'Already Approved');
         }
 
         $approved = $this->processApproval($leave);
 
         if (!$approved) {
-            return back()->with('error', 'Insufficient leave balance.');
+            return redirect()
+                ->route('admin.leave.index')
+                ->with('error', 'Insufficient leave balance.');
         }
 
         $leave->update([
@@ -287,7 +291,9 @@ public function store(Request $request)
 
         $this->notifyLeaveOwner($leave, 'approved');
 
-        return back()->with('success','Leave Approved');
+        return redirect()
+            ->route('admin.leave.index')
+            ->with('success', 'Leave Approved');
     }
 
 /*
@@ -480,6 +486,18 @@ public function store(Request $request)
     {
         $leave = Leave::findOrFail($id);
 
+        if ($leave->status === 'rejected') {
+            return redirect()
+                ->route('admin.leave.index')
+                ->with('error', 'Already Rejected');
+        }
+
+        if ($leave->status === 'approved') {
+            return redirect()
+                ->route('admin.leave.index')
+                ->with('error', 'Approved leave cannot be rejected. Revert it first.');
+        }
+
         $leave->update([
             'status' => 'rejected',
             'decided_via' => 'dashboard',
@@ -489,7 +507,9 @@ public function store(Request $request)
 
         $this->notifyLeaveOwner($leave, 'rejected');
 
-        return back()->with('success','Leave Rejected');
+        return redirect()
+            ->route('admin.leave.index')
+            ->with('success', 'Leave Rejected');
     }
 
 /*
