@@ -183,7 +183,7 @@
                                 <form method="POST"
                                       action="{{ route('admin.leave.approve', $leave->id) }}">
                                     @csrf
-                                    <button class="bg-green-600 text-white px-3 py-1 rounded text-xs">
+                                    <button type="submit" class="bg-green-600 text-white px-3 py-1 rounded text-xs">
                                         Approve
                                     </button>
                                 </form>
@@ -191,7 +191,7 @@
                                 <form method="POST"
                                       action="{{ route('admin.leave.reject', $leave->id) }}">
                                     @csrf
-                                    <button class="bg-red-600 text-white px-3 py-1 rounded text-xs">
+                                    <button type="submit" class="bg-red-600 text-white px-3 py-1 rounded text-xs">
                                         Reject
                                     </button>
                                 </form>
@@ -199,7 +199,7 @@
                                 <form method="POST"
                                       action="{{ route('admin.leave.resend.whatsapp', $leave->id) }}">
                                     @csrf
-                                    <button class="bg-teal-600 hover:bg-teal-700 text-white px-3 py-1 rounded text-xs"
+                                    <button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white px-3 py-1 rounded text-xs"
                                             title="Send leave approval WhatsApp again (use after WAHA reconnects)">
                                         {{ in_array($waStatus, ['sent', 'partial'], true) ? 'Resend WhatsApp' : 'Send WhatsApp' }}
                                     </button>
@@ -212,7 +212,7 @@
                                 <form method="POST"
                                       action="{{ route('admin.leave.revert', $leave->id) }}">
                                     @csrf
-                                    <button class="bg-orange-500 text-white px-3 py-1 rounded text-xs">
+                                    <button type="submit" class="bg-orange-500 text-white px-3 py-1 rounded text-xs">
                                         Revert
                                     </button>
                                 </form>

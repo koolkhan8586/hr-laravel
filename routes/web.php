@@ -359,8 +359,10 @@ Route::put('/work-from-home/{id}',
     |--------------------------------------------------------------------------
     */
 Route::get('/leaves', [LeaveController::class, 'adminIndex'])->name('leave.index');
-Route::post('/leave/approve/{id}', [LeaveController::class, 'approve'])->name('leave.approve');
-Route::post('/leave/reject/{id}', [LeaveController::class, 'reject'])->name('leave.reject');
+// GET is allowed so a re-login redirect (Laravel stores the approve URL and
+// resumes with GET) does not 405. Admin auth still protects these routes.
+Route::match(['get', 'post'], '/leave/approve/{id}', [LeaveController::class, 'approve'])->name('leave.approve');
+Route::match(['get', 'post'], '/leave/reject/{id}', [LeaveController::class, 'reject'])->name('leave.reject');
 Route::post('/leave/resend-whatsapp/{id}', [LeaveController::class, 'resendWhatsApp'])->name('leave.resend.whatsapp');
 Route::post('/leave/revert/{id}', [LeaveController::class, 'revert'])->name('leave.revert');
 Route::delete('/leave/delete/{id}', [LeaveController::class, 'destroy'])->name('leave.delete');
