@@ -6,6 +6,12 @@ alert("{{ session('success') }}");
 </script>
 @endif
 
+@if(session('error'))
+<script>
+alert(@json(session('error')));
+</script>
+@endif
+
 <x-slot name="header">
 <div class="mobile-header flex items-center justify-between w-full">
 <div class="flex items-center gap-3">
@@ -143,6 +149,11 @@ Today's Attendance Completed
 <a href="{{ route('loan.my') }}" class="bg-white shadow rounded-xl p-4 text-center">
 <div class="text-2xl">🏦</div>
 <div class="text-sm mt-1">My Loans</div>
+</a>
+
+<a href="{{ route('cafe.launch') }}" class="bg-white shadow rounded-xl p-4 text-center">
+<div class="text-2xl">☕</div>
+<div class="text-sm mt-1">Cafe</div>
 </a>
 
 </div>

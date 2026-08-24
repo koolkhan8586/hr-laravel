@@ -55,4 +55,19 @@ return [
         'daily_report_mobiles' => env('WAHA_DAILY_REPORT_MOBILES', ''),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Cafe LSAF (cafe.khanmusa.com)
+    |--------------------------------------------------------------------------
+    |
+    | Employee Panel → Cafe opens a short-lived SSO link into the cafe app.
+    | CAFE_SSO_SECRET must match Cafe's HR_SSO_SECRET (min 16 characters).
+    |
+    */
+    'cafe' => [
+        'base_url' => env('CAFE_BASE_URL', 'https://cafe.khanmusa.com'),
+        'sso_secret' => env('CAFE_SSO_SECRET'),
+        'sso_ttl' => env('CAFE_SSO_TTL', 120),
+    ],
+
 ];

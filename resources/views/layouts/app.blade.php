@@ -425,6 +425,10 @@ My Salary
 My Loans
 </a>
 
+<a href="{{ route('cafe.launch') }}" class="block py-1 hover:text-blue-600">
+Cafe
+</a>
+
 <a href="{{ route('profile.edit') }}" class="block py-1 hover:text-blue-600">
 Profile
 </a>
