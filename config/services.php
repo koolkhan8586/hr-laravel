@@ -60,7 +60,7 @@ return [
     | Cafe LSAF (cafe.khanmusa.com)
     |--------------------------------------------------------------------------
     |
-    | Employee Panel → Cafe opens a short-lived SSO link into the cafe app.
+    | The Cafe sidebar item opens a short-lived SSO link into the cafe app.
     | CAFE_SSO_SECRET must match Cafe's HR_SSO_SECRET (min 16 characters).
     |
     */

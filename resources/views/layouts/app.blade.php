@@ -425,10 +425,6 @@ My Salary
 My Loans
 </a>
 
-<a href="{{ route('cafe.launch') }}" class="block py-1 hover:text-blue-600">
-Cafe
-</a>
-
 <a href="{{ route('profile.edit') }}" class="block py-1 hover:text-blue-600">
 Profile
 </a>
@@ -443,6 +439,20 @@ Work From Home
 
 </div>
 </div>
+
+<a href="{{ route('cafe.launch') }}" class="block px-3 py-2 rounded hover:bg-gray-200">
+Cafe
+</a>
+
+<a href="https://roadmap.uolcc.edu.pk" target="_blank" rel="noopener noreferrer"
+   class="block px-3 py-2 rounded hover:bg-gray-200">
+Timetable
+</a>
+
+<a href="https://attendance.uolcc.edu.pk/" target="_blank" rel="noopener noreferrer"
+   class="block px-3 py-2 rounded hover:bg-gray-200">
+Student Attendance
+</a>
 
 </nav>
 

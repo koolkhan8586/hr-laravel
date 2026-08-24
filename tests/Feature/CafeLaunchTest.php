@@ -78,14 +78,29 @@ class CafeLaunchTest extends TestCase
             ->assertRedirect('https://cafe.khanmusa.com/login');
     }
 
-    public function test_cafe_appears_on_dashboard_and_in_employee_panel(): void
+    public function test_cafe_appears_on_dashboard_and_as_a_top_level_sidebar_item(): void
     {
         $user = User::factory()->create(['role' => 'employee']);
 
-        $this->actingAs($user)
+        $html = $this->actingAs($user)
             ->get(route('dashboard'))
             ->assertOk()
             ->assertSee('Cafe')
-            ->assertSee(route('cafe.launch'), false);
+            ->assertSee(route('cafe.launch'), false)
+            ->assertSee('Timetable')
+            ->assertSee('https://roadmap.uolcc.edu.pk', false)
+            ->assertSee('Student Attendance')
+            ->assertSee('https://attendance.uolcc.edu.pk/', false)
+            ->getContent();
+
+        $cafe = strpos($html, route('cafe.launch'));
+        $timetable = strpos($html, 'https://roadmap.uolcc.edu.pk');
+        $attendance = strpos($html, 'https://attendance.uolcc.edu.pk/');
+
+        $this->assertNotFalse($cafe);
+        $this->assertNotFalse($timetable);
+        $this->assertNotFalse($attendance);
+        $this->assertLessThan($timetable, $cafe);
+        $this->assertLessThan($attendance, $timetable);
     }
 }
