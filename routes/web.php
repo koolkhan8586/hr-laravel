@@ -21,6 +21,7 @@ use App\Http\Controllers\LeaveApprovalWhatsappController;
 use App\Http\Controllers\SalarySettingController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\AnnouncementController;
+use App\Http\Controllers\CafeController;
 
 
 /*
@@ -105,6 +106,9 @@ Route::get('/my-loans', [LoanController::class, 'myLoan'])->name('loan.my');
 Route::get('/loan/apply', [LoanController::class, 'apply'])->name('loan.apply');
 Route::post('/loan/store-request', [LoanController::class, 'storeRequest'])->name('loan.store.request');
 Route::get('/loan/{id}/ledger', [LoanController::class,'employeeLedger'])->name('loan.ledger');
+
+/* Cafe LSAF (SSO into cafe.khanmusa.com) */
+Route::get('/cafe', [CafeController::class, 'launch'])->name('cafe.launch');
 
 /* Employees Directory */
 Route::get('/employees', [EmployeeController::class, 'index'])->name('employees.index');
