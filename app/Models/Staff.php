@@ -12,11 +12,22 @@ class Staff extends Model
         'department',
         'designation',
         'salary',
-        'joining_date'
+        'joining_date',
+        'status',
     ];
 
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function isActive(): bool
+    {
+        return $this->status !== 'inactive';
+    }
+
+    public function hasLeft(): bool
+    {
+        return $this->status === 'inactive';
     }
 }

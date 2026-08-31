@@ -182,6 +182,24 @@
             </div>
 
             <div>
+                <label class="block font-semibold mb-1">Employment Status</label>
+                <select name="employment_status" class="w-full border p-2 rounded">
+                    <option value="active"
+                        {{ old('employment_status', $staff->status) === 'active' ? 'selected' : '' }}>
+                        Active
+                    </option>
+                    <option value="inactive"
+                        {{ old('employment_status', $staff->status) === 'inactive' ? 'selected' : '' }}>
+                        Left / Resigned
+                    </option>
+                </select>
+                <p class="text-xs text-gray-500 mt-1">
+                    Left or resigned employees are hidden from daily attendance,
+                    absence, late and leave reports.
+                </p>
+            </div>
+
+            <div>
                 <label class="block font-semibold mb-1">Attendance Tracking</label>
                 <select name="tracks_attendance" class="w-full border p-2 rounded">
                     <option value="1"

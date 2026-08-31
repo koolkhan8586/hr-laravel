@@ -158,7 +158,7 @@ $absentEmployees = collect();
 if(!$isWeekend){
 
 $absentEmployees = User::where('role','employee')
-    ->tracked()
+    ->forAttendanceRoster()
     ->whereNotIn('id',$attendanceUsers)
     ->whereNotIn('id',$leaveUsers)
     ->whereNotIn('id',$wfhUsers)
@@ -411,7 +411,7 @@ $isWeekend = \Carbon\Carbon::parse($today)->isWeekend();
 if(!$isWeekend){
 
 $records = User::where('role','employee')
-->tracked()
+->forAttendanceRoster()
 ->whereNotIn('id',$attendanceUsers)
 ->whereNotIn('id',$leaveUsers)
 ->whereNotIn('id',$wfhUsers)
@@ -578,6 +578,7 @@ public function attendanceCalendar(Request $request)
     $includePayrollOnly = $request->boolean('include_payroll_only');
 
     $users = \App\Models\User::where('role','employee')
+        ->employed()
         ->when(!$includePayrollOnly, fn ($q) => $q->tracked())
         ->orderBy('name','asc')
         ->get();
@@ -589,6 +590,7 @@ public function attendanceCalendar(Request $request)
     */
 
     $allEmployees = \App\Models\User::where('role','employee')
+        ->employed()
         ->when(!$includePayrollOnly, fn ($q) => $q->tracked())
         ->orderBy('name','asc')
         ->get();
@@ -686,6 +688,7 @@ $end   = \Carbon\Carbon::parse($month.'-01')->endOfMonth();
 $includePayrollOnly = $request->boolean('include_payroll_only');
 
 $users = \App\Models\User::where('role','employee')
+->employed()
 ->when(!$includePayrollOnly, fn ($q) => $q->tracked())
 ->orderBy('name','asc')
 ->get();
@@ -915,7 +918,7 @@ public function exportStaffLeaveReport(Request $request)
  */
 protected function reportRoster(bool $includePayrollOnly = false)
 {
-    $query = User::where('role', 'employee')->with('staff');
+    $query = User::where('role', 'employee')->with('staff')->employed();
 
     if (!$includePayrollOnly) {
         $query->tracked();

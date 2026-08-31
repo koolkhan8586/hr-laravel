@@ -48,7 +48,7 @@ class SendAttendanceWhatsAppReminder extends Command
                 continue;
             }
 
-            if ($user->staff && $user->staff->status === 'inactive') {
+            if (! $user->isEmployed()) {
                 $skipped++;
                 continue;
             }

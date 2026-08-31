@@ -66,6 +66,13 @@ class AttendanceController extends Controller
 
     $user = auth()->user();
 
+    if ($user->staff?->hasLeft()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Your employment has ended. Please contact HR if this is a mistake.',
+        ], 403);
+    }
+
     // ✅ OPTIONAL: If GPS not provided, still allow
     $lat = $request->latitude ?? null;
     $lng = $request->longitude ?? null;
