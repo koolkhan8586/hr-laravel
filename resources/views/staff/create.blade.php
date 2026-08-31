@@ -44,7 +44,8 @@
                        placeholder="03001234567"
                        class="w-full border p-2 rounded">
                 <p class="text-xs text-gray-500 mt-1">
-                    Used for WhatsApp attendance reminders (e.g. 03001234567 or 923001234567).
+                    Login credentials are sent here via WhatsApp when a new employee is created
+                    (e.g. 03001234567 or 923001234567).
                 </p>
             </div>
 
