@@ -194,7 +194,7 @@
         </a>
 
         <form method="POST" action="{{ route('admin.salary.sheet.post') }}"
-              onsubmit="return confirm('Post {{ $draftCount }} draft salary row(s)? This deducts loan instalments, records medical insurance, and emails each employee.');">
+              onsubmit="return confirm('Post {{ $draftCount }} draft salary row(s)? This deducts loan instalments, records medical insurance, and notifies each employee by email and WhatsApp.');">
             @csrf
             <input type="hidden" name="month" value="{{ $month }}">
             <input type="hidden" name="year" value="{{ $year }}">
