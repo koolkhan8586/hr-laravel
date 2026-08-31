@@ -101,6 +101,34 @@ class MedicalInsuranceSheetTest extends TestCase
         $this->assertDatabaseCount('medical_insurances', 2);
     }
 
+    public function test_saving_plus_prefixed_sum_without_blur(): void
+    {
+        $admin    = $this->admin();
+        $employee = $this->employee();
+
+        $this->actingAs($admin)
+            ->post(route('admin.salary.medical.store'), [
+                'year'     => 2026,
+                'category' => 'staff',
+                'rows'     => [
+                    [
+                        'user_id'      => $employee->id,
+                        'total_amount' => '+9699+92949',
+                    ],
+                ],
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('medical_insurances', [
+            'user_id'          => $employee->id,
+            'year'             => 2026,
+            'total_amount'     => 102648,
+            'total_formula'    => '=+9699+92949',
+            'employee_portion' => 51324,
+        ]);
+    }
+
     public function test_saving_a_formula_total_stores_the_expression_and_result(): void
     {
         $admin    = $this->admin();

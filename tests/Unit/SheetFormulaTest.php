@@ -11,6 +11,7 @@ class SheetFormulaTest extends TestCase
     public function test_plus_prefixed_sum(): void
     {
         $this->assertSame(3600.0, SheetFormula::evaluate('+2600+1000'));
+        $this->assertSame(102648.0, SheetFormula::evaluate('+9699+92949'));
     }
 
     public function test_equals_prefixed_sum(): void
