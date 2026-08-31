@@ -145,11 +145,25 @@
                             </button>
                         </form>
                     </td>
-                    <td class="p-3 flex gap-2">
+                    <td class="p-3 flex flex-wrap gap-2">
                         <a href="{{ route('admin.staff.edit', $item->id) }}"
                            class="bg-yellow-500 text-white px-3 py-1 rounded text-xs">
                             Edit
                         </a>
+                        @if(filled($item->user?->mobile))
+                        <form method="POST"
+                              action="{{ route('admin.staff.reset.password', $item->id) }}"
+                              onsubmit="return confirm('Reset password and send new credentials to {{ addslashes($item->user->name ?? 'this employee') }} on WhatsApp?');">
+                            @csrf
+                            <button class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs">
+                                Reset &amp; WhatsApp
+                            </button>
+                        </form>
+                        @else
+                        <span class="text-xs text-gray-400" title="Add a mobile number to send credentials via WhatsApp">
+                            No mobile
+                        </span>
+                        @endif
                         <form method="POST"
                               action="{{ route('admin.staff.destroy', $item->id) }}">
                             @csrf

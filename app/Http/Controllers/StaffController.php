@@ -13,6 +13,7 @@ use App\Exports\StaffSampleExport;
 use App\Exports\StaffExport;
 use Carbon\Carbon;
 use App\Models\OfficeLocation;
+use App\Services\EmployeeCredentialsWhatsAppNotifier;
 
 class StaffController extends Controller
 {
@@ -129,8 +130,18 @@ class StaffController extends Controller
             }
         );
 
+        $waResult = app(EmployeeCredentialsWhatsAppNotifier::class)
+            ->sendWelcome($user, $password);
+
+        $message = 'Staff Added Successfully (Code: '.$employeeCode.').';
+        if ($waResult['ok']) {
+            $message .= ' '.$waResult['message'];
+        } elseif (filled($request->mobile)) {
+            $message .= ' WhatsApp: '.$waResult['message'];
+        }
+
         return redirect()->route('admin.staff.index')
-        ->with('success', 'Staff Added Successfully (Code: '.$employeeCode.')');
+            ->with('success', $message);
     }
 
     /*
@@ -325,6 +336,41 @@ class StaffController extends Controller
 
         return back()->with('success', $userIds->count().' employee(s) set to '.
             ($tracks ? 'attendance tracking.' : 'payroll only.'));
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Reset Password + WhatsApp
+    |--------------------------------------------------------------------------
+    */
+    public function resetPassword($id)
+    {
+        $staff = Staff::with('user')->findOrFail($id);
+        $user  = $staff->user;
+
+        if (! $user) {
+            return back()->with('error', 'Employee user record not found.');
+        }
+
+        if (! filled($user->mobile)) {
+            return back()->with('error', 'Add a mobile number on the employee profile before sending credentials via WhatsApp.');
+        }
+
+        $password = Str::random(8);
+
+        $user->update([
+            'password' => Hash::make($password),
+            'force_password_change' => true,
+        ]);
+
+        $waResult = app(EmployeeCredentialsWhatsAppNotifier::class)
+            ->sendPasswordReset($user, $password);
+
+        if ($waResult['ok']) {
+            return back()->with('success', 'Password reset and sent to '.$user->name.' via WhatsApp.');
+        }
+
+        return back()->with('error', 'Password was reset but WhatsApp failed: '.$waResult['message']);
     }
 
     /*
