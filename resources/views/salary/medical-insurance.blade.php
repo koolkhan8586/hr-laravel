@@ -26,7 +26,8 @@
             <p class="text-sm text-gray-500 mt-1">
                 Yearly working from August 2026 onward. Enter the total; LSAF and the
                 employee each take half, then the employee half is divided by 12 for
-                the salary sheet.
+                the salary sheet. In Total Amount you can type a figure or a sum like
+                <code class="bg-gray-100 px-1">+2600+1000</code> or <code class="bg-gray-100 px-1">=2600+1000</code>.
             </p>
         </div>
 
@@ -179,7 +180,9 @@
                 <input type="text" inputmode="decimal"
                        name="rows[{{ $i }}][total_amount]"
                        value="{{ $row['total'] != 0 ? number_format($row['total'], fmod($row['total'], 1) == 0.0 ? 0 : 2) : '' }}"
-                       class="total-amount w-28 p-1 text-right border-0">
+                       data-formula="{{ $row['total_formula'] ?? '' }}"
+                       class="total-amount w-28 p-1 text-right border-0{{ filled($row['total_formula'] ?? '') ? ' has-formula' : '' }}"
+                       @if(filled($row['total_formula'] ?? '')) title="{{ $row['total_formula'] }}" @endif>
             </td>
 
             <td class="border p-1 text-right bg-green-50 lsaf-portion"></td>
@@ -253,6 +256,13 @@
     #medicalSheet input { width: auto !important; font-size: 8pt !important; text-align: right; }
     .no-print-link { text-decoration: none !important; color: #000 !important; }
     #medicalSheet tbody tr.row-empty { display: none !important; }
+    #medicalSheet input.total-amount.has-formula {
+        background-image: linear-gradient(135deg, transparent 92%, #2563eb 92%);
+    }
+    #medicalSheet input.total-amount.formula-bad {
+        background-color: #fef2f2;
+        color: #b91c1c;
+    }
 }
 </style>
 
@@ -261,11 +271,6 @@
 
     const fmt = n => (Math.round(n * 100) / 100)
         .toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-
-    const num = el => {
-        const v = parseFloat(String(el.value).replace(/,/g, ''));
-        return isNaN(v) ? 0 : v;
-    };
 
     const money = value => {
         const s = String(value).trim();
@@ -285,6 +290,105 @@
         cell.textContent = v === 0 ? '' : fmt(v);
     };
 
+    const looksLikeFormula = value => {
+        const s = String(value).trim().replace(/,/g, '');
+        if (s === '') return false;
+        if (s.startsWith('=')) return true;
+        if (/^[+\-*\/(]/.test(s)) return true;
+        return /[+\-*\/]/.test(s);
+    };
+
+    const normalizeFormula = value => {
+        const s = String(value).trim();
+        if (s === '') return '';
+        return s.startsWith('=') ? s : '=' + s.replace(/^=+/, '');
+    };
+
+    // Safe arithmetic reader for + - * / and brackets — not eval().
+    function evaluate(src) {
+        let i = 0;
+        const ws = () => { while (i < src.length && /\s/.test(src[i])) i++; };
+
+        function expression() {
+            let value = term();
+            ws();
+            while (src[i] === '+' || src[i] === '-') {
+                const op = src[i++];
+                const rhs = term();
+                value = op === '+' ? value + rhs : value - rhs;
+                ws();
+            }
+            return value;
+        }
+
+        function term() {
+            let value = factor();
+            ws();
+            while (src[i] === '*' || src[i] === '/') {
+                const op = src[i++];
+                const rhs = factor();
+                if (op === '/' && rhs === 0) throw new Error('divide by zero');
+                value = op === '*' ? value * rhs : value / rhs;
+                ws();
+            }
+            return value;
+        }
+
+        function factor() {
+            ws();
+            if (src[i] === '+') { i++; return factor(); }
+            if (src[i] === '-') { i++; return -factor(); }
+            if (src[i] === '(') {
+                i++;
+                const value = expression();
+                ws();
+                if (src[i] !== ')') throw new Error('missing )');
+                i++;
+                return value;
+            }
+            const number = /^\d*\.?\d+/.exec(src.slice(i));
+            if (number) { i += number[0].length; return parseFloat(number[0]); }
+            throw new Error('cannot read "' + src.slice(i) + '"');
+        }
+
+        const value = expression();
+        ws();
+        if (i !== src.length) throw new Error('cannot read "' + src.slice(i) + '"');
+        return value;
+    }
+
+    function readAmount(el) {
+        const formula = el.dataset.formula || '';
+        if (formula.startsWith('=')) {
+            try {
+                return Math.round(evaluate(formula.slice(1)) * 100) / 100;
+            } catch {
+                return 0;
+            }
+        }
+
+        const v = parseFloat(String(el.value).replace(/,/g, ''));
+        return isNaN(v) ? 0 : v;
+    }
+
+    function applyFormula(el, typed) {
+        const formula = normalizeFormula(typed);
+
+        try {
+            const value = Math.round(evaluate(formula.slice(1)) * 100) / 100;
+            el.dataset.formula = formula;
+            el.value = money(String(value));
+            el.classList.remove('formula-bad');
+            el.classList.add('has-formula');
+            el.title = formula;
+            return value;
+        } catch (err) {
+            el.classList.add('formula-bad');
+            el.title = formula + ' — ' + err.message;
+            return 0;
+        }
+    }
+
     function split(total) {
         const employee = Math.round((total / 2) * 100) / 100;
         const lsaf     = Math.round((total - employee) * 100) / 100;
@@ -298,7 +402,8 @@
 
         document.querySelectorAll('.medical-row').forEach(row => {
 
-            const total = num(row.querySelector('.total-amount'));
+            const totalInput = row.querySelector('.total-amount');
+            const total = readAmount(totalInput);
             const parts = split(total);
             const paid  = parseFloat(row.dataset.paid || 0) || 0;
             const balance = Math.round((parts.employee - paid) * 100) / 100;
@@ -330,22 +435,65 @@
     }
 
     document.querySelectorAll('#medicalSheet input.total-amount').forEach(el => {
-        el.addEventListener('input', recalc);
-        el.addEventListener('focus', () => { el.value = String(el.value).replace(/,/g, ''); el.select?.(); });
-        el.addEventListener('blur', () => { el.value = money(el.value); recalc(); });
+        el.addEventListener('input', () => {
+            if (el.dataset.formula) {
+                delete el.dataset.formula;
+                el.classList.remove('has-formula', 'formula-bad');
+                el.removeAttribute('title');
+            }
+            recalc();
+        });
+
+        el.addEventListener('focus', () => {
+            const formula = el.dataset.formula || '';
+            el.value = formula.startsWith('=')
+                ? formula
+                : String(el.value).replace(/,/g, '');
+            el.select?.();
+        });
+
+        el.addEventListener('blur', () => {
+            const typed = String(el.value).trim();
+
+            if (looksLikeFormula(typed)) {
+                applyFormula(el, typed);
+            } else {
+                delete el.dataset.formula;
+                el.classList.remove('has-formula', 'formula-bad');
+                el.removeAttribute('title');
+                el.value = money(typed);
+            }
+
+            recalc();
+        });
     });
 
     const form = document.getElementById('medicalSheet')?.closest('form');
     if (form) {
         form.addEventListener('submit', () => {
-            document.querySelectorAll('#medicalSheet input.total-amount').forEach(el => {
-                el.value = String(el.value).replace(/,/g, '');
+            form.querySelectorAll('.medical-formula-field').forEach(el => el.remove());
+
+            document.querySelectorAll('#medicalSheet input.total-amount').forEach((el, index) => {
+                const formula = el.dataset.formula || '';
+
+                if (formula.startsWith('=')) {
+                    const hidden = document.createElement('input');
+                    hidden.type = 'hidden';
+                    hidden.className = 'medical-formula-field';
+                    hidden.name = 'rows[' + index + '][total_formula]';
+                    hidden.value = formula;
+                    form.appendChild(hidden);
+                }
+
+                el.value = String(readAmount(el)).replace(/,/g, '');
             });
         });
     }
 
     document.querySelectorAll('#medicalSheet input.total-amount').forEach(el => {
-        el.value = money(el.value);
+        if (!(el.dataset.formula || '').startsWith('=')) {
+            el.value = money(el.value);
+        }
     });
 
     recalc();

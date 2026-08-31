@@ -10,6 +10,7 @@ class MedicalInsurance extends Model
         'user_id',
         'year',
         'total_amount',
+        'total_formula',
         'lsaf_portion',
         'employee_portion',
     ];
