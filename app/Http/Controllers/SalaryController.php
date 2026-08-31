@@ -1268,6 +1268,7 @@ public function employeeIndex()
             return [
                 'user'             => $user,
                 'total'            => $total,
+                'total_formula'    => $sheet->total_formula ?? '',
                 'lsaf'             => $split['lsaf_portion'],
                 'employee'         => $split['employee_portion'],
                 'monthly'          => $split['monthly_portion'],
@@ -1300,7 +1301,19 @@ public function employeeIndex()
 
         foreach ($request->rows as $row) {
 
-            $total = round((float) str_replace(',', '', $row['total_amount'] ?? 0), 2);
+            $formula = trim((string) ($row['total_formula'] ?? ''));
+            $raw     = trim((string) ($row['total_amount'] ?? ''));
+
+            if ($formula !== '' && str_starts_with($formula, '=')) {
+                $total         = \App\Support\SheetFormula::evaluate($formula);
+                $storedFormula = mb_substr($formula, 0, 200);
+            } elseif (\App\Support\SheetFormula::looksLikeExpression($raw)) {
+                $storedFormula = mb_substr(\App\Support\SheetFormula::normalize($raw), 0, 200);
+                $total         = \App\Support\SheetFormula::evaluate($storedFormula);
+            } else {
+                $total         = round((float) str_replace(',', '', $raw), 2);
+                $storedFormula = null;
+            }
 
             $split = \App\Models\MedicalInsurance::splitTotal($total);
             unset($split['monthly_portion']);
@@ -1310,7 +1323,9 @@ public function employeeIndex()
                     'user_id' => $row['user_id'],
                     'year'    => $year,
                 ],
-                $split
+                $split + [
+                    'total_formula' => $storedFormula,
+                ]
             );
 
             $saved++;
@@ -1355,6 +1370,7 @@ public function employeeIndex()
                 ],
                 [
                     'total_amount'     => $row->total_amount,
+                    'total_formula'    => $row->total_formula,
                     'lsaf_portion'     => $row->lsaf_portion,
                     'employee_portion' => $row->employee_portion,
                 ]

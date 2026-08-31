@@ -101,6 +101,50 @@ class MedicalInsuranceSheetTest extends TestCase
         $this->assertDatabaseCount('medical_insurances', 2);
     }
 
+    public function test_saving_a_formula_total_stores_the_expression_and_result(): void
+    {
+        $admin    = $this->admin();
+        $employee = $this->employee();
+
+        $this->actingAs($admin)
+            ->post(route('admin.salary.medical.store'), [
+                'year'     => 2026,
+                'category' => 'staff',
+                'rows'     => [
+                    [
+                        'user_id'       => $employee->id,
+                        'total_amount'  => '3600',
+                        'total_formula' => '=2600+1000',
+                    ],
+                ],
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('medical_insurances', [
+            'user_id'       => $employee->id,
+            'year'          => 2026,
+            'total_amount'  => 3600,
+            'total_formula' => '=2600+1000',
+            'lsaf_portion'  => 1800,
+            'employee_portion' => 1800,
+        ]);
+    }
+
+    public function test_medical_sheet_shows_formula_hint(): void
+    {
+        $admin = $this->admin();
+        $this->employee();
+
+        $this->actingAs($admin)
+            ->get(route('admin.salary.medical', [
+                'year'     => 2026,
+                'category' => 'staff',
+            ]))
+            ->assertOk()
+            ->assertSee('+2600+1000', false);
+    }
+
     public function test_monthly_employee_portion_is_hinted_on_the_salary_sheet(): void
     {
         $admin    = $this->admin();
