@@ -58,7 +58,7 @@ class SendDailyWhatsAppAttendanceReport extends Command
         $lateRecords = Attendance::with('user')
             ->whereDate('date', $today)
             ->where('status', 'late')
-            ->whereHas('user', fn ($q) => $q->where('role', 'employee')->tracked())
+            ->whereHas('user', fn ($q) => $q->where('role', 'employee')->forAttendanceRoster())
             ->get()
             ->unique('user_id')
             ->values();
@@ -67,6 +67,7 @@ class SendDailyWhatsAppAttendanceReport extends Command
             ->whereIn('status', ['pending', 'approved'])
             ->whereDate('start_date', '<=', $today)
             ->whereDate('end_date', '>=', $today)
+            ->whereHas('user', fn ($q) => $q->where('role', 'employee')->employed())
             ->get();
 
         $attendanceUserIds = Attendance::whereDate('date', $today)
@@ -89,7 +90,7 @@ class SendDailyWhatsAppAttendanceReport extends Command
 
         if (!$isWeekend) {
             $absentEmployees = User::where('role', 'employee')
-                ->tracked()
+                ->forAttendanceRoster()
                 ->whereNotIn('id', $attendanceUserIds)
                 ->whereNotIn('id', $leaveUserIds)
                 ->whereNotIn('id', $wfhUserIds)

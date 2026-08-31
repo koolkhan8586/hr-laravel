@@ -117,6 +117,27 @@ class User extends Authenticatable
         return $query->where('tracks_attendance', false);
     }
 
+    /**
+     * Employees still working — excludes staff marked as left / resigned.
+     */
+    public function scopeEmployed($query)
+    {
+        return $query->whereHas('staff', fn ($q) => $q->where('status', 'active'));
+    }
+
+    /**
+     * Who should appear on daily attendance reports and absence lists.
+     */
+    public function scopeForAttendanceRoster($query)
+    {
+        return $query->tracked()->employed();
+    }
+
+    public function isEmployed(): bool
+    {
+        return $this->staff?->isActive() ?? true;
+    }
+
     public function tracksAttendance(): bool
     {
         return $this->tracks_attendance === null

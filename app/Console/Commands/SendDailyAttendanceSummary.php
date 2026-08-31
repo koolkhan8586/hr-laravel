@@ -33,7 +33,7 @@ class SendDailyAttendanceSummary extends Command
 
     $attendances = \App\Models\Attendance::whereDate('date', $today)->get();
 
-    $total = \App\Models\User::where('role','employee')->count();
+    $total = \App\Models\User::where('role','employee')->employed()->forAttendanceRoster()->count();
 
     $present = $attendances->where('status','present')->count();
     $late = $attendances->where('status','late')->count();

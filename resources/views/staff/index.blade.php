@@ -106,7 +106,7 @@
                     <th class="p-3"><a href="{{ $sortLink('designation') }}" class="hover:underline">Designation{{ $arrow('designation') }}</a></th>
                     <th class="p-3"><a href="{{ $sortLink('salary') }}" class="hover:underline">Salary{{ $arrow('salary') }}</a></th>
                     <th class="p-3">Attendance</th>
-                    <th class="p-3"><a href="{{ $sortLink('status') }}" class="hover:underline">Status{{ $arrow('status') }}</a></th>
+                    <th class="p-3"><a href="{{ $sortLink('status') }}" class="hover:underline">Employment{{ $arrow('status') }}</a></th>
                     <th class="p-3">Actions</th>
                 </tr>
             </thead>
@@ -136,12 +136,25 @@
                         @endif
                     </td>
                     <td class="p-3">
+                        @if($item->status === 'active')
+                            <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-semibold">
+                                Active
+                            </span>
+                        @else
+                            <span class="bg-gray-200 text-gray-700 px-2 py-1 rounded text-xs font-semibold">
+                                Left / Resigned
+                            </span>
+                        @endif
                         <form method="POST"
-                              action="{{ route('admin.staff.toggle', $item->id) }}">
+                              action="{{ route('admin.staff.toggle', $item->id) }}"
+                              class="mt-1"
+                              onsubmit="return confirm('{{ $item->status === 'active'
+                                  ? 'Mark '.addslashes($item->user->name ?? 'this employee').' as left / resigned? They will be hidden from daily attendance reports.'
+                                  : 'Reinstate '.addslashes($item->user->name ?? 'this employee').'? They will appear in daily attendance again.' }}');">
                             @csrf
-                            <button class="px-2 py-1 rounded text-white
-                            {{ $item->status == 'active' ? 'bg-green-500' : 'bg-gray-500' }}">
-                                {{ ucfirst($item->status) }}
+                            <button class="px-2 py-1 rounded text-white text-xs
+                            {{ $item->status == 'active' ? 'bg-amber-600 hover:bg-amber-700' : 'bg-green-600 hover:bg-green-700' }}">
+                                {{ $item->status == 'active' ? 'Mark Left' : 'Reinstate' }}
                             </button>
                         </form>
                     </td>

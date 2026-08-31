@@ -211,6 +211,7 @@ class StaffController extends Controller
         'salary'          => 'required|numeric',
         'role'            => 'required|in:employee,manager,admin',
         'joining_date'    => 'required|date',
+        'employment_status' => 'nullable|in:active,inactive',
         'salary_category' => 'nullable|in:teacher,staff',
         'bank_account_no' => 'nullable|string|max:50',
         'bank_payee_id'   => 'nullable|exists:users,id',
@@ -268,6 +269,7 @@ class StaffController extends Controller
     'designation'  => $request->designation,
     'salary'       => $request->salary,
     'joining_date' => $request->joining_date,
+    'status'       => $request->input('employment_status', $staff->status),
 ]);
 
     return redirect()->route('admin.staff.index')
@@ -308,11 +310,18 @@ class StaffController extends Controller
     {
         $staff = Staff::findOrFail($id);
 
+        $wasActive = $staff->status === 'active';
+
         $staff->update([
-            'status' => $staff->status == 'active' ? 'inactive' : 'active'
+            'status' => $wasActive ? 'inactive' : 'active',
         ]);
 
-        return back();
+        return back()->with(
+            'success',
+            $wasActive
+                ? $staff->user->name.' marked as left / resigned. They are hidden from daily attendance reports.'
+                : $staff->user->name.' reinstated. They will appear in daily attendance again.'
+        );
     }
 
     /*
