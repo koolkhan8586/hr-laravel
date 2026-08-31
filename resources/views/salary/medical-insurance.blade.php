@@ -358,16 +358,28 @@
     }
 
     function readAmount(el) {
-        const formula = el.dataset.formula || '';
-        if (formula.startsWith('=')) {
+        const stored = el.dataset.formula || '';
+        if (stored.startsWith('=')) {
+            return amountFromText(stored);
+        }
+
+        return amountFromText(el.value);
+    }
+
+    function amountFromText(text) {
+        const raw = String(text).trim();
+        if (raw === '') return 0;
+
+        if (raw.startsWith('=') || looksLikeFormula(raw)) {
             try {
+                const formula = normalizeFormula(raw);
                 return Math.round(evaluate(formula.slice(1)) * 100) / 100;
             } catch {
                 return 0;
             }
         }
 
-        const v = parseFloat(String(el.value).replace(/,/g, ''));
+        const v = parseFloat(raw.replace(/,/g, ''));
         return isNaN(v) ? 0 : v;
     }
 
@@ -385,7 +397,8 @@
         } catch (err) {
             el.classList.add('formula-bad');
             el.title = formula + ' — ' + err.message;
-            return 0;
+            el.classList.remove('has-formula');
+            return amountFromText(typed);
         }
     }
 
@@ -456,7 +469,10 @@
             const typed = String(el.value).trim();
 
             if (looksLikeFormula(typed)) {
-                applyFormula(el, typed);
+                const value = applyFormula(el, typed);
+                if (value > 0 || typed === '0') {
+                    el.value = money(String(value));
+                }
             } else {
                 delete el.dataset.formula;
                 el.classList.remove('has-formula', 'formula-bad');
@@ -474,7 +490,13 @@
             form.querySelectorAll('.medical-formula-field').forEach(el => el.remove());
 
             document.querySelectorAll('#medicalSheet input.total-amount').forEach((el, index) => {
-                const formula = el.dataset.formula || '';
+                const typed = String(el.value).trim();
+                let formula = el.dataset.formula || '';
+
+                if (!formula.startsWith('=') && looksLikeFormula(typed)) {
+                    applyFormula(el, typed);
+                    formula = el.dataset.formula || '';
+                }
 
                 if (formula.startsWith('=')) {
                     const hidden = document.createElement('input');
