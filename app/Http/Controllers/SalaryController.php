@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Mail\SalaryPostedMail;
+use App\Services\SalaryPostedWhatsAppNotifier;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\SalaryImport;
 use App\Exports\SalariesExport;
@@ -462,18 +463,19 @@ public function employeeIndex()
 
         $posted = 0;
         $failedMail = 0;
+        $failedWhatsApp = 0;
 
         foreach ($drafts as $salary) {
 
             // Handles the loan ledger entry and flips the row to posted.
             $this->processLoanDeductionAndPost($salary);
 
-            try {
-                \Mail::to($salary->user->email)
-                    ->queue(new \App\Mail\SalaryPostedMail($salary));
-            } catch (\Exception $e) {
+            $notify = $this->notifySalaryPosted($salary);
+            if ($notify['mail_failed']) {
                 $failedMail++;
-                \Log::error('Salary post mail failed: '.$e->getMessage());
+            }
+            if ($notify['whatsapp_failed']) {
+                $failedWhatsApp++;
             }
 
             $posted++;
@@ -483,6 +485,10 @@ public function employeeIndex()
 
         if ($failedMail) {
             $message .= " {$failedMail} notification email(s) could not be sent - check the mail log.";
+        }
+
+        if ($failedWhatsApp) {
+            $message .= " {$failedWhatsApp} WhatsApp notification(s) could not be sent - check WAHA / mobile numbers.";
         }
 
         return redirect()->route('admin.salary.sheet', [
@@ -1616,15 +1622,14 @@ public function employeeIndex()
 
     $this->processLoanDeductionAndPost($salary);
 
-    // send email to employee
-    try {
-        \Mail::to($salary->user->email)
-            ->queue(new \App\Mail\SalaryPostedMail($salary));
-    } catch (\Exception $e) {
-        \Log::error($e->getMessage());
+    $notify = $this->notifySalaryPosted($salary);
+
+    $message = 'Salary posted successfully.';
+    if ($notify['whatsapp_failed']) {
+        $message .= ' WhatsApp notification could not be sent.';
     }
 
-    return back()->with('success','Salary posted successfully');
+    return back()->with('success', $message);
 }
 
 
@@ -1697,13 +1702,7 @@ public function show($id)
 
         $this->processLoanDeductionAndPost($salary);
 
-        // send email
-        try {
-            \Mail::to($salary->user->email)
-                ->queue(new \App\Mail\SalaryPostedMail($salary));
-        } catch (\Exception $e) {
-            \Log::error($e->getMessage());
-        }
+        $this->notifySalaryPosted($salary);
     }
 
     return back()->with('success','Selected salaries posted successfully');
@@ -1798,12 +1797,7 @@ public function show($id)
         foreach ($drafts as $salary) {
             $this->processLoanDeductionAndPost($salary);
 
-            try {
-                Mail::to($salary->user->email)
-                    ->queue(new SalaryPostedMail($salary));
-            } catch (\Exception $e) {
-                Log::error($e->getMessage());
-            }
+            $this->notifySalaryPosted($salary);
         }
 
         return back()->with('success','All draft salaries posted.');
@@ -2002,6 +1996,30 @@ public function destroy($id)
         return $pdf->download(
             'Salary_Slip_'.$salary->month.'_'.$salary->year.'.pdf'
         );
+    }
+
+    /**
+     * Email and WhatsApp notifications when a salary is posted.
+     *
+     * @return array{mail_failed: bool, whatsapp_failed: bool}
+     */
+    private function notifySalaryPosted(Salary $salary): array
+    {
+        $mailFailed = false;
+
+        try {
+            Mail::to($salary->user->email)->queue(new SalaryPostedMail($salary));
+        } catch (\Exception $e) {
+            $mailFailed = true;
+            \Log::error('Salary post mail failed: '.$e->getMessage());
+        }
+
+        $waResult = app(SalaryPostedWhatsAppNotifier::class)->notify($salary);
+
+        return [
+            'mail_failed' => $mailFailed,
+            'whatsapp_failed' => ! $waResult['ok'] && ! $waResult['skipped'],
+        ];
     }
 
     /*
