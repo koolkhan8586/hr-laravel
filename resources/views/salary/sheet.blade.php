@@ -30,16 +30,13 @@
     };
     $arrow = fn ($key) => $sort === $key ? ($dir === 'asc' ? ' ▲' : ' ▼') : '';
 
-    // Amounts read as figures, not as raw database decimals: 35,000 rather
-    // than 35000.00. Paisa are only shown when there actually are any.
+    // Salary sheet amounts are whole rupees — no paisa on the sheet.
     $money = function ($value) {
         if ($value === null || $value === '') {
             return '';
         }
 
-        $n = (float) $value;
-
-        return number_format($n, fmod($n, 1) == 0.0 ? 0 : 2);
+        return number_format((int) round((float) $value), 0);
     };
 @endphp
 
@@ -671,8 +668,10 @@
 <script>
 (function () {
 
-    const fmt = n => (Math.round(n * 100) / 100)
-        .toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    const roundWhole = n => Math.round(Number(n) || 0);
+
+    const fmt = n => roundWhole(n)
+        .toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
     /* ---------- Amounts are typed and shown as figures ----------
        The boxes are text, not number, so they can carry thousands
@@ -693,7 +692,7 @@
         return isNaN(v) ? 0 : v;
     };
 
-    // 35000 -> "35,000", 1234.5 -> "1,234.50", blank stays blank
+    // 35000 -> "35,000". All sheet amounts are whole rupees.
     const money = value => {
         const s = String(value).trim();
         if (s === '') return '';
@@ -701,9 +700,9 @@
         const n = parseFloat(s.replace(/,/g, ''));
         if (isNaN(n)) return '';
 
-        return n.toLocaleString('en-US', {
-            minimumFractionDigits: Number.isInteger(n) ? 0 : 2,
-            maximumFractionDigits: 2,
+        return roundWhole(n).toLocaleString('en-US', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
         });
     };
 
@@ -865,7 +864,7 @@
                     return;
                 }
 
-                value = Math.round(value * 100) / 100;
+                value = roundWhole(value);
 
                 el.classList.remove('formula-bad');
                 el.classList.add('has-formula');
@@ -1167,7 +1166,7 @@
             });
 
             moneyBoxes().forEach(el => {
-                el.value = String(el.value).replace(/,/g, '');
+                el.value = String(roundWhole(num(el)));
             });
         });
     }
