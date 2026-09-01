@@ -77,11 +77,10 @@ class Salary extends Model
             $totalEarnings   += $salary->customTotal('earning');
             $totalDeductions += $salary->customTotal('deduction');
 
-            // SAVE THESE ALSO
-            $salary->gross_total = $totalEarnings;
-            $salary->total_deductions = $totalDeductions;
-
-            $salary->net_salary = $totalEarnings - $totalDeductions;
+            // SAVE THESE ALSO — whole rupees on the salary sheet.
+            $salary->gross_total       = round($totalEarnings);
+            $salary->total_deductions  = round($totalDeductions);
+            $salary->net_salary        = round($totalEarnings - $totalDeductions);
 
             // Sync status
             $salary->is_posted = $salary->status === 'posted';

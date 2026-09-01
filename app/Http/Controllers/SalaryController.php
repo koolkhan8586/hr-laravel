@@ -534,7 +534,7 @@ public function employeeIndex()
 
         foreach ($request->rows as $row) {
 
-            $amount = fn ($key) => round((float) str_replace(',', '', $row[$key] ?? 0), 2);
+            $amount = fn ($key) => (int) round((float) str_replace(',', '', $row[$key] ?? 0));
 
             $existing = Salary::where('user_id', $row['user_id'])
                 ->where('month', $month)
@@ -570,7 +570,7 @@ public function employeeIndex()
 
             foreach ($columnIds as $columnId) {
                 $raw = $row['custom'][$columnId] ?? null;
-                $val = round((float) str_replace(',', '', $raw ?? 0), 2);
+                $val = (int) round((float) str_replace(',', '', $raw ?? 0));
 
                 if ($val != 0) {
                     $custom[$columnId] = $val;
