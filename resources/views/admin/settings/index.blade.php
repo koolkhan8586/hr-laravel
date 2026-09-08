@@ -71,11 +71,130 @@
 
     </div>
 
+    {{-- Daily report timing --}}
+    <div class="bg-white shadow rounded p-5 mb-6">
+
+        <h3 class="text-lg font-semibold mb-1">Daily Report Time</h3>
+        <p class="text-sm text-gray-500 mb-4">
+            When the Absent / Late / Leave report goes out each day (Asia/Karachi).
+        </p>
+
+        <form method="POST" action="{{ route('admin.settings.daily-schedule.save') }}"
+              class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            @csrf
+
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Send at</label>
+                <input type="time" name="daily_report_time" value="{{ $reportTime }}" required
+                       class="border p-2 rounded w-full">
+            </div>
+
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Keep trying until</label>
+                <input type="time" name="daily_report_retry_until" value="{{ $reportUntil }}" required
+                       class="border p-2 rounded w-full">
+            </div>
+
+            <div>
+                <label class="flex items-center gap-2 text-sm">
+                    <input type="checkbox" name="daily_report_retry" value="1"
+                           {{ $reportRetry ? 'checked' : '' }}>
+                    Retry if WhatsApp is down
+                </label>
+                <p class="text-[11px] text-gray-500 mt-1">
+                    Tries again every minute until the report gets through.
+                </p>
+            </div>
+
+            <div>
+                <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded w-full">
+                    Save Time
+                </button>
+            </div>
+        </form>
+
+        {{-- Today's outcome, and a way to send it by hand --}}
+        <div class="mt-5 pt-5 border-t flex flex-wrap items-center justify-between gap-3">
+
+            <div class="text-sm">
+                @if($todayRun && $todayRun->wasSent())
+                    <span class="text-green-700 font-semibold">
+                        ✅ Today's report went out at {{ $todayRun->sent_at?->timezone('Asia/Karachi')->format('h:i A') }}
+                    </span>
+                    <span class="text-gray-500">
+                        to {{ $todayRun->sent_count }} number(s){{ $todayRun->manual ? ' (sent by hand)' : '' }}.
+                    </span>
+                @elseif($todayRun && $todayRun->status === 'failed')
+                    <span class="text-red-700 font-semibold">
+                        ⚠️ Today's report has not gone out
+                    </span>
+                    <span class="text-gray-600">
+                        &mdash; {{ $todayRun->attempts }} attempt(s), last at
+                        {{ $todayRun->last_attempt_at?->timezone('Asia/Karachi')->format('h:i A') }}.
+                    </span>
+                    @if($todayRun->last_error)
+                    <div class="text-xs text-red-600 mt-1">{{ $todayRun->last_error }}</div>
+                    @endif
+                @else
+                    <span class="text-gray-600">
+                        Today's report is due at {{ \App\Support\DailyReportSchedule::label($reportTime) }}.
+                    </span>
+                @endif
+            </div>
+
+            <form method="POST" action="{{ route('admin.settings.daily-report.send') }}">
+                @csrf
+                <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm">
+                    Send Report Now
+                </button>
+            </form>
+
+        </div>
+
+        <p class="text-xs text-gray-500 mt-3">
+            <strong>Send Report Now</strong> works at any time of day and can be used
+            as often as you like &mdash; useful when WhatsApp was disconnected at the
+            usual time and the report needs to go out once it is back.
+        </p>
+
+        @if($recentRuns->isNotEmpty())
+        <details class="mt-4">
+            <summary class="cursor-pointer text-sm text-gray-600">Last 7 days</summary>
+            <table class="w-full text-xs mt-2">
+                <tr class="text-left text-gray-500">
+                    <th class="py-1 pr-4">Date</th>
+                    <th class="py-1 pr-4">Result</th>
+                    <th class="py-1 pr-4">Sent</th>
+                    <th class="py-1">Attempts</th>
+                </tr>
+                @foreach($recentRuns as $past)
+                <tr class="border-t">
+                    <td class="py-1 pr-4">{{ $past->report_date->format('d M Y') }}</td>
+                    <td class="py-1 pr-4">
+                        @if($past->wasSent())
+                            <span class="text-green-700">
+                                Sent {{ $past->sent_at?->timezone('Asia/Karachi')->format('h:i A') }}
+                            </span>
+                        @else
+                            <span class="text-red-700">Not sent</span>
+                        @endif
+                    </td>
+                    <td class="py-1 pr-4">{{ $past->sent_count }}</td>
+                    <td class="py-1">{{ $past->attempts }}</td>
+                </tr>
+                @endforeach
+            </table>
+        </details>
+        @endif
+
+    </div>
+
     {{-- Daily report numbers --}}
     <div class="bg-white shadow rounded p-5">
         <h3 class="text-lg font-semibold mb-1">Daily Report WhatsApp Numbers</h3>
         <p class="text-sm text-gray-500 mb-4">
-            These numbers receive the Absent / Late / Leave report every day at 11:38 AM (Asia/Karachi).
+            These numbers receive the Absent / Late / Leave report every day at
+            {{ \App\Support\DailyReportSchedule::label($reportTime) }} (Asia/Karachi).
             You can add multiple numbers.
         </p>
 

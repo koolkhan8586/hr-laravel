@@ -69,12 +69,16 @@ Schedule::command('attendance:whatsapp-reminder')
 |--------------------------------------------------------------------------
 | Daily WhatsApp Attendance Report (WAHA)
 |--------------------------------------------------------------------------
-| At 11:38 AM sends Absent / Late / Leave employee lists to numbers
-| configured in WAHA_DAILY_REPORT_MOBILES.
+| Sends the Absent / Late / Leave lists to the numbers set in Settings.
+|
+| It runs every minute and the command decides for itself whether the report
+| is due, so the send time can be changed on the Settings screen without
+| touching this file or the crontab, and a report missed because WAHA was
+| down is retried instead of being lost for the day.
 */
 
 Schedule::command('attendance:whatsapp-daily-report')
-    ->dailyAt('11:38')
+    ->everyMinute()
     ->timezone('Asia/Karachi')
     ->withoutOverlapping();
 

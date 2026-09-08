@@ -2,8 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Console\Commands\SendDailyWhatsAppAttendanceReport;
+use App\Models\AppSetting;
+use App\Models\DailyReportRun;
 use App\Models\DailyReportWhatsappNumber;
 use App\Services\WahaService;
+use App\Support\DailyReportSchedule;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 
@@ -16,12 +21,76 @@ class SettingsController extends Controller
         $dailyNumbers = DailyReportWhatsappNumber::latest()->get();
         $envDailyNumbers = $waha->parseMobileList(config('services.waha.daily_report_mobiles'));
 
+        $reportTime  = DailyReportSchedule::time();
+        $reportRetry = DailyReportSchedule::retries();
+        $reportUntil = DailyReportSchedule::retryUntil();
+
+        $todayRun = DailyReportRun::whereDate(
+            'report_date',
+            Carbon::now(DailyReportSchedule::TIMEZONE)->toDateString()
+        )->first();
+
+        $recentRuns = DailyReportRun::orderByDesc('report_date')->limit(7)->get();
+
         return view('admin.settings.index', compact(
             'wahaStatus',
             'mailStatus',
             'dailyNumbers',
-            'envDailyNumbers'
+            'envDailyNumbers',
+            'reportTime',
+            'reportRetry',
+            'reportUntil',
+            'todayRun',
+            'recentRuns'
         ));
+    }
+
+    /**
+     * When the daily report goes out, and how long to keep trying.
+     */
+    public function saveDailySchedule(Request $request)
+    {
+        $request->validate([
+            'daily_report_time'        => 'required|date_format:H:i',
+            'daily_report_retry_until' => 'required|date_format:H:i',
+            'daily_report_retry'       => 'nullable|boolean',
+        ]);
+
+        $time  = DailyReportSchedule::normalise($request->daily_report_time, DailyReportSchedule::DEFAULT_TIME);
+        $until = DailyReportSchedule::normalise($request->daily_report_retry_until, DailyReportSchedule::DEFAULT_RETRY_UNTIL);
+
+        // Retrying up to a time earlier than the send time would mean never
+        // retrying at all, which is not what anyone means by it.
+        if ($until <= $time) {
+            return back()->with('error',
+                'The "keep trying until" time must be later than the send time.');
+        }
+
+        AppSetting::put('daily_report_time', $time);
+        AppSetting::put('daily_report_retry_until', $until);
+        AppSetting::put('daily_report_retry', $request->boolean('daily_report_retry') ? '1' : '0');
+
+        return back()->with('success',
+            'Daily report will be sent at '.DailyReportSchedule::label($time).'.');
+    }
+
+    /**
+     * Send the report right now, whatever the time.
+     *
+     * This is the way out when WAHA was down at the scheduled minute: fix the
+     * session, press the button, and the day's report goes out.
+     */
+    public function sendDailyReportNow(WahaService $waha)
+    {
+        $now   = Carbon::now(DailyReportSchedule::TIMEZONE);
+        $today = $now->toDateString();
+
+        $run = DailyReportRun::forDate($today);
+
+        $result = app(SendDailyWhatsAppAttendanceReport::class)
+            ->deliver($waha, $now, $today, $run, true);
+
+        return back()->with($result['ok'] ? 'success' : 'error', $result['message']);
     }
 
     public function storeDailyNumber(Request $request)
