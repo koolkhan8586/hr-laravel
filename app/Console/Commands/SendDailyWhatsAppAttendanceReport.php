@@ -3,54 +3,131 @@
 namespace App\Console\Commands;
 
 use App\Models\Attendance;
+use App\Models\DailyReportRun;
 use App\Models\Holiday;
 use App\Models\Leave;
 use App\Models\User;
 use App\Models\WorkFromHome;
 use App\Services\WahaService;
+use App\Support\DailyReportSchedule;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
 class SendDailyWhatsAppAttendanceReport extends Command
 {
-    protected $signature = 'attendance:whatsapp-daily-report';
+    protected $signature = 'attendance:whatsapp-daily-report
+                            {--force : Send straight away, whatever the time and even if today\'s report already went out}';
 
-    protected $description = 'Send daily Absent / Late / Leave employee list to configured WhatsApp numbers at 11:38 AM';
+    protected $description = 'Send the daily Absent / Late / Leave list to the configured WhatsApp numbers at the time set in Settings, retrying if WAHA is down';
 
+    /**
+     * Runs every minute. It works out for itself whether the report is due,
+     * so the time can be changed in Settings without touching the crontab,
+     * and a report missed because WAHA was down is tried again rather than
+     * being lost for the day.
+     */
     public function handle(WahaService $waha): int
     {
-        if (!$waha->enabled()) {
-            $this->info('WAHA is disabled. Skipping daily WhatsApp report.');
+        $force = (bool) $this->option('force');
+        $now   = Carbon::now(DailyReportSchedule::TIMEZONE);
+        $today = $now->toDateString();
+
+        if (!$force && !DailyReportSchedule::isDue($now)) {
             return self::SUCCESS;
+        }
+
+        $run = DailyReportRun::forDate($today);
+
+        // Already delivered today; a manual send can still override.
+        if (!$force && $run->wasSent()) {
+            return self::SUCCESS;
+        }
+
+        $result = $this->deliver($waha, $now, $today, $run, $force);
+
+        $this->info($result['message']);
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * Build and send the report, recording how it went.
+     *
+     * @return array{ok: bool, message: string, sent: int, failed: int}
+     */
+    public function deliver(
+        WahaService $waha,
+        Carbon $now,
+        string $today,
+        DailyReportRun $run,
+        bool $manual = false
+    ): array {
+
+        $fail = function (string $reason) use ($run, $now, $manual) {
+            $run->fill([
+                'status'          => 'failed',
+                'attempts'        => $run->attempts + 1,
+                'last_attempt_at' => $now,
+                'last_error'      => $reason,
+                'manual'          => $manual || $run->manual,
+            ])->save();
+
+            return ['ok' => false, 'message' => $reason, 'sent' => 0, 'failed' => 0];
+        };
+
+        if (!$waha->enabled()) {
+            return $fail('WhatsApp (WAHA) is switched off, so the report could not be sent.');
+        }
+
+        $status = $waha->connectionStatus();
+
+        if (!$status['connected']) {
+            return $fail('WhatsApp session is '.$status['status'].' — '.$status['detail']);
         }
 
         $mobiles = $waha->dailyReportMobiles();
 
         if (empty($mobiles)) {
-            $this->warn('No WAHA_DAILY_REPORT_MOBILES configured. Skipping.');
-            return self::SUCCESS;
+            return $fail('No daily report WhatsApp numbers have been added.');
         }
 
-        $now = Carbon::now('Asia/Karachi');
-        $today = $now->toDateString();
         $message = $this->buildMessage($today, $now);
 
         $sent = 0;
+        $failed = [];
 
         foreach ($mobiles as $mobile) {
             if ($waha->sendToMobile($mobile, $message)) {
                 $sent++;
-                $this->info("Daily report sent to {$mobile}");
             } else {
-                $this->warn("Failed to send daily report to {$mobile}");
+                $failed[] = $mobile;
                 Log::warning('WAHA daily attendance report failed', ['mobile' => $mobile]);
             }
         }
 
-        $this->info("Daily WhatsApp attendance report finished. Sent: {$sent}/".count($mobiles));
+        // Anything delivered counts as done for the day; retrying would only
+        // send the same report twice to the numbers that already had it.
+        $ok = $sent > 0;
 
-        return self::SUCCESS;
+        $run->fill([
+            'status'          => $ok ? 'sent' : 'failed',
+            'attempts'        => $run->attempts + 1,
+            'sent_count'      => $sent,
+            'failed_count'    => count($failed),
+            'last_attempt_at' => $now,
+            'sent_at'         => $ok ? $now : $run->sent_at,
+            'last_error'      => $failed
+                ? 'Could not reach: '.implode(', ', $failed)
+                : null,
+            'manual'          => $manual || $run->manual,
+        ])->save();
+
+        $message = $ok
+            ? 'Report sent to '.$sent.' number(s)'.($failed ? ', '.count($failed).' failed' : '').'.'
+            : 'The report could not be sent to any number.';
+
+        return ['ok' => $ok, 'message' => $message, 'sent' => $sent, 'failed' => count($failed)];
     }
 
     protected function buildMessage(string $today, Carbon $now): string

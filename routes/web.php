@@ -407,6 +407,8 @@ Route::post('/settings/daily-numbers', [SettingsController::class, 'storeDailyNu
 Route::post('/settings/daily-numbers/{id}/toggle', [SettingsController::class, 'toggleDailyNumber'])->name('settings.daily-numbers.toggle');
 Route::delete('/settings/daily-numbers/{id}', [SettingsController::class, 'destroyDailyNumber'])->name('settings.daily-numbers.destroy');
 Route::post('/settings/test-email', [SettingsController::class, 'sendTestEmail'])->name('settings.test.email');
+Route::post('/settings/daily-schedule', [SettingsController::class, 'saveDailySchedule'])->name('settings.daily-schedule.save');
+Route::post('/settings/daily-report/send-now', [SettingsController::class, 'sendDailyReportNow'])->name('settings.daily-report.send');
 
 Route::get('/announcements', [AnnouncementController::class, 'index'])->name('announcements.index');
 Route::post('/announcements/send', [AnnouncementController::class, 'send'])->name('announcements.send');
