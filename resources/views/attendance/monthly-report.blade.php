@@ -6,7 +6,16 @@
     <style>
         body { font-family: DejaVu Sans; font-size: 11px; }
 
-        h2 { margin: 0 0 8px 0; font-size: 16px; }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #0f5132;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+        }
+        .header .logo { height: 52px; margin-bottom: 4px; }
+        .header .org { font-size: 15px; font-weight: bold; color: #0f5132; }
+        .header .title { font-size: 12px; margin-top: 3px; }
+
         .meta { margin-bottom: 10px; }
         .meta span { margin-right: 18px; }
 
@@ -38,7 +47,20 @@
 </head>
 <body>
 
-<h2>Monthly Attendance Report</h2>
+@php
+    // dompdf reads the logo off disk, so a missing file is skipped rather
+    // than left as a broken image on a printed report.
+    $logo = public_path('uol-logo.png');
+    $orgName = \App\Models\AppSetting::get('org_name', 'The University of Lahore (City Campus)');
+@endphp
+
+<div class="header">
+    @if(is_file($logo))
+        <img src="{{ $logo }}" class="logo" alt="">
+    @endif
+    <div class="org">{{ $orgName }}</div>
+    <div class="title">Monthly Attendance Report</div>
+</div>
 
 <p class="meta">
     <span><strong>Employee:</strong> {{ $user->name }}</span>
