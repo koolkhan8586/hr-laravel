@@ -10,11 +10,19 @@
         .meta { margin-bottom: 10px; }
         .meta span { margin-right: 18px; }
 
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #000; padding: 4px; text-align: center; }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        th, td { border: 1px solid #000; padding: 3px 4px; text-align: center; }
         th { background: #f2f2f2; }
 
         td.left { text-align: left; }
+
+        /* Fixed widths so dates and times stay on one line and the whole
+           month fits a single page. Remarks takes whatever is left. */
+        .c-date   { width: 14%; white-space: nowrap; }
+        .c-day    { width: 6%; }
+        .c-time   { width: 11%; white-space: nowrap; }
+        .c-hours  { width: 10%; }
+        .c-status { width: 14%; }
 
         /* A day that needs looking at should be findable at a glance. */
         tr.absent  td { background: #fdecec; }
@@ -39,31 +47,29 @@
 <table>
     <thead>
         <tr>
-            <th>Date</th>
-            <th>Day</th>
-            <th>Clock In</th>
-            <th>Clock Out</th>
-            <th>Total Hours</th>
-            <th>Status</th>
+            <th class="c-date">Date</th>
+            <th class="c-day">Day</th>
+            <th class="c-time">Clock In</th>
+            <th class="c-time">Clock Out</th>
+            <th class="c-hours">Total Hours</th>
+            <th class="c-status">Status</th>
             <th>Remarks</th>
-            <th>Location</th>
         </tr>
     </thead>
     <tbody>
         @forelse($days as $row)
         <tr class="{{ $row['bucket'] }}">
-            <td>{{ $row['date']->format('d M Y') }}</td>
+            <td class="c-date">{{ $row['date']->format('d M Y') }}</td>
             <td>{{ $row['day_name'] }}</td>
-            <td>{{ $row['clock_in'] ?: '-' }}</td>
-            <td>{{ $row['clock_out'] ?: '-' }}</td>
+            <td class="c-time">{{ $row['clock_in'] ?: '-' }}</td>
+            <td class="c-time">{{ $row['clock_out'] ?: '-' }}</td>
             <td>{{ $row['hours'] !== null ? number_format($row['hours'], 2) : '-' }}</td>
             <td>{{ $row['label'] }}</td>
             <td class="left">{{ $row['note'] ?: '-' }}</td>
-            <td>{{ $row['location'] ?: '-' }}</td>
         </tr>
         @empty
         <tr>
-            <td colspan="8">Nothing to show for this month yet.</td>
+            <td colspan="7">Nothing to show for this month yet.</td>
         </tr>
         @endforelse
     </tbody>

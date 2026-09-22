@@ -73,9 +73,10 @@ class MonthlyAttendanceSheet
     /**
      * What a single day was.
      *
-     * Order matters. An attendance record outranks everything, because
-     * somebody who clocked in on their day off was still at work. After that
-     * comes the weekly off, then a holiday, then leave, then work from home.
+     * Order matters. A day they were not rostered on and did not work is a
+     * weekly off. Otherwise an approved half day wins, then the attendance
+     * record, because somebody who clocked in on their day off was still at
+     * work. After that: holiday, full-day leave, work from home.
      *
      * @return array<string, mixed>
      */
@@ -97,32 +98,49 @@ class MonthlyAttendanceSheet
             'clock_in'  => null,
             'clock_out' => null,
             'hours'     => null,
-            'location'  => null,
             'note'      => null,
         ];
 
         $record = $records[$date] ?? null;
 
-        // Somebody actually turned up, whatever the calendar said.
-        // array_merge, not +, so these values win over the blanks in $base.
-        if ($record && $record->clock_in) {
-            return array_merge($base, [
-                'label'     => self::statusLabel($record->status),
-                'bucket'    => self::bucketFor($record->status),
+        $worked = $record && $record->clock_in
+            ? [
                 'clock_in'  => Carbon::parse($record->clock_in)->format('h:i A'),
                 'clock_out' => $record->clock_out
                     ? Carbon::parse($record->clock_out)->format('h:i A')
                     : null,
                 'hours'     => (float) ($record->total_hours ?? 0),
-                'location'  => self::location($record),
+            ]
+            : [];
+
+        // A day they were never rostered on, and did not come in for, is a day
+        // off whatever else covers it. Counting the Sunday inside a week's
+        // leave as leave would overstate the leave taken.
+        if (!$worked && self::isOffDay($day, $offDays)) {
+            return array_merge($base, ['label' => 'Weekly Off', 'bucket' => 'off']);
+        }
+
+        $halfDayLeave = $leaves->first(fn ($l) => $l->duration_type === 'half_day'
+            && self::covers($l->start_date, $l->end_date, $day));
+
+        // Half a day off and half a day worked is a half day, not a late
+        // arrival. The attendance row alone would say "Late", because coming
+        // in after lunch looks exactly like coming in late.
+        if ($halfDayLeave) {
+            return array_merge($base, $worked, [
+                'label'  => 'Half Day',
+                'bucket' => 'half_day',
+                'note'   => self::leaveNote($halfDayLeave),
             ]);
         }
 
-        // A day they were never rostered on is a day off, even if a longer
-        // leave happens to span it. Counting the Sunday inside a week's leave
-        // as leave would overstate the leave taken.
-        if (self::isOffDay($day, $offDays)) {
-            return array_merge($base, ['label' => 'Weekly Off', 'bucket' => 'off']);
+        // Somebody actually turned up, whatever the calendar said.
+        // array_merge, not +, so these values win over the blanks in $base.
+        if ($worked) {
+            return array_merge($base, $worked, [
+                'label'  => self::statusLabel($record->status),
+                'bucket' => self::bucketFor($record->status),
+            ]);
         }
 
         $holiday = $holidays->first(fn ($h) => self::covers($h->start_date, $h->end_date, $day));
@@ -139,9 +157,9 @@ class MonthlyAttendanceSheet
 
         if ($leave) {
             return array_merge($base, [
-                'label'  => self::leaveLabel($leave),
+                'label'  => 'Leave',
                 'bucket' => 'leave',
-                'note'   => $leave->reason,
+                'note'   => self::leaveNote($leave),
             ]);
         }
 
@@ -176,27 +194,25 @@ class MonthlyAttendanceSheet
         };
     }
 
-    protected static function leaveLabel(Leave $leave): string
+    /**
+     * The detail behind a leave, for the Remarks column.
+     *
+     * The Status column stays short so the table can be scanned; which kind
+     * of leave it was, which half of the day, and why, all read better here.
+     */
+    protected static function leaveNote(Leave $leave): string
     {
-        $type = ucfirst(str_replace('_', ' ', (string) $leave->type));
+        $parts = [ucfirst(str_replace('_', ' ', (string) $leave->type)).' leave'];
 
-        if ($leave->duration_type === 'half_day') {
-            $half = $leave->half_day_type
-                ? ' - '.ucfirst(str_replace('_', ' ', $leave->half_day_type))
-                : '';
-
-            return 'Half Day Leave ('.$type.$half.')';
+        if ($leave->duration_type === 'half_day' && $leave->half_day_type) {
+            $parts[0] .= ' ('.str_replace('_', ' ', $leave->half_day_type).')';
         }
 
-        return 'Leave ('.$type.')';
-    }
+        if (filled($leave->reason)) {
+            $parts[] = $leave->reason;
+        }
 
-    protected static function location($record): ?string
-    {
-        $lat = $record->clock_in_latitude;
-        $lng = $record->clock_in_longitude;
-
-        return $lat && $lng ? $lat.', '.$lng : null;
+        return implode(' - ', $parts);
     }
 
     /** Inclusive date-range check that ignores any time component. */
