@@ -480,22 +480,31 @@ $clockOut = $request->clock_out
         );
     }
 
+    /**
+     * The month's report as a PDF, one row per calendar day.
+     *
+     * Listing only the days with a clock-in hid the ones that matter most:
+     * leave, absences and days off all showed up as nothing at all.
+     */
+    protected function monthlyAttendancePdf(User $user, Carbon $month)
+    {
+        $sheet = \App\Support\MonthlyAttendanceSheet::build($user, $month);
+
+        return Pdf::loadView('attendance.monthly-report', [
+            'user'   => $user,
+            'days'   => $sheet['days'],
+            'totals' => $sheet['totals'],
+            'month'  => $month->format('F Y'),
+        ]);
+    }
+
     public function sendMonthlyAttendance($userId, $month)
 {
     $monthCarbon = Carbon::parse($month);
 
-    $records = Attendance::where('user_id', $userId)
-        ->whereMonth('clock_in', $monthCarbon->month)
-        ->whereYear('clock_in', $monthCarbon->year)
-        ->get();
-
     $user = User::findOrFail($userId);
 
-    $pdf = Pdf::loadView('attendance.monthly-pdf', [
-        'records' => $records,
-        'user' => $user,
-        'month' => $monthCarbon->format('F Y')
-    ]);
+    $pdf = $this->monthlyAttendancePdf($user, $monthCarbon);
 
     Mail::send([], [], function ($message) use ($user, $pdf, $monthCarbon) {
         $message->to($user->email)
@@ -510,19 +519,7 @@ $clockOut = $request->clock_out
 
     $user = User::findOrFail($userId);
 
-    $records = Attendance::where('user_id', $userId)
-        ->whereMonth('clock_in', $monthCarbon->month)
-        ->whereYear('clock_in', $monthCarbon->year)
-        ->orderBy('clock_in')
-        ->get();
-
-    $pdf = Pdf::loadView('attendance.monthly-admin-pdf', [
-        'user' => $user,
-        'records' => $records,
-        'month' => $monthCarbon->format('F Y')
-    ]);
-
-    return $pdf->download(
+    return $this->monthlyAttendancePdf($user, $monthCarbon)->download(
         $user->name.'_attendance_'.$monthCarbon->format('F_Y').'.pdf'
     );
 }
