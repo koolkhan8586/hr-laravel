@@ -16,13 +16,15 @@
 
         td.left { text-align: left; }
 
-        /* Fixed widths so dates and times stay on one line and the whole
-           month fits a single page. Remarks takes whatever is left. */
-        .c-date   { width: 14%; white-space: nowrap; }
-        .c-day    { width: 6%; }
-        .c-time   { width: 11%; white-space: nowrap; }
-        .c-hours  { width: 10%; }
-        .c-status { width: 14%; }
+        /* Fixed widths, chosen so the date and the two times always sit on
+           one line. Most days have no remark at all, so that column is given
+           only what the occasional leave note needs. */
+        .c-date    { width: 16%; white-space: nowrap; }
+        .c-day     { width: 7%; }
+        .c-time    { width: 13%; white-space: nowrap; }
+        .c-hours   { width: 11%; }
+        .c-status  { width: 15%; }
+        .c-remarks { width: 25%; }
 
         /* A day that needs looking at should be findable at a glance. */
         tr.absent  td { background: #fdecec; }
@@ -53,19 +55,19 @@
             <th class="c-time">Clock Out</th>
             <th class="c-hours">Total Hours</th>
             <th class="c-status">Status</th>
-            <th>Remarks</th>
+            <th class="c-remarks">Remarks</th>
         </tr>
     </thead>
     <tbody>
         @forelse($days as $row)
         <tr class="{{ $row['bucket'] }}">
             <td class="c-date">{{ $row['date']->format('d M Y') }}</td>
-            <td>{{ $row['day_name'] }}</td>
+            <td class="c-day">{{ $row['day_name'] }}</td>
             <td class="c-time">{{ $row['clock_in'] ?: '-' }}</td>
             <td class="c-time">{{ $row['clock_out'] ?: '-' }}</td>
-            <td>{{ $row['hours'] !== null ? number_format($row['hours'], 2) : '-' }}</td>
-            <td>{{ $row['label'] }}</td>
-            <td class="left">{{ $row['note'] ?: '-' }}</td>
+            <td class="c-hours">{{ $row['hours'] !== null ? number_format($row['hours'], 2) : '-' }}</td>
+            <td class="c-status">{{ $row['label'] }}</td>
+            <td class="left c-remarks">{{ $row['note'] ?: '-' }}</td>
         </tr>
         @empty
         <tr>
