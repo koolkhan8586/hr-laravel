@@ -32,16 +32,14 @@ class DutyRoster
      */
     public static function week(User $user): array
     {
-        $byDay = WeeklySchedule::with('shift')
-            ->where('user_id', $user->id)
-            ->get()
-            ->keyBy(fn ($row) => strtolower((string) $row->day_of_week));
+        // Resolved by the model, so this and the admin grid always agree.
+        $byDay = WeeklySchedule::forUser($user->id);
 
         $week = [];
 
         foreach (self::DAYS as $day) {
 
-            $shift = $byDay[strtolower($day)]->shift ?? null;
+            $shift = $byDay[$day]->shift ?? null;
 
             $week[] = [
                 'day'     => $day,

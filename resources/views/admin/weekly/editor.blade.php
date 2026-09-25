@@ -38,6 +38,12 @@ $days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
 
 @foreach($users as $user)
 
+@php
+    // Resolved the same way the employee's own page does, so the two
+    // screens cannot disagree about the same employee.
+    $week = \App\Models\WeeklySchedule::forUser($user->id);
+@endphp
+
 <tr>
 
 <td class="border p-2 font-semibold">{{ $user->name }}</td>
@@ -45,7 +51,7 @@ $days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
 @foreach($days as $day)
 
 @php
-$schedule = $user->weeklySchedules->where('day_of_week',$day)->first();
+$schedule = $week[$day] ?? null;
 @endphp
 
 <td class="border p-2">

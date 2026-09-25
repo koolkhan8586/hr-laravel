@@ -34,7 +34,7 @@ $days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
 @foreach($days as $day)
 
 @php
-$schedule = $user->weeklySchedules->where('day_of_week',$day)->first();
+$schedule = \App\Models\WeeklySchedule::forUser($user->id)[$day] ?? null;
 @endphp
 
 <td class="border p-2 text-center">
