@@ -11,6 +11,7 @@ use App\Http\Controllers\AdminAttendanceController;
 use App\Http\Controllers\ShiftController;
 use App\Http\Controllers\EmployeeScheduleController;
 use App\Http\Controllers\WeeklyScheduleController;
+use App\Http\Controllers\MyScheduleController;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\HolidayController;
 use App\Http\Controllers\WorkFromHomeController;
@@ -119,20 +120,8 @@ Route::post('/employees/{id}/update', [EmployeeController::class, 'update'])->na
 Route::get('/salary', [SalaryController::class,'employeeIndex'])->name('salary.index');
 Route::get('/salary/download/{id}', [SalaryController::class,'download'])->name('salary.download');
 
-/* Shift & Schedule */
-Route::resource('shifts', ShiftController::class);
-Route::resource('schedules', EmployeeScheduleController::class);
-
-Route::get('/weekly-schedule', [WeeklyScheduleController::class,'create'])->name('weekly.schedule');
-Route::post('/weekly-schedule', [WeeklyScheduleController::class,'store']);
-
-Route::get('/weekly-schedules', [WeeklyScheduleController::class, 'index'])->name('weekly.schedules');
-Route::get('/weekly-schedule/{user}/edit', [WeeklyScheduleController::class,'edit'])->name('weekly.edit');
-Route::delete('/weekly-schedule/{user}', [WeeklyScheduleController::class,'delete'])->name('weekly.delete');
-
-Route::get('/schedule-calendar', [WeeklyScheduleController::class, 'calendar'])->name('schedule.calendar');
-Route::get('/schedule-editor', [WeeklyScheduleController::class,'editor'])->name('schedule.editor');
-Route::post('/schedule-editor', [WeeklyScheduleController::class,'updateGrid'])->name('schedule.editor.update');
+/* My Schedule (Employee) - the signed-in user's own duty timings */
+Route::get('/my-schedule', [MyScheduleController::class, 'index'])->name('schedule.my');
 
 /* Holidays (Employee View Only) */
 Route::get('/holidays', [HolidayController::class,'index'])->name('holidays.index');
@@ -143,6 +132,36 @@ Route::get('/my-wfh', [WorkFromHomeController::class,'employeeWFH'])->name('empl
 
 });
 
+
+/*
+|--------------------------------------------------------------------------
+| Shift & Schedule Management (ADMIN)
+|--------------------------------------------------------------------------
+| These decide everybody's duty timings, so they are admin only. The nav
+| already hid them from employees, but the routes themselves were open:
+| anyone signed in could open the grid editor and rewrite the whole roster.
+|
+| Paths and route names are deliberately unchanged, so existing links and
+| redirects keep working - only who may reach them has changed. Employees
+| see their own timings at /my-schedule instead.
+*/
+Route::middleware(['auth', 'admin'])->group(function () {
+
+    Route::resource('shifts', ShiftController::class);
+    Route::resource('schedules', EmployeeScheduleController::class);
+
+    Route::get('/weekly-schedule', [WeeklyScheduleController::class,'create'])->name('weekly.schedule');
+    Route::post('/weekly-schedule', [WeeklyScheduleController::class,'store']);
+
+    Route::get('/weekly-schedules', [WeeklyScheduleController::class, 'index'])->name('weekly.schedules');
+    Route::get('/weekly-schedule/{user}/edit', [WeeklyScheduleController::class,'edit'])->name('weekly.edit');
+    Route::delete('/weekly-schedule/{user}', [WeeklyScheduleController::class,'delete'])->name('weekly.delete');
+
+    Route::get('/schedule-calendar', [WeeklyScheduleController::class, 'calendar'])->name('schedule.calendar');
+    Route::get('/schedule-editor', [WeeklyScheduleController::class,'editor'])->name('schedule.editor');
+    Route::post('/schedule-editor', [WeeklyScheduleController::class,'updateGrid'])->name('schedule.editor.update');
+
+});
 
 /*
 |--------------------------------------------------------------------------
