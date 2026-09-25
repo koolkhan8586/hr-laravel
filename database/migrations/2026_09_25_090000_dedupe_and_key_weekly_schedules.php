@@ -26,6 +26,10 @@ return new class extends Migration
         $this->normaliseDayNames();
         $this->removeDuplicates();
 
+        if (Schema::hasIndex('weekly_schedules', 'weekly_schedules_user_day_unique')) {
+            return;
+        }
+
         Schema::table('weekly_schedules', function (Blueprint $table) {
             $table->unique(['user_id', 'day_of_week'], 'weekly_schedules_user_day_unique');
         });
