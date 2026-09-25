@@ -12,6 +12,7 @@ use App\Http\Controllers\ShiftController;
 use App\Http\Controllers\EmployeeScheduleController;
 use App\Http\Controllers\WeeklyScheduleController;
 use App\Http\Controllers\MyScheduleController;
+use App\Http\Controllers\MonthlyScheduleController;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\HolidayController;
 use App\Http\Controllers\WorkFromHomeController;
@@ -158,6 +159,9 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::delete('/weekly-schedule/{user}', [WeeklyScheduleController::class,'delete'])->name('weekly.delete');
 
     Route::get('/schedule-calendar', [WeeklyScheduleController::class, 'calendar'])->name('schedule.calendar');
+    Route::get('/monthly-schedule', [MonthlyScheduleController::class,'index'])->name('schedule.monthly');
+    Route::post('/monthly-schedule', [MonthlyScheduleController::class,'update'])->name('schedule.monthly.update');
+
     Route::get('/schedule-editor', [WeeklyScheduleController::class,'editor'])->name('schedule.editor');
     Route::post('/schedule-editor', [WeeklyScheduleController::class,'updateGrid'])->name('schedule.editor.update');
 

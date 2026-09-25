@@ -250,6 +250,10 @@ Schedule Calendar
 Schedule Grid Editor
 </a>
 
+<a href="{{ route('schedule.monthly') }}" class="block py-1 hover:text-blue-600">
+Monthly Schedule
+</a>
+
 </div>
 </div>
 

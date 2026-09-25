@@ -68,11 +68,7 @@ class DutyRoster
 
         $weekly = collect(self::week($user))->keyBy('day');
 
-        $dated = EmployeeSchedule::with('shift')
-            ->where('user_id', $user->id)
-            ->whereBetween('date', [$start->toDateString(), $end->toDateString()])
-            ->get()
-            ->keyBy(fn ($row) => Carbon::parse($row->date)->toDateString());
+        $dated = EmployeeSchedule::forUserBetween($user->id, $start, $end);
 
         $leaves = Leave::where('user_id', $user->id)
             ->where('status', 'approved')
@@ -93,9 +89,16 @@ class DutyRoster
 
             $date = $day->toDateString();
 
-            // A shift set for this exact date overrides the weekly pattern.
+            // A row for this exact date overrides the weekly pattern outright,
+            // including one with no shift on it: that is an employee taken off
+            // a day they would normally work, which is how an alternating
+            // Saturday is expressed. Falling back to the weekly shift here
+            // would quietly put them back on duty.
             $override = $dated[$date] ?? null;
-            $shift    = $override?->shift ?? ($weekly[$day->format('l')]['shift'] ?? null);
+
+            $shift = $override
+                ? $override->shift
+                : ($weekly[$day->format('l')]['shift'] ?? null);
 
             $holiday = $holidays->first(fn ($h) => self::covers($h->start_date, $h->end_date, $day));
             $leave   = $leaves->first(fn ($l) => self::covers($l->start_date, $l->end_date, $day));
