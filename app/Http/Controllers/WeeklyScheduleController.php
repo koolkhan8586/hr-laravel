@@ -59,23 +59,11 @@ class WeeklyScheduleController extends Controller
 
   public function updateGrid(Request $request)
 {
-    $days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+    foreach($request->schedule ?? [] as $userId => $daysData){
 
-    foreach($request->schedule as $userId => $daysData){
+        foreach(WeeklySchedule::DAYS as $day){
 
-        foreach($days as $day){
-
-            $shiftId = $daysData[$day] ?? null;
-
-            \App\Models\WeeklySchedule::updateOrCreate(
-                [
-                    'user_id' => $userId,
-                    'day_of_week' => $day
-                ],
-                [
-                    'shift_id' => $shiftId
-                ]
-            );
+            WeeklySchedule::setFor($userId, $day, $daysData[$day] ?? null);
 
         }
 
@@ -90,19 +78,11 @@ class WeeklyScheduleController extends Controller
             'Thursday','Friday','Saturday','Sunday'
         ];
 
-        foreach ($request->users as $user) {
+        foreach ($request->users ?? [] as $user) {
 
             foreach ($days as $day) {
 
-                WeeklySchedule::updateOrCreate(
-                    [
-                        'user_id' => $user,
-                        'day_of_week' => $day
-                    ],
-                    [
-                        'shift_id' => $request->$day
-                    ]
-                );
+                WeeklySchedule::setFor($user, $day, $request->$day);
             }
         }
 
