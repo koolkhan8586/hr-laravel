@@ -409,6 +409,10 @@ Employee Panel
 
 <div x-show="open" class="pl-4 space-y-1">
 
+<a href="{{ route('schedule.my') }}" class="block py-1 hover:text-blue-600">
+My Schedule
+</a>
+
 <a href="{{ route('attendance.index') }}" class="block py-1 hover:text-blue-600">
 My Attendance
 </a>
