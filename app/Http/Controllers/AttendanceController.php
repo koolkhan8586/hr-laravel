@@ -73,17 +73,31 @@ class AttendanceController extends Controller
         ], 403);
     }
 
-    // ✅ OPTIONAL: If GPS not provided, still allow
     $lat = $request->latitude ?? null;
     $lng = $request->longitude ?? null;
 
     /*
     |--------------------------------------------------------------------------
-    | LOCATION VALIDATION (REMOVED COMPLETELY)
+    | LOCATION VALIDATION
     |--------------------------------------------------------------------------
+    | Only applies to employees who have offices assigned to them. Anyone
+    | with none is unrestricted, as before, so holding one person to a site
+    | does not lock everybody else out. Checked here rather than in the
+    | browser, because the browser can be skipped.
     */
 
-    $locationStatus = 'anywhere';
+    $location = \App\Support\AttendanceLocation::check($user, $lat, $lng);
+
+    if (!$location['allowed']) {
+        return response()->json([
+            'success' => false,
+            'message' => $location['message'],
+        ], 403);
+    }
+
+    $locationStatus = $location['reason'] === 'inside'
+        ? 'inside'
+        : ($location['reason'] === 'override' ? 'override' : 'anywhere');
 
     /*
     |--------------------------------------------------------------------------
@@ -188,8 +202,13 @@ class AttendanceController extends Controller
         Log::error('ClockIn Mail Error: '.$e->getMessage());
     }
 
-    return redirect()->route('dashboard')
-        ->with('success', 'Clock-in successful! Attendance marked.');
+    // The attendance page posts this over fetch and reads JSON back. A
+    // redirect here made a successful clock-in report "Server did not return
+    // valid JSON", even though the attendance had been saved.
+    return response()->json([
+        'success' => true,
+        'message' => 'Clock-in successful! Attendance marked.',
+    ]);
 }
     /*
     |--------------------------------------------------------------------------
@@ -557,54 +576,32 @@ return view('admin.partials.attendance-details',compact('attendance'));
 
 }
 
-private function calculateDistance($lat1, $lon1, $lat2, $lon2)
-{
-    $earthRadius = 6371000;
 
-    $dLat = deg2rad($lat2 - $lat1);
-    $dLon = deg2rad($lon2 - $lon1);
-
-    $a = sin($dLat / 2) * sin($dLat / 2) +
-         cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
-         sin($dLon / 2) * sin($dLon / 2);
-
-    $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
-
-    return $earthRadius * $c;
-}
-
+    /**
+     * Live indicator on the attendance page.
+     *
+     * Decided by the same rules the clock-in itself uses, so what the page
+     * shows and what the server will accept cannot disagree.
+     */
     public function checkLocation(Request $request)
-{
-    $user = auth()->user();
+    {
+        $user = auth()->user();
 
-    $lat = $request->latitude;
-    $lng = $request->longitude;
+        $result = \App\Support\AttendanceLocation::check(
+            $user,
+            $request->latitude,
+            $request->longitude
+        );
 
-    // 🔓 Override
-    if (
-        $user->allow_anywhere_attendance ||
-        ($user->attendance_override_until && now()->lessThan($user->attendance_override_until))
-    ) {
-        return response()->json(['status' => 'override']);
+        return response()->json([
+            'status'   => $result['reason'] === 'inside' ? 'inside'
+                        : ($result['allowed'] ? 'override' : 'outside'),
+            'office'   => $result['office']?->name,
+            'distance' => $result['distance'] !== null
+                ? \App\Support\AttendanceLocation::readable($result['distance'])
+                : null,
+            'message'  => $result['message'],
+        ]);
     }
 
-    if (!$user->officeLocation) {
-        return response()->json(['status' => 'outside']);
-    }
-
-    $office = $user->officeLocation;
-
-    $distance = $this->calculateDistance(
-        $lat,
-        $lng,
-        $office->latitude,
-        $office->longitude
-    );
-
-    if ($distance <= $office->radius) {
-        return response()->json(['status' => 'inside']);
-    }
-
-    return response()->json(['status' => 'outside']);
-}
 }

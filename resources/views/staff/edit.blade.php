@@ -242,19 +242,44 @@
                 </p>
             </div>
 
-            <div class="mt-3">
-    <label class="block font-semibold mb-1">Office Location</label>
+            @php
+                $assignedOffices = old('office_location_ids',
+                    $staff->user->officeLocations->pluck('id')->all());
+            @endphp
 
-    <select name="office_location_id" class="w-full border p-2 rounded">
-        <option value="">Select Office</option>
+            <div class="mt-3 col-span-2">
+    <label class="block font-semibold mb-1">Attendance Locations</label>
 
-        @foreach($locations as $location)
-            <option value="{{ $location->id }}"
-                {{ $staff->user->office_location_id == $location->id ? 'selected' : '' }}>
-                {{ $location->name }}
-            </option>
-        @endforeach
-    </select>
+    @if($locations->isEmpty())
+        <p class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-3">
+            No office locations have been added yet.
+            <a href="{{ route('admin.office-locations.index') }}" class="underline font-semibold">
+                Add one
+            </a>
+            with its position and radius first.
+        </p>
+    @else
+        <div class="border rounded p-3 grid grid-cols-1 md:grid-cols-2 gap-2">
+            @foreach($locations as $location)
+            <label class="flex items-start gap-2 text-sm">
+                <input type="checkbox" name="office_location_ids[]" value="{{ $location->id }}"
+                       class="mt-1"
+                       {{ in_array($location->id, $assignedOffices) ? 'checked' : '' }}>
+                <span>
+                    {{ $location->name }}
+                    <span class="block text-xs text-gray-500">
+                        within {{ (int) ($location->radius ?: 100) }}m
+                    </span>
+                </span>
+            </label>
+            @endforeach
+        </div>
+
+        <p class="text-xs text-gray-500 mt-1">
+            Tick one or more and this employee can only clock in within range of
+            them. Tick none and they can clock in from anywhere.
+        </p>
+    @endif
 </div>
 
             <div class="mt-4">

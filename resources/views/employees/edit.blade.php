@@ -17,20 +17,34 @@
 <input type="email" name="email" value="{{ $employee->email }}" class="border p-2 w-full">
 </div>
 
-{{-- LOCATION --}}
+{{-- ATTENDANCE LOCATIONS --}}
+@php
+    $assignedOffices = old('office_location_ids', $employee->officeLocations->pluck('id')->all());
+@endphp
+
 <div class="mb-3">
-<label>Office Location</label>
-<select name="office_location_id" class="border p-2 w-full">
-<option value="">Select Location</option>
+<label>Attendance Locations</label>
 
-@foreach($locations as $loc)
-<option value="{{ $loc->id }}"
-{{ $employee->office_location_id == $loc->id ? 'selected' : '' }}>
-{{ $loc->name }}
-</option>
-@endforeach
-
-</select>
+@if($locations->isEmpty())
+<p class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
+    No office locations have been added yet.
+</p>
+@else
+<div class="border rounded p-2 grid grid-cols-1 md:grid-cols-2 gap-1">
+    @foreach($locations as $loc)
+    <label class="flex items-start gap-2 text-sm">
+        <input type="checkbox" name="office_location_ids[]" value="{{ $loc->id }}" class="mt-1"
+               {{ in_array($loc->id, $assignedOffices) ? 'checked' : '' }}>
+        <span>{{ $loc->name }}
+            <span class="block text-xs text-gray-500">within {{ (int) ($loc->radius ?: 100) }}m</span>
+        </span>
+    </label>
+    @endforeach
+</div>
+<p class="text-xs text-gray-500 mt-1">
+    Tick none to let this employee clock in from anywhere.
+</p>
+@endif
 </div>
 
 {{-- ALLOW ANYWHERE --}}
