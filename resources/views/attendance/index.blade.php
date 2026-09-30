@@ -88,6 +88,23 @@ Absent (Auto marked)
 
 </div>
 
+@php
+    // So somebody standing outside knows why before they tap, rather than
+    // finding out from a refusal.
+    $myOffices = auth()->user()->attendanceOffices();
+    $anywhere  = \App\Support\AttendanceLocation::hasOverride(auth()->user());
+@endphp
+
+@if($myOffices->isNotEmpty() && !$anywhere)
+<div class="text-sm text-gray-600 mb-3">
+    You can clock in at
+    <strong>{{ $myOffices->pluck('name')->implode(' or ') }}</strong>.
+    <a href="{{ route('location-requests.mine') }}" class="text-blue-600 hover:underline">
+        Details or request a change
+    </a>
+</div>
+@endif
+
 <div>
 
 @if(!$todayAttendance || !$todayAttendance->clock_in)

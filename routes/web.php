@@ -13,6 +13,7 @@ use App\Http\Controllers\EmployeeScheduleController;
 use App\Http\Controllers\WeeklyScheduleController;
 use App\Http\Controllers\MyScheduleController;
 use App\Http\Controllers\MonthlyScheduleController;
+use App\Http\Controllers\LocationChangeRequestController;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\HolidayController;
 use App\Http\Controllers\WorkFromHomeController;
@@ -121,6 +122,11 @@ Route::get('/salary/download/{id}', [SalaryController::class,'download'])->name(
 
 /* My Schedule (Employee) - the signed-in user's own duty timings */
 Route::get('/my-schedule', [MyScheduleController::class, 'index'])->name('schedule.my');
+
+/* My Work Locations (Employee) - see where they may clock in, and ask to change it */
+Route::get('/my-locations', [LocationChangeRequestController::class, 'mine'])->name('location-requests.mine');
+Route::post('/my-locations', [LocationChangeRequestController::class, 'store'])->name('location-requests.store');
+Route::delete('/my-locations/{id}', [LocationChangeRequestController::class, 'cancel'])->name('location-requests.cancel');
 
 /* Holidays (Employee View Only) */
 Route::get('/holidays', [HolidayController::class,'index'])->name('holidays.index');
@@ -308,6 +314,10 @@ Route::get('/office-locations', [OfficeLocationController::class,'index'])->name
 Route::post('/office-locations', [OfficeLocationController::class,'store'])->name('office-locations.store');
 Route::put('/office-locations/{id}', [OfficeLocationController::class,'update'])->name('office-locations.update');
 Route::delete('/office-locations/{id}', [OfficeLocationController::class,'destroy'])->name('office-locations.destroy');
+
+Route::get('/location-requests', [LocationChangeRequestController::class,'index'])->name('location-requests.index');
+Route::post('/location-requests/{id}/approve', [LocationChangeRequestController::class,'approve'])->name('location-requests.approve');
+Route::post('/location-requests/{id}/reject', [LocationChangeRequestController::class,'reject'])->name('location-requests.reject');
 Route::get('/live-map', [AdminAttendanceController::class, 'liveMap'])->name('live.map');
 /*
 |--------------------------------------------------------------------------
