@@ -216,6 +216,16 @@ Staff Leave (Month)
        📍 Office Locations
     </a>
 
+    @php $pendingLocationRequests = \App\Models\LocationChangeRequest::pending()->count(); @endphp
+    <a href="{{ route('admin.location-requests.index') }}"
+       class="block py-2 px-3 hover:bg-gray-100 rounded">
+
+       📨 Location Requests
+       @if($pendingLocationRequests)
+       <span class="bg-red-600 text-white text-xs px-2 py-0.5 rounded-full">{{ $pendingLocationRequests }}</span>
+       @endif
+    </a>
+
 
 </div>
 </div>
@@ -419,6 +429,10 @@ My Schedule
 
 <a href="{{ route('attendance.index') }}" class="block py-1 hover:text-blue-600">
 My Attendance
+</a>
+
+<a href="{{ route('location-requests.mine') }}" class="block py-1 hover:text-blue-600">
+My Work Locations
 </a>
 
 <a href="{{ route('leave.index') }}" class="block py-1 hover:text-blue-600">
