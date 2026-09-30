@@ -206,6 +206,55 @@ class User extends Authenticatable
 
     /*
     |--------------------------------------------------------------------------
+    | Where attendance may be marked
+    |--------------------------------------------------------------------------
+    |
+    | An employee can be tied to more than one office. office_location_id is
+    | kept in step with the first of them so older code reading it still gets
+    | a sensible answer, but this list is what the attendance check uses.
+    |
+    */
+
+    public function officeLocations()
+    {
+        return $this->belongsToMany(OfficeLocation::class, 'office_location_user')
+            ->withTimestamps();
+    }
+
+    /**
+     * The offices this employee is held to.
+     *
+     * Empty means unrestricted: they can mark attendance from anywhere, which
+     * is how everybody behaved before offices could be assigned.
+     */
+    public function attendanceOffices()
+    {
+        $offices = $this->relationLoaded('officeLocations')
+            ? $this->officeLocations
+            : $this->officeLocations()->get();
+
+        // Fall back to the single column for a record written before the
+        // pivot existed and not yet carried across.
+        if ($offices->isEmpty() && $this->office_location_id && $this->officeLocation) {
+            return collect([$this->officeLocation]);
+        }
+
+        return $offices;
+    }
+
+    /** Replace the set of offices, keeping office_location_id in step. */
+    public function syncOfficeLocations($ids): void
+    {
+        $ids = collect($ids)->filter()->map(fn ($id) => (int) $id)->unique()->values();
+
+        $this->officeLocations()->sync($ids->all());
+
+        $this->office_location_id = $ids->first();
+        $this->save();
+    }
+
+    /*
+    |--------------------------------------------------------------------------
     | Helper Methods
     |--------------------------------------------------------------------------
     */

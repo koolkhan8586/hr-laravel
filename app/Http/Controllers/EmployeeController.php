@@ -53,9 +53,6 @@ class EmployeeController extends Controller
             'designation' => $request->designation,
             'department' => $request->department,
 
-            // ✅ LOCATION ASSIGN
-            'office_location_id' => $request->office_location_id,
-
             // ✅ ALLOW ANYWHERE
             'allow_anywhere_attendance' => $request->has('allow_anywhere_attendance'),
 
@@ -64,6 +61,9 @@ class EmployeeController extends Controller
                 ? Carbon::parse($request->attendance_override_until)
                 : null,
         ]);
+
+        // Where this employee may mark attendance. None ticked means anywhere.
+        $employee->syncOfficeLocations($request->input('office_location_ids', []));
 
         return redirect()->route('employees.index')
             ->with('success', 'Employee updated successfully');

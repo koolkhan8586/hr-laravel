@@ -216,6 +216,8 @@ class StaffController extends Controller
         'bank_account_no' => 'nullable|string|max:50',
         'bank_payee_id'   => 'nullable|exists:users,id',
         'tracks_attendance' => 'nullable|in:0,1',
+        'office_location_ids'   => 'nullable|array',
+        'office_location_ids.*' => 'integer|exists:office_locations,id',
     ]);
 
     /*
@@ -229,7 +231,6 @@ class StaffController extends Controller
         'mobile'        => $request->mobile,
         'cnic'          => $this->normalizeCnic($request->cnic),
         'employee_code' => strtoupper($request->employee_code),
-        'office_location_id' => $request->office_location_id,
 
         // Payroll / salary sheet details
         'salary_category' => $request->salary_category ?? 'staff',
@@ -257,6 +258,9 @@ class StaffController extends Controller
 
     $staff->user->role = $request->role;
     $staff->user->save();
+
+    // Where this employee may mark attendance. None ticked means anywhere.
+    $staff->user->syncOfficeLocations($request->input('office_location_ids', []));
 
     /*
     |--------------------------------------------------------------------------
