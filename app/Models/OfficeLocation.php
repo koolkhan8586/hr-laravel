@@ -14,8 +14,16 @@ class OfficeLocation extends Model
         'address'
     ];
 
+    /** Employees whose single office_location_id still points here. */
     public function users()
     {
         return $this->hasMany(User::class);
+    }
+
+    /** Employees held to this office for marking attendance. */
+    public function assignedUsers()
+    {
+        return $this->belongsToMany(User::class, 'office_location_user')
+            ->withTimestamps();
     }
 }
