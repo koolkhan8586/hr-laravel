@@ -112,10 +112,8 @@ Route::get('/loan/{id}/ledger', [LoanController::class,'employeeLedger'])->name(
 /* Cafe LSAF (SSO into cafe.khanmusa.com) */
 Route::get('/cafe', [CafeController::class, 'launch'])->name('cafe.launch');
 
-/* Employees Directory */
+/* Employees Directory - the listing is for everybody, read only */
 Route::get('/employees', [EmployeeController::class, 'index'])->name('employees.index');
-Route::get('/employees/{id}/edit', [EmployeeController::class, 'edit'])->name('employees.edit');
-Route::post('/employees/{id}/update', [EmployeeController::class, 'update'])->name('employees.update');
 
 /* Salary (Employee) */
 Route::get('/salary', [SalaryController::class,'employeeIndex'])->name('salary.index');
@@ -147,6 +145,14 @@ Route::get('/my-wfh', [WorkFromHomeController::class,'employeeWFH'])->name('empl
 | see their own timings at /my-schedule instead.
 */
 Route::middleware(['auth', 'admin'])->group(function () {
+
+    /*
+    | Editing an employee sets their attendance locations and whether they are
+    | exempt from them, so it cannot sit in the plain auth group: any employee
+    | could open it by URL and free themselves, or edit a colleague.
+    */
+    Route::get('/employees/{id}/edit', [EmployeeController::class, 'edit'])->name('employees.edit');
+    Route::post('/employees/{id}/update', [EmployeeController::class, 'update'])->name('employees.update');
 
     Route::resource('shifts', ShiftController::class);
     Route::resource('schedules', EmployeeScheduleController::class);
@@ -300,6 +306,7 @@ Route::get('/attendance-list/{type}',[AdminAttendanceController::class,'attendan
 
 Route::get('/office-locations', [OfficeLocationController::class,'index'])->name('office-locations.index');
 Route::post('/office-locations', [OfficeLocationController::class,'store'])->name('office-locations.store');
+Route::put('/office-locations/{id}', [OfficeLocationController::class,'update'])->name('office-locations.update');
 Route::delete('/office-locations/{id}', [OfficeLocationController::class,'destroy'])->name('office-locations.destroy');
 Route::get('/live-map', [AdminAttendanceController::class, 'liveMap'])->name('live.map');
 /*
