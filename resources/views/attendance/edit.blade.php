@@ -34,6 +34,32 @@
                class="border p-2 w-full">
     </div>
 
+    <div>
+        <label class="block font-medium">Status</label>
+
+        <select name="status" class="border p-2 w-full">
+            <option value="auto">Work it out from the shift</option>
+            <option value="present"  {{ $attendance->status === 'present'  ? 'selected' : '' }}>Present</option>
+            <option value="late"     {{ $attendance->status === 'late'     ? 'selected' : '' }}>Late</option>
+            <option value="half_day" {{ $attendance->status === 'half_day' ? 'selected' : '' }}>Half Day</option>
+            <option value="absent"   {{ $attendance->status === 'absent'   ? 'selected' : '' }}>Absent</option>
+        </select>
+
+        <p class="text-xs text-gray-500 mt-1">
+            @if($shift)
+                Rostered on <strong>{{ $shift->name }}</strong>
+                ({{ \Carbon\Carbon::parse($shift->start_time)->format('h:i A') }}
+                start, {{ (int) ($shift->grace_minutes ?? 0) }} min grace), so
+                arriving after
+                {{ \Carbon\Carbon::parse($shift->start_time)->addMinutes((int) ($shift->grace_minutes ?? 0))->format('h:i A') }}
+                counts as late.
+            @else
+                No shift is set for this employee on this date, so nothing counts as late.
+            @endif
+            Pick a status above to set it yourself instead.
+        </p>
+    </div>
+
     <div class="flex justify-end">
         <button type="submit"
                 class="bg-green-600 text-white px-6 py-2 rounded">
