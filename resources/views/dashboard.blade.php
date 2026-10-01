@@ -78,31 +78,21 @@ $today = \App\Models\Attendance::where('user_id', auth()->id())
 
 @if(!$today)
 
-<form id="clockInForm" method="POST" action="{{ route('attendance.clockin') }}">
-@csrf
-<input type="hidden" name="latitude" id="latitude">
-<input type="hidden" name="longitude" id="longitude">
-
-<button type="button" onclick="clockInWithGPS()"
-class="bg-green-500 text-white px-6 py-2 rounded-lg shadow hover:bg-green-600">
+<button type="button"
+onclick="attendanceAction('{{ route('attendance.clockin') }}', this)"
+class="bg-green-500 text-white px-6 py-2 rounded-lg shadow hover:bg-green-600 disabled:opacity-60">
 Clock In
 </button>
 
 <div id="locationStatus" class="mt-2 font-semibold text-sm"></div>
-</form>
 
 @elseif($today && !$today->clock_out)
 
-<form id="clockOutForm" method="POST" action="{{ route('attendance.clockout') }}">
-@csrf
-<input type="hidden" name="latitude" id="out_latitude">
-<input type="hidden" name="longitude" id="out_longitude">
-
-<button type="button" onclick="clockOutWithGPS()"
-class="bg-red-500 text-white px-6 py-2 rounded-lg shadow hover:bg-red-600">
+<button type="button"
+onclick="attendanceAction('{{ route('attendance.clockout') }}', this)"
+class="bg-red-500 text-white px-6 py-2 rounded-lg shadow hover:bg-red-600 disabled:opacity-60">
 Clock Out
 </button>
-</form>
 
 @else
 
@@ -198,30 +188,6 @@ String(secs).padStart(2,'0');
 setInterval(updateTimer,1000);
 </script>
 
-<!-- GPS CLOCK IN -->
-<script>
-function clockInWithGPS(){
-navigator.geolocation.getCurrentPosition(function(position){
-document.getElementById("latitude").value = position.coords.latitude;
-document.getElementById("longitude").value = position.coords.longitude;
-document.getElementById("clockInForm").submit();
-},function(){
-alert("Enable GPS");
-});
-}
-</script>
-
-<!-- GPS CLOCK OUT -->
-<script>
-function clockOutWithGPS(){
-navigator.geolocation.getCurrentPosition(function(position){
-document.getElementById("out_latitude").value = position.coords.latitude;
-document.getElementById("out_longitude").value = position.coords.longitude;
-document.getElementById("clockOutForm").submit();
-},function(){
-alert("Enable GPS");
-});
-}
-</script>
+@include('partials.attendance-modal')
 
 </x-app-layout>

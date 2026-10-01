@@ -286,8 +286,12 @@ if (!$attendance) {
         Log::error('ClockOut Mail Error: '.$e->getMessage());
     }
 
-    return redirect()->route('dashboard')
-    ->with('success', 'Clock-out successful!');
+    // Both the dashboard and the attendance page post this over fetch and
+    // read JSON back, same as clock-in.
+    return response()->json([
+        'success' => true,
+        'message' => 'Clock-out successful!',
+    ]);
 
     
 }   /*
