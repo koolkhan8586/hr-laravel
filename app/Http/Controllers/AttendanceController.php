@@ -105,23 +105,19 @@ class AttendanceController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    $day = $now->format('l');
+    // Via the roster, so a shift set for this one date is honoured. Reading
+    // the weekly pattern alone told somebody moved onto a one-off shift that
+    // it was their off day, and refused to let them clock in at all.
+    $shift = \App\Support\DutyRoster::shiftFor($user, $now);
 
-    $schedule = \App\Models\WeeklySchedule::where('user_id', $user->id)
-        ->where('day_of_week', $day)
-        ->first();
-
-    if (!$schedule || !$schedule->shift_id) {
+    if (!$shift) {
         return response()->json([
             'success' => false,
             'message' => 'Today is your OFF day.'
         ], 403);
     }
 
-    $shift = \App\Models\Shift::find($schedule->shift_id);
-
-    $shiftStart = \Carbon\Carbon::parse($shift->start_time, 'Asia/Karachi');
-    $lateAfter = $shiftStart->copy()->addMinutes($shift->grace_minutes);
+    $lateAfter = \App\Support\DutyRoster::lateAfter($user, $now);
 
     $attendance = Attendance::where('user_id', $user->id)
         ->whereDate('date', $today)
@@ -167,7 +163,8 @@ class AttendanceController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    $status = $now->gt($lateAfter) ? 'late' : 'present';
+    // No start time on the shift means there is nothing to be late for.
+    $status = $lateAfter && $now->gt($lateAfter) ? 'late' : 'present';
 
     $attendance = Attendance::create([
         'user_id' => $user->id,
@@ -302,7 +299,13 @@ if (!$attendance) {
     public function edit($id)
     {
         $attendance = Attendance::with('user')->findOrFail($id);
-        return view('attendance.edit', compact('attendance'));
+
+        // Shown on the form so it is clear what "work it out" will decide.
+        $shift = $attendance->user
+            ? \App\Support\DutyRoster::shiftFor($attendance->user, $attendance->date ?: $attendance->clock_in)
+            : null;
+
+        return view('attendance.edit', compact('attendance', 'shift'));
     }
 
 
@@ -398,36 +401,62 @@ foreach ($attendances as $attendance) {
     | Admin Update Attendance
     |--------------------------------------------------------------------------
     */
-    public function update(Request $request, $id)
+
+    /**
+     * What an arrival on a given day amounts to.
+     *
+     * Measured against the shift that employee was actually rostered on for
+     * that date, including a one-off change, rather than a fixed clock time:
+     * somebody on an 11:30 shift arriving at 10:13 is early, not late.
+     */
+    protected function statusFor(?\App\Models\User $user, Carbon $clockIn, ?float $totalHours): string
     {
-        $attendance = Attendance::findOrFail($id);
-
-        $request->validate([
-    'clock_in'  => 'required|string',
-    'clock_out' => 'nullable|string',
-]);
-
-       $clockIn = Carbon::parse($request->clock_in)
-    ->setTimezone('Asia/Karachi');
-
-$clockOut = $request->clock_out
-    ? Carbon::parse($request->clock_out)->setTimezone('Asia/Karachi')
-    : null;
-        
-        $totalHours = null;
-        $status = 'present';
-
-        if ($clockOut) {
-            $totalHours = $clockIn->diffInMinutes($clockOut) / 60;
-
-            if ($totalHours < 4) {
-                $status = 'half_day';
-            }
+        // A short day is a half day whether or not it also started late,
+        // otherwise the half day disappears behind the lateness.
+        if ($totalHours !== null && $totalHours < 4) {
+            return 'half_day';
         }
 
-        // Late detection
-        if ($clockIn->format('H:i:s') > '09:15:00') {
-            $status = 'late';
+        if (!$user) {
+            return 'present';
+        }
+
+        $lateAfter = \App\Support\DutyRoster::lateAfter($user, $clockIn);
+
+        // Not rostered that day, so there is nothing to be late for.
+        if (!$lateAfter) {
+            return 'present';
+        }
+
+        return $clockIn->greaterThan($lateAfter) ? 'late' : 'present';
+    }
+
+    public function update(Request $request, $id)
+    {
+        $attendance = Attendance::with('user')->findOrFail($id);
+
+        $request->validate([
+            'clock_in'  => 'required|string',
+            'clock_out' => 'nullable|string',
+            'status'    => 'nullable|in:auto,present,late,half_day,absent',
+        ]);
+
+        $clockIn = Carbon::parse($request->clock_in)->setTimezone('Asia/Karachi');
+
+        $clockOut = $request->clock_out
+            ? Carbon::parse($request->clock_out)->setTimezone('Asia/Karachi')
+            : null;
+
+        $totalHours = null;
+
+        if ($clockOut && $clockOut->greaterThan($clockIn)) {
+            $totalHours = round($clockIn->diffInMinutes($clockOut) / 60, 2);
+        }
+
+        $status = $request->input('status', 'auto');
+
+        if ($status === 'auto' || $status === null) {
+            $status = $this->statusFor($attendance->user, $clockIn, $totalHours);
         }
 
         $attendance->update([

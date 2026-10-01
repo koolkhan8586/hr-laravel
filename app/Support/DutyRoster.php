@@ -134,6 +134,52 @@ class DutyRoster
             ->first(fn ($d) => $d['is_today']);
     }
 
+    /**
+     * The shift an employee was rostered on for one date.
+     *
+     * A shift set against the date itself wins over the weekly pattern, the
+     * same order the roster screens use. Null means they were not due in.
+     *
+     * Everything that needs to know when somebody was supposed to start -
+     * clocking in, and editing a record afterwards - goes through here, so a
+     * one-off change is honoured everywhere rather than only on the screens
+     * that display it.
+     */
+    public static function shiftFor(User $user, $date): ?Shift
+    {
+        $date = Carbon::parse($date)->startOfDay();
+
+        $override = EmployeeSchedule::forUserBetween($user->id, $date, $date)[$date->toDateString()] ?? null;
+
+        if ($override) {
+            return $override->shift;
+        }
+
+        return WeeklySchedule::forUser($user->id)[$date->format('l')]?->shift;
+    }
+
+    /**
+     * When an arrival counts as late for that date, grace included.
+     *
+     * Null when they were not rostered, so the caller decides what that means.
+     */
+    public static function lateAfter(User $user, $date): ?Carbon
+    {
+        $shift = self::shiftFor($user, $date);
+
+        if (!$shift || !$shift->start_time) {
+            return null;
+        }
+
+        $date = Carbon::parse($date)->startOfDay();
+
+        $start = Carbon::parse($shift->start_time, self::TIMEZONE);
+
+        return $date->copy()
+            ->setTime((int) $start->format('H'), (int) $start->format('i'), (int) $start->format('s'))
+            ->addMinutes((int) ($shift->grace_minutes ?? 0));
+    }
+
     /** "09:00 AM - 05:30 PM", or nothing when no shift is set. */
     public static function timing(?Shift $shift): ?string
     {
