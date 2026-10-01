@@ -109,13 +109,17 @@ Absent (Auto marked)
 
 @if(!$todayAttendance || !$todayAttendance->clock_in)
 
-<button onclick="clockIn()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded text-lg shadow">
+<button type="button"
+onclick="attendanceAction('{{ route('attendance.clockin') }}', this)"
+class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded text-lg shadow disabled:opacity-60">
 Clock In
 </button>
 
 @elseif($todayAttendance && !$todayAttendance->clock_out)
 
-<button onclick="clockOut()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded text-lg shadow">
+<button type="button"
+onclick="attendanceAction('{{ route('attendance.clockout') }}', this)"
+class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded text-lg shadow disabled:opacity-60">
 Clock Out
 </button>
 
@@ -279,135 +283,10 @@ String(seconds).padStart(2,'0');
 
 
 
-function clockIn() {
-
-if (!navigator.geolocation) {
-alert("Geolocation not supported.");
-return;
-}
-
-navigator.geolocation.getCurrentPosition(
-
-function(position) {
-
-fetch("{{ route('attendance.clockin') }}", {
-
-method:'POST',
-
-headers:{
-'Content-Type':'application/json',
-'X-CSRF-TOKEN':'{{ csrf_token() }}'
-},
-
-body:JSON.stringify({
-
-latitude:position.coords.latitude,
-longitude:position.coords.longitude
-
-})
-
-})
-
-.then(res => res.text())
-
-.then(text => {
-
-console.log("RAW RESPONSE:", text);
-
-try {
-
-const data = JSON.parse(text);
-
-alert(data.message);
-
-if(data.success){
-location.reload();
-}
-
-} catch(e) {
-
-alert("Server did not return valid JSON");
-
-}
-
-})
-
-.catch(error => {
-
-console.error(error);
-
-alert("Something went wrong");
-
-});
-
-},
-
-function(){
-alert("Please allow location access.");
-},
-
-{
-enableHighAccuracy:true,
-timeout:10000,
-maximumAge:0
-}
-
-);
-
-}
-
-
-function clockOut() {
-
-if (!navigator.geolocation) {
-alert("Geolocation not supported.");
-return;
-}
-
-navigator.geolocation.getCurrentPosition(function(position) {
-
-fetch("{{ route('attendance.clockout') }}", {
-
-method:'POST',
-
-headers:{
-'Content-Type':'application/json',
-'X-CSRF-TOKEN':'{{ csrf_token() }}'
-},
-
-body:JSON.stringify({
-
-latitude:position.coords.latitude,
-longitude:position.coords.longitude
-
-})
-
-})
-
-.then(res => res.json())
-
-.then(data => {
-
-alert(data.message);
-
-if(data.success){
-location.reload();
-}
-
-})
-
-.catch(() => alert("Something went wrong"));
-
-},
-
-function(){
-alert("Please allow location access.");
-});
-
-}
-
 </script>
 
 
+
+@include('partials.attendance-modal')
 
 </x-app-layout>
