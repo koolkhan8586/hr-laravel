@@ -42,8 +42,22 @@
                 Rs {{ number_format($pending->amount, 2) }} over
                 {{ $pending->installments }} month(s), applied
                 {{ $pending->requested_at?->format('d M Y h:i A') }}.
-                You can apply again once this one has been decided.
+                You can apply again once this one has been decided - or cancel
+                it now and apply afresh. Once it has been approved it can no
+                longer be cancelled here.
             </p>
+
+            <form method="POST"
+                  action="{{ route('loan.application.cancel', $pending->id) }}"
+                  class="mt-4"
+                  onsubmit="return confirm('Cancel application {{ $pending->reference() }}? The approvers will be told you have taken it back.')">
+                @csrf
+                @method('DELETE')
+
+                <button class="text-white px-4 py-2 rounded" style="background:#dc2626;">
+                    Cancel This Application
+                </button>
+            </form>
         </div>
 
     @else
@@ -173,6 +187,19 @@
                             <span class="text-gray-300">|</span>
                             <a href="{{ route('loan.application.print', [$application->id, 'pdf' => 1]) }}"
                                class="text-indigo-600 hover:underline">PDF</a>
+
+                            @if($application->isCancellableBy(auth()->user()))
+                                <form method="POST"
+                                      action="{{ route('loan.application.cancel', $application->id) }}"
+                                      class="mt-2"
+                                      onsubmit="return confirm('Cancel application {{ $application->reference() }}?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button class="hover:underline" style="color:#dc2626;">
+                                        Cancel
+                                    </button>
+                                </form>
+                            @endif
                         </td>
                     </tr>
                 @empty

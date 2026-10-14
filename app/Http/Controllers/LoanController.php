@@ -108,6 +108,76 @@ class LoanController extends Controller
     }
 
     /**
+     * The employee takes their own application back.
+     *
+     * Only while it is still waiting: once it has been approved the money is
+     * granted and the ledger entry written, and once it has been turned down
+     * the decision is a record in its own right. Either way it is no longer
+     * theirs to remove, so they are told to speak to HR instead.
+     *
+     * The row is marked withdrawn rather than deleted, because the approvers
+     * were sent a WhatsApp with links to it: deleting it would leave them
+     * tapping a link that 404s, instead of being told it was taken back.
+     */
+    public function cancelApplication($id)
+    {
+        $loan = Loan::with('user')->findOrFail($id);
+
+        abort_unless($loan->user_id === auth()->id(), 403, 'This loan application is not yours.');
+
+        if (! $loan->isCancellableBy(auth()->user())) {
+
+            $reason = $loan->status === 'approved'
+                ? 'This loan has already been approved, so it cannot be cancelled here. Ask HR if it needs to be reversed.'
+                : 'This application has already been '.$loan->status.', so there is nothing to cancel.';
+
+            return back()->with('error', $reason);
+        }
+
+        $loan->update([
+            'status' => 'cancelled',
+            'remaining_balance' => 0,
+            'decided_by' => $loan->user->name.' (the applicant)',
+            'decided_via' => 'employee',
+            'decided_at' => now(),
+            'decision_remarks' => 'Withdrawn by the employee',
+        ]);
+
+        $this->notifyApproversOfWithdrawal($loan);
+
+        return back()->with('success', 'Application '.$loan->reference().' has been cancelled. You can apply again whenever you need to.');
+    }
+
+    /**
+     * Tell whoever was asked to decide it that they no longer need to.
+     *
+     * Best effort: the withdrawal stands whether or not the message goes out.
+     */
+    protected function notifyApproversOfWithdrawal(Loan $loan): void
+    {
+        $waha = app(WahaService::class);
+
+        if (! $waha->enabled()) {
+            return;
+        }
+
+        $message = implode("\n", [
+            'Loan Application Withdrawn',
+            '',
+            'Reference: '.$loan->reference(),
+            'Employee: '.($loan->user->name ?? 'Employee'),
+            'Amount: Rs '.number_format((float) $loan->amount, 2),
+            '',
+            'The employee has taken this application back, so no decision is needed.',
+            '- LSAF HR',
+        ]);
+
+        foreach (\App\Models\LoanApprover::active() as $approver) {
+            $waha->sendToMobile($approver->mobile, $message);
+        }
+    }
+
+    /**
      * The printed application form: the employee's own, or any of them for
      * whoever manages loans.
      *
@@ -165,7 +235,7 @@ class LoanController extends Controller
     | to Approved the moment they applied. Their applications and where each
     | one stands are on the apply page.
     */
-    $decided = fn ($query) => $query->whereNotIn('status', ['pending', 'rejected']);
+    $decided = fn ($query) => $query->whereNotIn('status', ['pending', 'rejected', 'cancelled']);
 
     $loan = Loan::where('user_id', auth()->id())
                 ->tap($decided)
@@ -220,7 +290,7 @@ class LoanController extends Controller
     // summed into the employee's outstanding balance here and shown as
     // Approved. They live on the applications screen instead.
     $loans = Loan::with('user')
-        ->whereNotIn('status', ['pending', 'rejected'])
+        ->whereNotIn('status', ['pending', 'rejected', 'cancelled'])
         ->latest()
         ->get()
         ->groupBy('user_id')
@@ -263,7 +333,7 @@ class LoanController extends Controller
 
         $applications = Loan::with('user')
             ->applications()
-            ->when(in_array($status, ['pending', 'approved', 'rejected'], true),
+            ->when(in_array($status, ['pending', 'approved', 'rejected', 'cancelled'], true),
                 fn ($q) => $q->where('status', $status))
             ->orderByRaw("CASE WHEN status = 'pending' THEN 0 ELSE 1 END")
             ->orderByDesc('requested_at')
@@ -271,17 +341,44 @@ class LoanController extends Controller
 
         return view('loan.applications', [
             'applications' => $applications,
+            'outstanding' => $this->outstandingFor($applications->pluck('user_id')),
             'status' => $status,
             'approverCount' => \App\Models\LoanApprover::active()->count(),
             'wahaEnabled' => app(WahaService::class)->enabled(),
         ]);
     }
 
+    /**
+     * What each of these employees still owes, keyed by user.
+     *
+     * Only loans that are actually running count: an application waiting for
+     * a decision is not money owed, and a rejected or withdrawn one never
+     * will be. Worked out in one query rather than one per row.
+     *
+     * @param  \Illuminate\Support\Collection<int, int>  $userIds
+     * @return \Illuminate\Support\Collection<int, float>
+     */
+    protected function outstandingFor($userIds)
+    {
+        $userIds = collect($userIds)->filter()->unique()->values();
+
+        if ($userIds->isEmpty()) {
+            return collect();
+        }
+
+        return Loan::whereIn('user_id', $userIds)
+            ->whereIn('status', ['approved', 'completed'])
+            ->groupBy('user_id')
+            ->selectRaw('user_id, SUM(remaining_balance) as total')
+            ->pluck('total', 'user_id')
+            ->map(fn ($total) => (float) $total);
+    }
+
     public function exportApplications(Request $request)
     {
         $status = $request->query('status');
 
-        $status = in_array($status, ['pending', 'approved', 'rejected'], true)
+        $status = in_array($status, ['pending', 'approved', 'rejected', 'cancelled'], true)
             ? $status
             : null;
 
