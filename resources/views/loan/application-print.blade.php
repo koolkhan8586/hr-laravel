@@ -247,6 +247,7 @@
                         'pending'   => ['Waiting for a decision', '#fef9c3', '#a16207'],
                         'approved'  => ['Approved', '#dcfce7', '#15803d'],
                         'rejected'  => ['Rejected', '#fee2e2', '#b91c1c'],
+                        'cancelled' => ['Withdrawn by the employee', '#e5e7eb', '#4b5563'],
                         'closed'    => ['Paid Off', '#e5e7eb', '#374151'],
                         'completed' => ['Paid Off', '#e5e7eb', '#374151'],
                     ];

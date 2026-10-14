@@ -30,6 +30,14 @@ each month over {{ $loan->installments ?: '-' }} month(s).
 ({{ $loan->reference() }}) has been rejected.
 </p>
 
+@elseif($loan->status === 'cancelled')
+<div style="font-size:40px;">&#8505;</div>
+<h2 style="color:#374151;">Application Withdrawn</h2>
+<p style="color:#4b5563;">
+{{ $loan->user->name ?? 'The employee' }} has taken this application back,
+so nothing was decided.
+</p>
+
 @else
 <div style="font-size:40px;">&#8505;</div>
 <h2 style="color:#374151;">Already Decided</h2>

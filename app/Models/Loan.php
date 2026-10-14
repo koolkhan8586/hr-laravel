@@ -66,6 +66,22 @@ class Loan extends Model
         return $this->status === 'pending';
     }
 
+    /**
+     * May the employee take this one back?
+     *
+     * Only their own application, and only while nobody has decided it. Once
+     * it is approved the money has been granted and the ledger entry written,
+     * so withdrawing it is not the employee's to do - they have to ask
+     * whoever manages loans.
+     */
+    public function isCancellableBy(?User $user): bool
+    {
+        return $user
+            && $this->user_id === $user->id
+            && $this->isApplication()
+            && $this->isPending();
+    }
+
     /** "LN-000123", for the printed application. */
     public function reference(): string
     {

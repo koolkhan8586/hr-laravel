@@ -50,7 +50,7 @@
 
     {{-- Filter --}}
     <div class="mb-4" style="display:flex; gap:8px; font-size:14px;">
-        @foreach(['' => 'All', 'pending' => 'Waiting', 'approved' => 'Approved', 'rejected' => 'Rejected'] as $value => $label)
+        @foreach(['' => 'All', 'pending' => 'Waiting', 'approved' => 'Approved', 'rejected' => 'Rejected', 'cancelled' => 'Cancelled'] as $value => $label)
             <a href="{{ route('admin.loan.applications', $value ? ['status' => $value] : []) }}"
                style="padding:6px 14px; border-radius:4px; text-decoration:none;
                       background:{{ (string) $status === (string) $value ? '#111827' : '#e5e7eb' }};

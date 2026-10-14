@@ -218,6 +218,94 @@ class LoanApplicationTest extends TestCase
         $this->assertNotNull($response->viewData('pendingApplication'));
     }
 
+    public function test_an_employee_may_cancel_their_own_application_while_it_waits(): void
+    {
+        $employee = $this->employee();
+        $loan = $this->application($employee);
+
+        $this->actingAs($employee)
+            ->delete(route('loan.application.cancel', $loan->id))
+            ->assertSessionHas('success');
+
+        $loan->refresh();
+
+        // Kept, not deleted: the approvers were sent links to it.
+        $this->assertSame('cancelled', $loan->status);
+        $this->assertEquals(0, $loan->remaining_balance);
+        $this->assertSame('employee', $loan->decided_via);
+        $this->assertNotNull($loan->decided_at);
+        $this->assertSame(0, LoanLedger::where('loan_id', $loan->id)->count());
+
+        // And they are free to apply again.
+        $this->actingAs($employee)
+            ->post(route('loan.store.request'), [
+                'amount' => 30000,
+                'installments' => 3,
+                'purpose' => 'A smaller amount instead',
+            ])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('loan.apply'));
+
+        $this->assertSame(1, Loan::where('user_id', $employee->id)->where('status', 'pending')->count());
+    }
+
+    public function test_an_approved_loan_cannot_be_cancelled_by_the_employee(): void
+    {
+        $employee = $this->employee();
+        $loan = $this->application($employee);
+
+        $this->actingAs($this->admin())->post(route('admin.loan.approve', $loan->id));
+
+        $this->actingAs($employee)
+            ->delete(route('loan.application.cancel', $loan->id))
+            ->assertSessionHas('error');
+
+        $this->assertSame('approved', $loan->fresh()->status);
+
+        // The loan and its ledger entry are left exactly as they were.
+        $this->assertEquals(120000, $loan->fresh()->remaining_balance);
+        $this->assertSame(1, LoanLedger::where('loan_id', $loan->id)->count());
+    }
+
+    public function test_a_rejected_application_cannot_be_cancelled_away(): void
+    {
+        $employee = $this->employee();
+        $loan = $this->application($employee);
+
+        $this->actingAs($this->admin())->post(route('admin.loan.reject', $loan->id));
+
+        $this->actingAs($employee)
+            ->delete(route('loan.application.cancel', $loan->id))
+            ->assertSessionHas('error');
+
+        $this->assertSame('rejected', $loan->fresh()->status);
+    }
+
+    public function test_an_employee_cannot_cancel_somebody_elses_application(): void
+    {
+        $loan = $this->application($this->employee());
+
+        $this->actingAs($this->employee(['email' => 'other@example.com']))
+            ->delete(route('loan.application.cancel', $loan->id))
+            ->assertForbidden();
+
+        $this->assertSame('pending', $loan->fresh()->status);
+    }
+
+    public function test_a_cancelled_application_is_not_counted_as_a_balance(): void
+    {
+        $employee = $this->employee();
+        $loan = $this->application($employee, ['amount' => 90000]);
+
+        $this->actingAs($employee)->delete(route('loan.application.cancel', $loan->id));
+
+        $response = $this->actingAs($employee)->get(route('loan.my'));
+
+        $response->assertOk();
+        $this->assertNull($response->viewData('loan'));
+        $this->assertNull($response->viewData('pendingApplication'));
+    }
+
     public function test_an_employee_may_print_only_their_own_application(): void
     {
         $employee = $this->employee();

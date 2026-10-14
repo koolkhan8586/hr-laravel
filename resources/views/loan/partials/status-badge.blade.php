@@ -3,6 +3,7 @@
         'pending'   => ['Waiting',  '#fef9c3', '#a16207'],
         'approved'  => ['Approved', '#dcfce7', '#15803d'],
         'rejected'  => ['Rejected', '#fee2e2', '#b91c1c'],
+        'cancelled' => ['Cancelled', '#e5e7eb', '#4b5563'],
         'closed'    => ['Paid Off', '#e5e7eb', '#374151'],
         'completed' => ['Paid Off', '#e5e7eb', '#374151'],
     ];

@@ -9,7 +9,16 @@
 
 <div style="max-width:480px; margin:60px auto; background:#ffffff; border-radius:8px; border:1px solid #e5e7eb; padding:32px;">
 
-@if($loan->status !== 'pending')
+@if($loan->status === 'cancelled')
+    <div style="text-align:center;">
+        <div style="font-size:40px;">&#8505;</div>
+        <h2 style="color:#374151;">Application Withdrawn</h2>
+        <p style="color:#4b5563;">
+            {{ $loan->user->name ?? 'The employee' }} has taken this
+            application back, so there is nothing to decide.
+        </p>
+    </div>
+@elseif($loan->status !== 'pending')
     <div style="text-align:center;">
         <div style="font-size:40px;">&#8505;</div>
         <h2 style="color:#374151;">Already Decided</h2>

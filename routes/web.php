@@ -125,6 +125,7 @@ Route::get('/my-loans', [LoanController::class, 'myLoan'])->name('loan.my');
 Route::get('/loan/apply', [LoanController::class, 'apply'])->name('loan.apply');
 Route::post('/loan/store-request', [LoanController::class, 'storeRequest'])->name('loan.store.request');
 Route::get('/loan/application/{id}/print', [LoanController::class,'printApplication'])->name('loan.application.print');
+Route::delete('/loan/application/{id}', [LoanController::class,'cancelApplication'])->name('loan.application.cancel');
 Route::get('/loan/{id}/ledger', [LoanController::class,'employeeLedger'])->name('loan.ledger');
 
 /* Cafe LSAF (SSO into cafe.khanmusa.com) */
