@@ -71,6 +71,7 @@
                     <th class="p-3 text-left">Amount</th>
                     <th class="p-3 text-left">Months</th>
                     <th class="p-3 text-left">Monthly</th>
+                    <th class="p-3 text-left">Outstanding</th>
                     <th class="p-3 text-left">Purpose</th>
                     <th class="p-3 text-left">WhatsApp</th>
                     <th class="p-3 text-left">Status</th>
@@ -113,6 +114,30 @@
                             @if($loan->deduction_start_month)
                                 <div class="text-xs text-gray-500">
                                     from {{ \Carbon\Carbon::parse($loan->deduction_start_month)->format('M Y') }}
+                                </div>
+                            @endif
+                        </td>
+
+                        {{-- What this employee still owes on loans already
+                             running. For one still waiting, that is what they
+                             owe before this request; the line underneath says
+                             what it would come to if it is approved. --}}
+                        <td class="p-3 whitespace-nowrap">
+                            @php
+                                $owed = $outstanding[$loan->user_id] ?? 0;
+                            @endphp
+
+                            @if($owed > 0)
+                                <span style="color:#b91c1c; font-weight:600;">
+                                    Rs {{ number_format($owed, 2) }}
+                                </span>
+                            @else
+                                <span class="text-gray-400">None</span>
+                            @endif
+
+                            @if($loan->isPending())
+                                <div class="text-xs text-gray-500">
+                                    Rs {{ number_format($owed + (float) $loan->amount, 2) }} if approved
                                 </div>
                             @endif
                         </td>
@@ -238,7 +263,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="10" class="text-center p-6 text-gray-500">
+                        <td colspan="11" class="text-center p-6 text-gray-500">
                             No loan applications
                             @if($status) with that status @endif
                             yet.

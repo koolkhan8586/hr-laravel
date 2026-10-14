@@ -341,10 +341,37 @@ class LoanController extends Controller
 
         return view('loan.applications', [
             'applications' => $applications,
+            'outstanding' => $this->outstandingFor($applications->pluck('user_id')),
             'status' => $status,
             'approverCount' => \App\Models\LoanApprover::active()->count(),
             'wahaEnabled' => app(WahaService::class)->enabled(),
         ]);
+    }
+
+    /**
+     * What each of these employees still owes, keyed by user.
+     *
+     * Only loans that are actually running count: an application waiting for
+     * a decision is not money owed, and a rejected or withdrawn one never
+     * will be. Worked out in one query rather than one per row.
+     *
+     * @param  \Illuminate\Support\Collection<int, int>  $userIds
+     * @return \Illuminate\Support\Collection<int, float>
+     */
+    protected function outstandingFor($userIds)
+    {
+        $userIds = collect($userIds)->filter()->unique()->values();
+
+        if ($userIds->isEmpty()) {
+            return collect();
+        }
+
+        return Loan::whereIn('user_id', $userIds)
+            ->whereIn('status', ['approved', 'completed'])
+            ->groupBy('user_id')
+            ->selectRaw('user_id, SUM(remaining_balance) as total')
+            ->pluck('total', 'user_id')
+            ->map(fn ($total) => (float) $total);
     }
 
     public function exportApplications(Request $request)

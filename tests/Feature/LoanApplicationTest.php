@@ -306,6 +306,63 @@ class LoanApplicationTest extends TestCase
         $this->assertNull($response->viewData('pendingApplication'));
     }
 
+    public function test_the_applications_screen_shows_what_the_employee_already_owes(): void
+    {
+        $employee = $this->employee();
+
+        // Two loans running, one already paid off, one application that was
+        // turned down: only the money still owed should be counted.
+        Loan::create([
+            'user_id' => $employee->id,
+            'amount' => 50000,
+            'installments' => 10,
+            'monthly_deduction' => 5000,
+            'remaining_balance' => 20000,
+            'status' => 'approved',
+            'loan_date' => now()->toDateString(),
+        ]);
+
+        Loan::create([
+            'user_id' => $employee->id,
+            'amount' => 30000,
+            'installments' => 3,
+            'monthly_deduction' => 10000,
+            'remaining_balance' => 0,
+            'status' => 'closed',
+            'loan_date' => now()->toDateString(),
+        ]);
+
+        $this->application($employee, ['amount' => 75000, 'status' => 'rejected']);
+
+        $application = $this->application($employee, ['amount' => 90000]);
+
+        $response = $this->actingAs($this->admin())->get(route('admin.loan.applications'));
+
+        $response->assertOk();
+
+        $outstanding = $response->viewData('outstanding');
+
+        $this->assertEquals(20000, $outstanding[$employee->id]);
+
+        // Shown on the row, with what it would come to if this one is granted.
+        $response->assertSee('Rs 20,000.00');
+        $response->assertSee('Rs 110,000.00 if approved');
+
+        $this->assertSame('pending', $application->fresh()->status);
+    }
+
+    public function test_an_employee_with_no_loans_shows_nothing_outstanding(): void
+    {
+        $employee = $this->employee();
+        $this->application($employee, ['amount' => 25000]);
+
+        $response = $this->actingAs($this->admin())->get(route('admin.loan.applications'));
+
+        $response->assertOk();
+        $this->assertNull($response->viewData('outstanding')[$employee->id] ?? null);
+        $response->assertSee('Rs 25,000.00 if approved');
+    }
+
     public function test_an_employee_may_print_only_their_own_application(): void
     {
         $employee = $this->employee();
