@@ -5,6 +5,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\LoanController;
+use App\Http\Controllers\LoanApproverController;
 use App\Http\Controllers\LeaveController;
 use App\Http\Controllers\SalaryController;
 use App\Http\Controllers\AdminAttendanceController;
@@ -53,6 +54,21 @@ Route::get('/leave/email-decision/{id}/{decision}', [LeaveController::class, 'em
 
 Route::post('/leave/email-decision/{id}/{decision}', [LeaveController::class, 'emailDecisionSubmit'])
     ->name('leave.email.decision.submit')
+    ->middleware('signed');
+
+/*
+|--------------------------------------------------------------------------
+| Loan Approve/Reject via WhatsApp Link (no login required)
+|--------------------------------------------------------------------------
+| The GET only shows a confirmation page, so a link preview cannot decide a
+| loan; the POST behind the Confirm button does.
+*/
+Route::get('/loan/whatsapp-decision/{id}/{decision}', [LoanController::class, 'whatsappDecision'])
+    ->name('loan.whatsapp.decision')
+    ->middleware('signed');
+
+Route::post('/loan/whatsapp-decision/{id}/{decision}', [LoanController::class, 'whatsappDecisionSubmit'])
+    ->name('loan.whatsapp.decision.submit')
     ->middleware('signed');
 
 /*|                                                                          |
@@ -108,6 +124,7 @@ Route::get('/leave/history', [LeaveController::class, 'history'])->name('leave.h
 Route::get('/my-loans', [LoanController::class, 'myLoan'])->name('loan.my');
 Route::get('/loan/apply', [LoanController::class, 'apply'])->name('loan.apply');
 Route::post('/loan/store-request', [LoanController::class, 'storeRequest'])->name('loan.store.request');
+Route::get('/loan/application/{id}/print', [LoanController::class,'printApplication'])->name('loan.application.print');
 Route::get('/loan/{id}/ledger', [LoanController::class,'employeeLedger'])->name('loan.ledger');
 
 /* Cafe LSAF (SSO into cafe.khanmusa.com) */
@@ -550,6 +567,18 @@ Route::middleware(['auth', 'loan'])
     ->name('admin.')
     ->group(function () {
         Route::get('/loans', [LoanController::class, 'index'])->name('loan.index');
+
+        /* Loan applications employees submitted, and who is told about them */
+        Route::get('/loan-applications', [LoanController::class, 'applications'])->name('loan.applications');
+        Route::get('/loan-applications/export', [LoanController::class, 'exportApplications'])->name('loan.applications.export');
+        Route::post('/loan-applications/{id}/resend-whatsapp', [LoanController::class, 'resendWhatsApp'])->name('loan.applications.resend');
+
+        Route::get('/loan-approvers', [LoanApproverController::class, 'index'])->name('loan.approvers.index');
+        Route::post('/loan-approvers', [LoanApproverController::class, 'store'])->name('loan.approvers.store');
+        Route::post('/loan-approvers/{id}/toggle', [LoanApproverController::class, 'toggle'])->name('loan.approvers.toggle');
+        Route::post('/loan-approvers/{id}/test', [LoanApproverController::class, 'test'])->name('loan.approvers.test');
+        Route::delete('/loan-approvers/{id}', [LoanApproverController::class, 'destroy'])->name('loan.approvers.destroy');
+
         Route::get('/loans/create', [LoanController::class, 'create'])->name('loan.create');
         Route::post('/loans/store', [LoanController::class, 'store'])->name('loan.store');
         Route::post('/loans/approve/{id}', [LoanController::class, 'approve'])->name('loan.approve');

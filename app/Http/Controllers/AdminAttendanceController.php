@@ -697,46 +697,49 @@ $payrollOnlyCount = \App\Models\User::where('role','employee')->payrollOnly()->c
 
 $data = [];
 
+/*
+| Counted by walking each employee's month through MonthlyAttendanceSheet,
+| the same thing the employee's own monthly report prints. Counting the
+| attendance rows directly, as this used to, missed half days taken as
+| leave: the day has an approved half day leave on it and an attendance row
+| that says Late, so it landed under Leave and the Half Day column read 0
+| while the employee's own report showed it as a half day.
+|
+| It also means a holiday and a weekly off are no longer counted as
+| absences - the old absent figure was every weekday of the month that had
+| no record, holidays and days not yet reached included.
+*/
 foreach($users as $user){
 
-$present = \App\Models\Attendance::where('user_id',$user->id)
-->whereBetween('date',[$start,$end])
-->where('status','present')
-->count();
+$sheet = \App\Support\MonthlyAttendanceSheet::build($user, $start->copy());
 
-$late = \App\Models\Attendance::where('user_id',$user->id)
-->whereBetween('date',[$start,$end])
-->where('status','late')
-->count();
+$t = $sheet['totals'];
 
-$halfday = \App\Models\Attendance::where('user_id',$user->id)
-->whereBetween('date',[$start,$end])
-->where('status','half_day')
-->count();
+// Days the employee was actually due in: a holiday or their weekly off is
+// not one, so neither counts for or against them.
+$workingDays = $t['present'] + $t['late'] + $t['half_day']
+    + $t['leave'] + $t['wfh'] + $t['absent'];
 
-$leave = \App\Models\Leave::where('user_id',$user->id)
-->where('status','approved')
-->whereBetween('start_date',[$start,$end])
-->count();
+// A half day is half a day attended.
+$attended = $t['present'] + $t['late'] + $t['wfh'] + ($t['half_day'] * 0.5);
 
-$workingDays = $present + $late + $halfday + $leave;
-
-$monthDays = $start->diffInWeekdays($end) + 1;
-
-$absent = max($monthDays - $workingDays,0);
-
-$attendancePercent = $monthDays > 0
-? round(($workingDays / $monthDays) * 100)
+$attendancePercent = $workingDays > 0
+? round(($attended / $workingDays) * 100)
 : 0;
 
 $data[] = [
 
 'user' => $user,
-'present' => $present,
-'late' => $late,
-'halfday' => $halfday,
-'leave' => $leave,
-'absent' => $absent,
+'present' => $t['present'],
+'late' => $t['late'],
+'halfday' => $t['half_day'],
+'leave' => $t['leave'],
+'wfh' => $t['wfh'],
+'holiday' => $t['holiday'],
+'off' => $t['off'],
+'absent' => $t['absent'],
+'hours' => $t['hours'],
+'working_days' => $workingDays,
 'percent' => $attendancePercent
 
 ];

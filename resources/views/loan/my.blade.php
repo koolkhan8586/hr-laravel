@@ -29,7 +29,31 @@
 
 <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6">
 
-    <h2 class="text-2xl font-bold mb-6 text-gray-800">Loan Dashboard</h2>
+    <div class="mb-6" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <h2 class="text-2xl font-bold text-gray-800">Loan Dashboard</h2>
+
+        <a href="{{ route('loan.apply') }}"
+           class="text-white px-4 py-2 rounded shadow text-sm"
+           style="background:#16a34a;">
+            Apply for a Loan
+        </a>
+    </div>
+
+    @if($pendingApplication ?? null)
+        <div class="bg-white p-4 rounded shadow mb-6" style="border-left:4px solid #eab308;">
+            Your application <strong>{{ $pendingApplication->reference() }}</strong> for
+            Rs {{ number_format($pendingApplication->amount, 2) }} is waiting for a
+            decision.
+            <a href="{{ route('loan.apply') }}" class="underline" style="color:#2563eb;">
+                See it
+            </a>
+            or
+            <a href="{{ route('loan.application.print', $pendingApplication->id) }}"
+               target="_blank" class="underline" style="color:#2563eb;">
+                print the application
+            </a>.
+        </div>
+    @endif
 
     @if($loan)
 
@@ -171,8 +195,10 @@
 
     @else
 
-        <div class="bg-yellow-100 p-4 rounded text-yellow-800">
-            No approved loan found.
+        <div class="p-4 rounded" style="background:#fef9c3; color:#a16207;">
+            You have no loan running at the moment.
+            <a href="{{ route('loan.apply') }}" class="underline">Apply for one</a>
+            if you need it.
         </div>
 
     @endif

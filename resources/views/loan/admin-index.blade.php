@@ -10,6 +10,18 @@
 
         <div class="flex gap-3">
 
+            {{-- Applications employees submitted themselves --}}
+            <a href="{{ route('admin.loan.applications') }}"
+               class="text-white px-4 py-2 rounded shadow text-sm"
+               style="background:#111827;">
+                Applications
+                @if(($pendingApplications ?? 0) > 0)
+                    <span style="display:inline-block; margin-left:4px; padding:1px 7px; border-radius:9999px; font-size:11px; background:#fef9c3; color:#a16207;">
+                        {{ $pendingApplications }}
+                    </span>
+                @endif
+            </a>
+
             {{-- Export --}}
             <a href="{{ route('admin.loan.export') }}"
                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow text-sm">
