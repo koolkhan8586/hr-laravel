@@ -409,6 +409,20 @@ Loan Opening Balance
 Loan Management
 </a>
 
+<a href="{{ route('admin.loan.applications') }}" class="block py-1 hover:text-blue-600">
+Loan Applications
+@php($waitingLoans = \App\Models\Loan::applications()->where('status','pending')->count())
+@if($waitingLoans > 0)
+<span style="display:inline-block; margin-left:4px; padding:1px 7px; border-radius:9999px; font-size:11px; background:#fef9c3; color:#a16207;">
+{{ $waitingLoans }}
+</span>
+@endif
+</a>
+
+<a href="{{ route('admin.loan.approvers.index') }}" class="block py-1 hover:text-blue-600">
+Loan Approvers
+</a>
+
 </div>
 </div>
 @endif
@@ -445,6 +459,10 @@ My Salary
 
 <a href="{{ route('loan.my') }}" class="block py-1 hover:text-blue-600">
 My Loans
+</a>
+
+<a href="{{ route('loan.apply') }}" class="block py-1 hover:text-blue-600">
+Apply for Loan
 </a>
 
 <a href="{{ route('profile.edit') }}" class="block py-1 hover:text-blue-600">
