@@ -214,15 +214,10 @@ public function store(Request $request)
             return back()->with('error','Insufficient leave balance.');
         }
 
-        Mail::raw(
-            "Leave Created By Admin\n\nFrom: ".$request->start_date.
-            "\nTo: ".$request->end_date.
-            "\nDays: ".$days,
-            function ($message) use ($leave) {
-                $message->to($leave->user->email)
-                    ->subject('Leave Created By Admin');
-            }
-        );
+        // Entered by an admin means it is already approved, so the employee
+        // gets the same notice they would have had from an approval - which
+        // for leave without pay says what it will cost them.
+        $this->notifyLeaveOwner($leave, 'approved');
     }
 
     return back()->with('success','Leave Created Successfully');
@@ -392,21 +387,95 @@ public function store(Request $request)
 |--------------------------------------------------------------------------
 */
 
+    /**
+     * Tell the employee what was decided.
+     *
+     * Leave without pay costs them money, so an approved one says how much
+     * and which month's salary it comes off - worked out the same way the
+     * attendance calendar and the salary sheet work it out, so all three
+     * agree. It goes by email and, where there is a number on file, WhatsApp.
+     *
+     * Neither is allowed to break the decision itself: the leave has already
+     * been approved by the time this runs.
+     */
     private function notifyLeaveOwner($leave, string $status)
     {
-        $subject = $status === 'approved' ? 'Leave Approved' : 'Leave Rejected';
+        $leave->loadMissing('user');
 
-        $body = $status === 'approved'
-            ? "Your Leave Has Been Approved\n\nFrom: ".$leave->start_date.
-              "\nTo: ".$leave->end_date.
-              "\nDays: ".$leave->calculated_days
-            : "Your Leave Has Been Rejected\n\nFrom: ".$leave->start_date.
-              "\nTo: ".$leave->end_date;
+        $approved = $status === 'approved';
 
-        Mail::raw($body, function ($message) use ($leave, $subject) {
-            $message->to($leave->user->email)
-                ->subject($subject);
-        });
+        $withoutPay = $approved
+            ? \App\Support\WithoutPayLeave::noticeLines($leave)
+            : null;
+
+        $subject = $approved
+            ? ($withoutPay ? 'Leave Approved (Without Pay)' : 'Leave Approved')
+            : 'Leave Rejected';
+
+        $lines = $approved
+            ? [
+                'Your Leave Has Been Approved',
+                '',
+                'From: '.\Carbon\Carbon::parse($leave->start_date)->format('d M Y'),
+                'To: '.\Carbon\Carbon::parse($leave->end_date)->format('d M Y'),
+                'Days: '.$leave->calculated_days,
+            ]
+            : [
+                'Your Leave Has Been Rejected',
+                '',
+                'From: '.\Carbon\Carbon::parse($leave->start_date)->format('d M Y'),
+                'To: '.\Carbon\Carbon::parse($leave->end_date)->format('d M Y'),
+            ];
+
+        if ($withoutPay) {
+            $lines[] = '';
+            $lines = array_merge($lines, $withoutPay);
+        }
+
+        $body = implode("\n", $lines);
+
+        try {
+            Mail::raw($body, function ($message) use ($leave, $subject) {
+                $message->to($leave->user->email)
+                    ->subject($subject);
+            });
+        } catch (\Throwable $e) {
+            Log::error('Leave decision email failed', [
+                'leave_id' => $leave->id,
+                'message' => $e->getMessage(),
+            ]);
+        }
+
+        $this->whatsappLeaveOwner($leave, $subject, $lines);
+    }
+
+    /**
+     * The same notice on WhatsApp, when the employee has a number on file.
+     *
+     * @param  array<int, string>  $lines
+     */
+    private function whatsappLeaveOwner($leave, string $subject, array $lines): void
+    {
+        $mobile = $leave->user->mobile ?? null;
+
+        if (!filled($mobile)) {
+            return;
+        }
+
+        // The first line repeats the subject, so swap it for the heading.
+        $lines[0] = $subject;
+        $lines[] = '';
+        $lines[] = '- LSAF HR';
+
+        try {
+            app(\App\Services\WahaService::class)
+                ->sendToMobile($mobile, implode("\n", $lines));
+        } catch (\Throwable $e) {
+            Log::error('Leave decision WhatsApp failed', [
+                'leave_id' => $leave->id,
+                'message' => $e->getMessage(),
+            ]);
+        }
     }
 
 /*

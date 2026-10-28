@@ -374,6 +374,198 @@ class WithoutPayLeaveTest extends TestCase
         $this->assertEquals(0, Salary::where('user_id', $user->id)->value('extra_leaves'));
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Telling the employee what an approved unpaid leave will cost them
+    |--------------------------------------------------------------------------
+    */
+
+    /** The bodies of the mails sent during this test. */
+    private function sentMails(): array
+    {
+        return collect(app('mailer')->getSymfonyTransport()->messages())
+            ->map(fn ($message) => [
+                'subject' => $message->getOriginalMessage()->getSubject(),
+                'body' => $message->getOriginalMessage()->getTextBody()
+                    ?? $message->getOriginalMessage()->getBody()->bodyToString(),
+            ])
+            ->all();
+    }
+
+    /** Catches whatever is sent on WhatsApp, instead of sending it. */
+    private function fakeWhatsApp(): array
+    {
+        $sent = [];
+
+        $waha = \Mockery::mock(\App\Services\WahaService::class);
+        $waha->shouldReceive('enabled')->andReturn(true);
+        $waha->shouldReceive('sendToMobile')
+            ->andReturnUsing(function ($mobile, $text) use (&$sent) {
+                $sent[] = ['mobile' => $mobile, 'text' => $text];
+                return true;
+            });
+
+        $this->app->instance(\App\Services\WahaService::class, $waha);
+
+        return ['sent' => &$sent];
+    }
+
+    public function test_approving_unpaid_leave_tells_the_employee_what_it_costs(): void
+    {
+        config(['mail.default' => 'array']);
+
+        $user = $this->employee(60000);
+        $user->forceFill(['mobile' => '03001234567'])->save();
+
+        $whatsapp = $this->fakeWhatsApp();
+
+        $leave = $this->leave($user, '2026-09-01', '2026-09-03');
+        $leave->update(['status' => 'pending']);
+
+        $this->actingAs(User::factory()->create(['role' => 'admin']))
+            ->post(route('admin.leave.approve', $leave->id))
+            ->assertRedirect(route('admin.leave.index'));
+
+        $this->assertSame('approved', $leave->fresh()->status);
+
+        $mail = $this->sentMails()[0] ?? null;
+
+        $this->assertNotNull($mail, 'The employee should have been emailed.');
+        $this->assertSame('Leave Approved (Without Pay)', $mail['subject']);
+        $this->assertStringContainsString('This leave is without pay.', $mail['body']);
+        $this->assertStringContainsString('Rs 6,000 will be deducted from your September 2026 salary', $mail['body']);
+        $this->assertStringContainsString('3 day(s) at Rs 2,000.00 a day', $mail['body']);
+
+        // No salary sheet for September yet, so the figure came from the
+        // staff record - and says so, rather than reading as final.
+        $this->assertStringContainsString('salary on record', $mail['body']);
+
+        $this->assertCount(1, $whatsapp['sent']);
+        $this->assertSame('03001234567', $whatsapp['sent'][0]['mobile']);
+        $this->assertStringContainsString('Leave Approved (Without Pay)', $whatsapp['sent'][0]['text']);
+        $this->assertStringContainsString('Rs 6,000 will be deducted', $whatsapp['sent'][0]['text']);
+    }
+
+    public function test_approving_paid_leave_says_nothing_about_deductions(): void
+    {
+        config(['mail.default' => 'array']);
+
+        $user = $this->employee(60000);
+        $leave = $this->leave($user, '2026-09-01', '2026-09-03', ['type' => 'annual', 'status' => 'pending']);
+
+        \App\Models\LeaveBalance::create([
+            'user_id' => $user->id,
+            'opening_balance' => 20,
+            'used_leaves' => 0,
+            'remaining_leaves' => 20,
+        ]);
+
+        $this->actingAs(User::factory()->create(['role' => 'admin']))
+            ->post(route('admin.leave.approve', $leave->id));
+
+        $mail = $this->sentMails()[0];
+
+        $this->assertSame('Leave Approved', $mail['subject']);
+        $this->assertStringNotContainsString('without pay', $mail['body']);
+        $this->assertStringNotContainsString('deducted', $mail['body']);
+    }
+
+    public function test_the_figure_reads_as_final_once_the_month_has_a_salary_sheet(): void
+    {
+        $user = $this->employee(60000);
+
+        Salary::create([
+            'user_id' => $user->id,
+            'month' => 9,
+            'year' => 2026,
+            'basic_salary' => 90000,
+            'status' => 'draft',
+        ]);
+
+        $leave = $this->leave($user, '2026-09-01', '2026-09-01');
+
+        $lines = implode("\n", WithoutPayLeave::noticeLines($leave));
+
+        $this->assertStringContainsString('Rs 3,000 will be deducted', $lines);
+        $this->assertStringNotContainsString('salary on record', $lines);
+    }
+
+    public function test_a_leave_running_into_the_next_month_is_priced_month_by_month(): void
+    {
+        $user = $this->employee(62000);
+
+        // Mon 28 September to Fri 2 October: three days in September at
+        // 62,000/30, two in October at 62,000/31.
+        $leave = $this->leave($user, '2026-09-28', '2026-10-02');
+
+        $cost = WithoutPayLeave::forLeave($leave);
+
+        $this->assertSame(5.0, $cost['days']);
+        $this->assertCount(2, $cost['months']);
+
+        $this->assertSame('September 2026', $cost['months'][0]['label']);
+        $this->assertSame(3.0, $cost['months'][0]['days']);
+        $this->assertEquals(6200, $cost['months'][0]['amount']);
+
+        $this->assertSame('October 2026', $cost['months'][1]['label']);
+        $this->assertSame(2.0, $cost['months'][1]['days']);
+        $this->assertEquals(4000, $cost['months'][1]['amount']);
+
+        $this->assertEquals(10200, $cost['amount']);
+
+        $lines = implode("\n", WithoutPayLeave::noticeLines($leave));
+
+        $this->assertStringContainsString('September 2026 salary', $lines);
+        $this->assertStringContainsString('October 2026 salary', $lines);
+        $this->assertStringContainsString('Total to be deducted: Rs 10,200', $lines);
+    }
+
+    public function test_an_unpaid_leave_with_no_salary_on_file_still_says_how_many_days(): void
+    {
+        $user = User::factory()->create(['role' => 'employee']);
+
+        $leave = $this->leave($user, '2026-09-01', '2026-09-02');
+
+        $lines = implode("\n", WithoutPayLeave::noticeLines($leave));
+
+        $this->assertStringContainsString('2 day(s) will be deducted', $lines);
+        $this->assertStringContainsString('worked out from your salary', $lines);
+        $this->assertStringNotContainsString('Rs 0', $lines);
+    }
+
+    public function test_an_unpaid_leave_falling_only_on_days_off_says_nothing(): void
+    {
+        $user = $this->employee(60000);
+
+        // Saturday and Sunday: not days they were due in.
+        $leave = $this->leave($user, '2026-09-05', '2026-09-06');
+
+        $this->assertNull(WithoutPayLeave::noticeLines($leave));
+    }
+
+    public function test_a_failing_notification_does_not_undo_the_approval(): void
+    {
+        $user = $this->employee(60000);
+        $user->forceFill(['mobile' => '03001234567'])->save();
+
+        $leave = $this->leave($user, '2026-09-01', '2026-09-03');
+        $leave->update(['status' => 'pending']);
+
+        // Both channels broken at once.
+        config(['mail.default' => 'smtp', 'mail.mailers.smtp.host' => 'localhost', 'mail.mailers.smtp.port' => 1]);
+
+        $waha = \Mockery::mock(\App\Services\WahaService::class);
+        $waha->shouldReceive('sendToMobile')->andThrow(new \RuntimeException('WAHA is down'));
+        $this->app->instance(\App\Services\WahaService::class, $waha);
+
+        $this->actingAs(User::factory()->create(['role' => 'admin']))
+            ->post(route('admin.leave.approve', $leave->id))
+            ->assertRedirect(route('admin.leave.index'))
+            ->assertSessionHas('success');
+
+        $this->assertSame('approved', $leave->fresh()->status);
+    }
+
     public function test_the_salary_sheet_screens_need_salary_access(): void
     {
         $employee = $this->employee(60000);
