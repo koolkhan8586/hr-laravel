@@ -101,6 +101,135 @@ class WithoutPayLeave
         return $result;
     }
 
+    /**
+     * What one approved leave without pay will cost the employee.
+     *
+     * Worked out a month at a time, because the rate is a month's pay over a
+     * month's days: a leave running from one month into the next is deducted
+     * from two salaries, at two different daily rates.
+     *
+     * @return array{days: float, amount: float, months: array<int, array{label: string, days: float, rate: float, amount: float, priced: bool}>}
+     */
+    public static function forLeave(Leave $leave, ?string $basis = null): array
+    {
+        $leave->loadMissing('user');
+
+        $from = Carbon::parse($leave->start_date)->startOfDay();
+        $to   = Carbon::parse($leave->end_date)->startOfDay();
+
+        $offDays  = self::offDaysByUser([$leave->user_id])[$leave->user_id] ?? ['sunday'];
+        $holidays = self::holidaysInRange($from, $to);
+
+        $months = [];
+        $totalDays = 0.0;
+        $totalAmount = 0.0;
+
+        for ($month = $from->copy()->startOfMonth(); $month->lte($to); $month->addMonth()) {
+
+            // Only the part of the leave that falls inside this month.
+            $windowStart = $month->copy()->startOfMonth()->max($from);
+            $windowEnd   = $month->copy()->endOfMonth()->min($to);
+
+            $days = self::countDays(
+                collect([$leave]),
+                $windowStart,
+                $windowEnd,
+                $offDays,
+                $holidays,
+                $leave->user_id
+            );
+
+            if ($days <= 0) {
+                continue;
+            }
+
+            $basisDays = self::basisDays($month, $basis);
+
+            [$monthly, $source] = self::monthlyPay(collect([$leave->user_id]), $month)[$leave->user_id] ?? [0.0, 'none'];
+
+            $rate = $basisDays > 0 ? $monthly / $basisDays : 0.0;
+            $amount = (float) round($rate * $days);
+
+            $months[] = [
+                'label'  => $month->format('F Y'),
+                'days'   => $days,
+                'rate'   => round($rate, 2),
+                'amount' => $amount,
+                // No salary on file yet: the days are known, the money is not.
+                'priced' => $monthly > 0,
+                'source' => $source,
+            ];
+
+            $totalDays += $days;
+            $totalAmount += $amount;
+        }
+
+        return [
+            'days'   => $totalDays,
+            'amount' => $totalAmount,
+            'months' => $months,
+        ];
+    }
+
+    /**
+     * The deduction spelled out for the employee, as lines of a message.
+     *
+     * Null when there is nothing to say - the leave is paid, or it falls
+     * entirely on days they were not due in anyway.
+     *
+     * @return array<int, string>|null
+     */
+    public static function noticeLines(Leave $leave, ?string $basis = null): ?array
+    {
+        if ($leave->type !== 'without_pay') {
+            return null;
+        }
+
+        $cost = self::forLeave($leave, $basis);
+
+        if ($cost['days'] <= 0) {
+            return null;
+        }
+
+        $lines = ['This leave is without pay.'];
+
+        foreach ($cost['months'] as $month) {
+
+            $days = self::niceDays($month['days']);
+
+            $lines[] = $month['priced']
+                ? 'Rs '.number_format($month['amount']).' will be deducted from your '
+                  .$month['label'].' salary ('.$days.' day(s) at Rs '
+                  .number_format($month['rate'], 2).' a day).'
+                : $days.' day(s) will be deducted from your '.$month['label']
+                  .' salary. The amount will be worked out from your salary for that month.';
+        }
+
+        if (count($cost['months']) > 1 && $cost['amount'] > 0) {
+            $lines[] = 'Total to be deducted: Rs '.number_format($cost['amount']).'.';
+        }
+
+        $lines[] = 'A weekly off or a holiday inside the leave is not deducted for.';
+
+        // Said plainly when the figure came from the salary on record rather
+        // than a salary sheet that does not exist yet, so a later difference
+        // is not a surprise.
+        $fromRecord = collect($cost['months'])
+            ->contains(fn ($m) => $m['priced'] && $m['source'] === 'staff record');
+
+        if ($fromRecord) {
+            $lines[] = 'This is worked out from your salary on record and will follow that month\'s salary sheet.';
+        }
+
+        return $lines;
+    }
+
+    /** "3" rather than "3.0", but "0.5" kept. */
+    public static function niceDays(float $days): string
+    {
+        return rtrim(rtrim(number_format($days, 1), '0'), '.');
+    }
+
     /** The unpaid days one employee took in a month. */
     protected static function countDays(
         $leaves,
