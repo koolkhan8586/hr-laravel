@@ -180,6 +180,32 @@
             </button>
         </form>
 
+        {{-- Unpaid leave straight into Extra Leaves, so the deduction does not
+             have to be worked out and copied across by hand. --}}
+        <form method="POST" action="{{ route('admin.salary.sheet.pull.wop') }}"
+              class="flex items-center gap-1"
+              onsubmit="return confirm('Fill the Extra Leaves column from leave taken without pay in {{ \Carbon\Carbon::create($year, $month, 1)->format('F Y') }}? Posted rows are left alone, and you can still edit any figure afterwards.');">
+            @csrf
+            <input type="hidden" name="month" value="{{ $month }}">
+            <input type="hidden" name="year" value="{{ $year }}">
+            <input type="hidden" name="category" value="{{ $category }}">
+
+            <select name="basis" class="border border-gray-300 rounded text-sm p-2"
+                    title="How a day's pay is worked out">
+                <option value="month_days" {{ ($wopBasis ?? '') === 'month_days' ? 'selected' : '' }}>
+                    Gross ÷ {{ \Carbon\Carbon::create($year, $month, 1)->daysInMonth }} days
+                </option>
+                <option value="thirty" {{ ($wopBasis ?? '') === 'thirty' ? 'selected' : '' }}>
+                    Gross ÷ 30 days
+                </option>
+            </select>
+
+            <button class="bg-rose-700 hover:bg-rose-800 text-white px-4 py-2 rounded text-sm"
+                    style="background:#be123c;">
+                Update Extra Leaves from Unpaid Leave
+            </button>
+        </form>
+
         <a href="{{ route('admin.salary.tax.sheet', ['year' => $year, 'category' => $category, 'source_month' => $month]) }}"
            class="bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded text-sm">
             Open Tax Sheet
@@ -404,11 +430,29 @@
             <td class="border p-1 text-right font-bold bg-green-50 total-addition">0</td>
 
             {{-- DEDUCTIONS --}}
+
+            {{-- EXTRA LEAVES: grey hint of what this month's leave without pay
+                 comes to. Placeholder only, like the loan and insurance hints,
+                 so it stays off the printout until a figure is actually put
+                 in - by hand or by the toolbar button. --}}
+            @php
+                $wop = $withoutPay[$user->id] ?? null;
+                $wopDays = $wop['days'] ?? 0;
+                $wopAmount = $wop['amount'] ?? 0;
+            @endphp
             <td class="border p-0">
                 <input type="text" inputmode="decimal" data-col="extra_leaves"
                        data-formula="{{ $row?->formulaFor('extra_leaves') }}"
                        name="rows[{{ $i }}][extra_leaves]" value="{{ $money($row->extra_leaves ?? null) }}" {{ $ro }}
-                       class="deduction w-24 p-1 text-right border-0 {{ $roCls }}">
+                       data-wop-amount="{{ $wopAmount }}"
+                       placeholder="{{ $wopAmount > 0 ? number_format($wopAmount) : '' }}"
+                       title="{{ $wopDays > 0
+                            ? rtrim(rtrim(number_format($wopDays, 1), '0'), '.').' day(s) leave without pay - Rs '
+                              .number_format($wop['monthly']).' ('.$wop['source'].') over '.$wop['basis_days']
+                              .' days = Rs '.number_format($wop['rate'], 2).' a day'
+                            : 'No leave without pay this month' }}"
+                       class="deduction w-24 p-1 text-right border-0 {{ $roCls }}
+                              {{ $wopAmount > 0 ? 'has-wop' : '' }}">
             </td>
 
             <td class="border p-0">
@@ -626,6 +670,11 @@
     }
     #salarySheet input.insurance-input::placeholder { color: #6b7280; opacity: .7; }
 
+    /* Extra Leaves: tinted where this month carries leave without pay, with
+       the amount hinted as a placeholder until it is actually entered. */
+    #salarySheet input.has-wop { background: #fff1f2; }
+    #salarySheet input.has-wop::placeholder { color: #be123c; opacity: .55; }
+
     /* A figure worked out from a formula is marked with a small corner tick,
        so it is obvious which cells carry workings. */
     #salarySheet input.has-formula {
@@ -658,7 +707,8 @@
         opacity: 0 !important;
     }
     #salarySheet input.insurance-input.has-insurance,
-    #salarySheet input.loan-input.has-loan {
+    #salarySheet input.loan-input.has-loan,
+    #salarySheet input.has-wop {
         background: transparent !important;
         color: inherit !important;
     }
