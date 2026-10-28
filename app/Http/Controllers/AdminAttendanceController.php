@@ -644,6 +644,19 @@ public function attendanceCalendar(Request $request)
 
     /*
     |--------------------------------------------------------------------------
+    | Leave Without Pay
+    |--------------------------------------------------------------------------
+    | Unpaid days are the ones the salary has to answer for, so the calendar
+    | marks them differently and carries the running total and what it comes
+    | to at the end of each row.
+    */
+
+    $withoutPay = \App\Support\WithoutPayLeave::forMonth($users, $start->copy());
+
+    $wopBasisLabel = \App\Support\WithoutPayLeave::basisLabel($start->copy());
+
+    /*
+    |--------------------------------------------------------------------------
     | FINAL RETURN (ONLY ONE)
     |--------------------------------------------------------------------------
     */
@@ -655,6 +668,8 @@ public function attendanceCalendar(Request $request)
         'leaves',
         'holidays',
         'wfhData',
+        'withoutPay',
+        'wopBasisLabel',
         'start',
         'end',
         'month',

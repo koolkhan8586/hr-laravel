@@ -249,6 +249,15 @@ public function employeeIndex()
         // as a grey hint on the Insurance column until someone types a figure.
         $insurancePortions = $this->insurancePortions($users->pluck('id'), $month, $year);
 
+        // Leave taken without pay this month, hinted on Extra Leaves the same
+        // way, and writable into the whole column from the toolbar.
+        $withoutPay = \App\Support\WithoutPayLeave::forMonth(
+            $users,
+            \Carbon\Carbon::create($year, $month, 1)
+        );
+
+        $wopBasis = \App\Support\WithoutPayLeave::basis();
+
         // Anyone on the payroll who won't appear above, so a missing employee
         // can be explained rather than silently dropped.
         $shownIds = $users->pluck('id');
@@ -280,8 +289,148 @@ public function employeeIndex()
             'dir',
             'missing',
             'loanBalances',
-            'insurancePortions'
+            'insurancePortions',
+            'withoutPay',
+            'wopBasis'
         ));
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | EXTRA LEAVES FROM LEAVE WITHOUT PAY
+    |--------------------------------------------------------------------------
+    | Unpaid leave is the one kind of leave that has to come off the pay. The
+    | calendar shows what each employee's unpaid days come to; this writes
+    | those figures into the Extra Leaves column so they do not have to be
+    | copied across by hand. Posted rows are finalised and left alone, and
+    | every figure stays editable afterwards.
+    */
+    public function sheetPullWithoutPay(Request $request)
+    {
+        $request->validate([
+            'month'    => 'required|integer|min:1|max:12',
+            'year'     => 'required|integer|min:2000|max:2100',
+            'category' => 'required|in:teacher,staff,all',
+            'basis'    => 'nullable|in:month_days,thirty',
+        ]);
+
+        $month = (int) $request->month;
+        $year  = (int) $request->year;
+
+        // Remember the choice, so the calendar and the next month agree.
+        \App\Support\WithoutPayLeave::rememberBasis($request->basis);
+
+        $query = User::with('staff')->where('role', 'employee');
+
+        if ($request->category !== 'all') {
+            $query->where('salary_category', $request->category);
+        }
+
+        $users = $query->get();
+
+        $withoutPay = \App\Support\WithoutPayLeave::forMonth(
+            $users,
+            \Carbon\Carbon::create($year, $month, 1),
+            $request->basis
+        );
+
+        $applied = 0;
+        $skipped = 0;
+        $noRow   = 0;
+        $noPay   = 0;
+
+        foreach ($users as $user) {
+
+            $wop = $withoutPay[$user->id] ?? null;
+
+            if (!$wop || $wop['days'] <= 0) {
+                continue;
+            }
+
+            $salary = Salary::where('user_id', $user->id)
+                ->where('month', $month)
+                ->where('year', $year)
+                ->first();
+
+            if (!$salary) {
+                $noRow++;
+                continue;
+            }
+
+            if ($salary->isPosted()) {
+                $skipped++;
+                continue;
+            }
+
+            // Unpaid days but nothing to work a rate from: say so rather than
+            // writing a silent zero over whatever is there.
+            if ($wop['amount'] <= 0) {
+                $noPay++;
+                continue;
+            }
+
+            $salary->update(['extra_leaves' => $wop['amount']]);
+
+            $applied++;
+        }
+
+        /*
+        | Anyone carrying an Extra Leaves figure with no unpaid leave behind
+        | it - a leave taken back since the column was last filled, or a
+        | deduction somebody typed for a reason of their own. These are
+        | named, not wiped: the column is editable by hand and quietly
+        | zeroing a figure somebody entered would be worse than leaving a
+        | stale one for them to look at.
+        */
+        $stale = [];
+
+        foreach ($users as $user) {
+
+            $wop = $withoutPay[$user->id] ?? null;
+
+            if ($wop && $wop['days'] > 0) {
+                continue;
+            }
+
+            $salary = Salary::where('user_id', $user->id)
+                ->where('month', $month)
+                ->where('year', $year)
+                ->first();
+
+            if (!$salary || $salary->isPosted() || (float) $salary->extra_leaves == 0.0) {
+                continue;
+            }
+
+            $stale[] = $user->name;
+        }
+
+        $period = \Carbon\Carbon::create($year, $month, 1)->format('F Y');
+
+        $message = "Extra Leaves updated from unpaid leave for {$applied} employee(s) on {$period}.";
+
+        if ($stale) {
+
+            $names = count($stale) > 5
+                ? implode(', ', array_slice($stale, 0, 5)).' and '.(count($stale) - 5).' more'
+                : implode(', ', $stale);
+
+            $message .= ' '.count($stale).' row(s) still carry an Extra Leaves figure with no unpaid leave'
+                .' this month and were left as they are - check '.$names.'.';
+        }
+
+        if ($skipped) {
+            $message .= " {$skipped} posted row(s) were left unchanged.";
+        }
+
+        if ($noRow) {
+            $message .= " {$noRow} employee(s) with unpaid leave have no salary row for {$period} yet.";
+        }
+
+        if ($noPay) {
+            $message .= " {$noPay} employee(s) have unpaid leave but no salary to work a daily rate from.";
+        }
+
+        return back()->with($applied ? 'success' : 'error', $message);
     }
 
     /*

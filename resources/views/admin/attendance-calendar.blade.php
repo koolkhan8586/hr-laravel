@@ -1,5 +1,26 @@
 <x-app-layout>
 
+<style>
+/* The unpaid-leave figures stay pinned to the right edge, the way the
+   employee name is pinned to the left, so they are readable without
+   scrolling a month of columns to the end. */
+#calendarArea .wop-col {
+    position: sticky;
+    background: #fff1f2;
+    z-index: 5;
+}
+
+#calendarArea .wop-days   { right: 86px; width: 58px; min-width: 58px; }
+#calendarArea .wop-amount { right: 0;    width: 86px; min-width: 86px; }
+
+#calendarArea thead .wop-col { z-index: 15; }
+
+@media print {
+    /* Nothing scrolls on paper, so let the columns sit where they fall. */
+    #calendarArea .wop-col { position: static; }
+}
+</style>
+
 <div class="max-w-7xl mx-auto py-6">
 
 <h2 class="text-xl font-bold mb-6">Monthly Attendance Calendar</h2>
@@ -36,10 +57,11 @@ Print / Export
 <span class="text-green-600 font-bold">✔ Present</span>
 <span class="text-yellow-600 font-bold">⏰ Late</span>
 <span class="text-purple-600 font-bold">🕒 Half Day</span>
-<span class="text-blue-600 font-bold">🌴 Leave</span>
+<span class="text-blue-600 font-bold">🌴 Leave (paid)</span>
 <span class="text-blue-600 font-bold">🌓 Half Day Leave</span>
 <span class="text-blue-600 font-bold">🌅 Morning Leave</span>
 <span class="text-blue-600 font-bold">🌇 Afternoon Leave</span>
+<span class="text-rose-700 font-bold" style="color:#be123c;">💸 Without Pay (deducted)</span>
 <span class="text-indigo-600 font-bold">🏠 Work From Home</span>
 <span class="text-red-600 font-bold">🎉 Holiday</span>
 <span class="text-gray-400 font-bold">- Weekend / Future</span>
@@ -103,6 +125,19 @@ $isToday = $dayDate->toDateString() == now()->toDateString();
 </th>
 
 @endfor
+
+{{-- What the unpaid days come to. Pinned to the right the way the name
+     is pinned to the left, so the figure stays in view however far the
+     month is scrolled. --}}
+<th class="border p-2 text-center wop-col wop-days">
+<div class="font-semibold">WOP</div>
+<div class="text-xs text-gray-600">Days</div>
+</th>
+
+<th class="border p-2 text-center wop-col wop-amount">
+<div class="font-semibold">Deduct</div>
+<div class="text-xs text-gray-600">Rs</div>
+</th>
 
 </tr>
 
@@ -227,7 +262,26 @@ title="Work From Home">🏠</span>
 
 @elseif($leave)
 
-@if($leave->duration_type == 'half_day')
+@php
+    // Leave without pay is the one kind that costs the employee money, so it
+    // is marked differently from an ordinary paid leave rather than sharing
+    // the same palm tree.
+    $isWop = $leave->type === 'without_pay';
+    $half  = $leave->duration_type == 'half_day';
+
+    $whichHalf = $leave->half_day_type == 'morning'
+        ? ' (Morning)'
+        : ($leave->half_day_type == 'afternoon' ? ' (Afternoon)' : '');
+@endphp
+
+@if($isWop)
+
+<span class="font-bold" style="color:#be123c;"
+title="{{ $half ? 'Half Day Without Pay'.$whichHalf.' - 0.5 day deducted' : 'Leave Without Pay - 1 day deducted' }}">
+💸@if($half)<sup class="text-xs">½</sup>@endif
+</span>
+
+@elseif($half)
 
 @if($leave->half_day_type == 'morning')
 
@@ -249,7 +303,7 @@ title="Half Day Leave">🌓</span>
 @else
 
 <span class="text-blue-600 font-bold"
-title="Full Day Leave">🌴</span>
+title="Full Day Leave (paid)">🌴</span>
 
 @endif
 
@@ -286,15 +340,65 @@ title="Full Day Leave">🌴</span>
 </td>
 
 @endfor
+
+@php
+    $wop = $withoutPay[$user->id] ?? ['days' => 0, 'amount' => 0, 'rate' => 0, 'basis_days' => 0, 'monthly' => 0, 'source' => 'none'];
+@endphp
+
+<td class="border p-2 text-center font-semibold wop-col wop-days"
+    style="color:{{ $wop['days'] > 0 ? '#be123c' : '#9ca3af' }};">
+{{ $wop['days'] > 0 ? rtrim(rtrim(number_format($wop['days'], 1), '0'), '.') : '-' }}
+</td>
+
+<td class="border p-2 text-right font-semibold wop-col wop-amount"
+    style="color:{{ $wop['amount'] > 0 ? '#be123c' : '#9ca3af' }};"
+    title="{{ $wop['days'] > 0
+        ? 'Rs '.number_format($wop['monthly']).' ('.$wop['source'].') over '.$wop['basis_days'].' days = Rs '.number_format($wop['rate'], 2).' a day'
+        : 'No leave without pay this month' }}">
+{{ $wop['amount'] > 0 ? number_format($wop['amount']) : '-' }}
+</td>
+
 </tr>
 
 @endforeach
 
 </tbody>
 
+<tfoot class="bg-gray-100 font-semibold">
+
+<tr>
+
+<td class="border p-2 sticky left-0 bg-gray-100 z-10">
+Total to deduct
+</td>
+
+<td class="border p-2 text-center text-gray-400" colspan="{{ $end->day }}">
+Leave without pay only
+</td>
+
+<td class="border p-2 text-center wop-col wop-days" style="color:#be123c;">
+{{ ($d = collect($withoutPay)->sum('days')) > 0 ? rtrim(rtrim(number_format($d, 1), '0'), '.') : '-' }}
+</td>
+
+<td class="border p-2 text-right wop-col wop-amount" style="color:#be123c;">
+{{ ($a = collect($withoutPay)->sum('amount')) > 0 ? number_format($a) : '-' }}
+</td>
+
+</tr>
+
+</tfoot>
+
 </table>
 
 </div>
+
+<p class="text-sm text-gray-500 mt-3">
+A day's pay is the month's gross divided by {{ $wopBasisLabel }}. A weekly off
+or a holiday inside a stretch of leave is not charged for. Hover a figure to
+see how it was worked out, and enter it on the salary sheet under
+<strong>Extra Leaves</strong> - the sheet can fill the whole column itself
+with <em>Update Extra Leaves from Unpaid Leave</em>.
+</p>
 
 </div>
 

@@ -502,6 +502,7 @@ Route::middleware(['auth', 'salary'])
     Route::post('/salary-sheet/copy-previous', [SalaryController::class,'sheetCopyPrevious'])->name('salary.sheet.copy');
     Route::post('/salary-sheet/post', [SalaryController::class,'sheetPost'])->name('salary.sheet.post');
     Route::post('/salary-sheet/pull-tax', [SalaryController::class,'sheetPullTax'])->name('salary.sheet.pull.tax');
+    Route::post('/salary-sheet/pull-without-pay', [SalaryController::class,'sheetPullWithoutPay'])->name('salary.sheet.pull.wop');
     Route::get('/medical-insurance', [SalaryController::class,'medicalInsurance'])->name('salary.medical');
     Route::post('/medical-insurance', [SalaryController::class,'medicalInsuranceStore'])->name('salary.medical.store');
     Route::post('/medical-insurance/copy-previous', [SalaryController::class,'medicalInsuranceCopyPrevious'])->name('salary.medical.copy');
