@@ -130,7 +130,7 @@ $isToday = $dayDate->toDateString() == now()->toDateString();
      is pinned to the left, so the figure stays in view however far the
      month is scrolled. --}}
 <th class="border p-2 text-center wop-col wop-days">
-<div class="font-semibold">WOP</div>
+<div class="font-semibold">Unpaid</div>
 <div class="text-xs text-gray-600">Days</div>
 </th>
 
@@ -342,19 +342,32 @@ title="Full Day Leave (paid)">🌴</span>
 @endfor
 
 @php
-    $wop = $withoutPay[$user->id] ?? ['days' => 0, 'amount' => 0, 'rate' => 0, 'basis_days' => 0, 'monthly' => 0, 'source' => 'none'];
+    $wop = $withoutPay[$user->id] ?? ['days' => 0, 'leave_days' => 0, 'absent_days' => 0,
+        'amount' => 0, 'rate' => 0, 'basis_days' => 0, 'monthly' => 0, 'source' => 'none'];
+
+    // Both kinds of unpaid day, so the figure can be taken apart.
+    $wopParts = [];
+
+    if (($wop['leave_days'] ?? 0) > 0) {
+        $wopParts[] = \App\Support\WithoutPayLeave::niceDays($wop['leave_days']).' day(s) leave without pay';
+    }
+
+    if (($wop['absent_days'] ?? 0) > 0) {
+        $wopParts[] = \App\Support\WithoutPayLeave::niceDays($wop['absent_days']).' day(s) absent with no leave';
+    }
 @endphp
 
 <td class="border p-2 text-center font-semibold wop-col wop-days"
-    style="color:{{ $wop['days'] > 0 ? '#be123c' : '#9ca3af' }};">
+    style="color:{{ $wop['days'] > 0 ? '#be123c' : '#9ca3af' }};"
+    title="{{ $wopParts ? implode(' + ', $wopParts) : 'Nothing unpaid this month' }}">
 {{ $wop['days'] > 0 ? rtrim(rtrim(number_format($wop['days'], 1), '0'), '.') : '-' }}
 </td>
 
 <td class="border p-2 text-right font-semibold wop-col wop-amount"
     style="color:{{ $wop['amount'] > 0 ? '#be123c' : '#9ca3af' }};"
     title="{{ $wop['days'] > 0
-        ? 'Rs '.number_format($wop['monthly']).' ('.$wop['source'].') over '.$wop['basis_days'].' days = Rs '.number_format($wop['rate'], 2).' a day'
-        : 'No leave without pay this month' }}">
+        ? implode(' + ', $wopParts).' - Rs '.number_format($wop['monthly']).' ('.$wop['source'].') over '.$wop['basis_days'].' days = Rs '.number_format($wop['rate'], 2).' a day'
+        : 'Nothing unpaid this month' }}">
 {{ $wop['amount'] > 0 ? number_format($wop['amount']) : '-' }}
 </td>
 
@@ -373,7 +386,7 @@ Total to deduct
 </td>
 
 <td class="border p-2 text-center text-gray-400" colspan="{{ $end->day }}">
-Leave without pay only
+Leave without pay, and days absent with no leave
 </td>
 
 <td class="border p-2 text-center wop-col wop-days" style="color:#be123c;">
@@ -393,11 +406,16 @@ Leave without pay only
 </div>
 
 <p class="text-sm text-gray-500 mt-3">
-A day's pay is the month's gross divided by {{ $wopBasisLabel }}. A weekly off
-or a holiday inside a stretch of leave is not charged for. Hover a figure to
-see how it was worked out, and enter it on the salary sheet under
-<strong>Extra Leaves</strong> - the sheet can fill the whole column itself
-with <em>Update Extra Leaves from Unpaid Leave</em>.
+Unpaid days are leave taken without pay{{ $deductAbsences ? ', and days absent with no leave applied for' : '' }}.
+A day's pay is the month's gross divided by {{ $wopBasisLabel }}. A weekly
+off or a holiday is never charged for. Hover a figure to see how it was
+worked out, and enter it on the salary sheet under <strong>Extra
+Leaves</strong> - the sheet can fill the whole column itself with
+<em>Update Extra Leaves from Unpaid Days</em>.
+@unless($deductAbsences)
+    Days absent with no leave are not being deducted; switch that on under
+    Settings if they should be.
+@endunless
 </p>
 
 </div>

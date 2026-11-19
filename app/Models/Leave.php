@@ -17,6 +17,10 @@ class Leave extends Model
         'days',
         'calculated_days',
         'reason',
+        // Set when the system charged this leave itself - leaving early, or
+        // never marking a clock-out - rather than somebody applying for it.
+        'auto_reason',
+        'auto_charged_at',
         'status',
         'decided_via',
         'decided_by_email',
@@ -31,8 +35,15 @@ class Leave extends Model
         'days' => 'float',
         'calculated_days' => 'float',
         'decided_at' => 'datetime',
+        'auto_charged_at' => 'datetime',
         'whatsapp_notified_at' => 'datetime',
     ];
+
+    /** Charged by the system rather than applied for. */
+    public function isAutoCharged(): bool
+    {
+        return filled($this->auto_reason);
+    }
 
     // ✅ ADD THIS
     public function user()

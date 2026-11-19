@@ -71,6 +71,93 @@
 
     </div>
 
+    {{-- Attendance rules: what a short day costs --}}
+    <div class="bg-white shadow rounded p-5 mb-6">
+
+        <h3 class="text-lg font-semibold mb-1">Attendance Rules</h3>
+        <p class="text-sm text-gray-500 mb-4">
+            Half a day is charged for leaving early or never marking a clock-out.
+            It comes off the annual leave balance, and when there is none left it
+            is taken without pay, which the salary sheet deducts under Extra
+            Leaves. The employee is told either way.
+        </p>
+
+        <form method="POST" action="{{ route('admin.settings.attendance-rules.save') }}"
+              class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+            @csrf
+
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">
+                    Clocking out this many minutes early costs half a day
+                </label>
+                <input type="number" name="early_minutes" min="1" max="480" required
+                       value="{{ $attendanceRules['early_minutes'] }}"
+                       class="border p-2 rounded w-full">
+            </div>
+
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">
+                    No clock-out this many minutes after the shift ends costs half a day
+                </label>
+                <input type="number" name="missing_minutes" min="1" max="480" required
+                       value="{{ $attendanceRules['missing_minutes'] }}"
+                       class="border p-2 rounded w-full">
+            </div>
+
+            <div class="md:col-span-2 space-y-2">
+
+                <label class="flex items-start gap-2 text-sm">
+                    <input type="checkbox" name="deduct_absences" value="1" class="mt-1"
+                           {{ $attendanceRules['deduct_absences'] ? 'checked' : '' }}>
+                    <span>
+                        <strong>Deduct days absent with no leave.</strong>
+                        A day nobody applied for and nobody explained is taken off
+                        the pay as a day without pay. Weekly offs, holidays and
+                        approved leave are never touched.
+                    </span>
+                </label>
+
+                <div class="pl-6">
+                    <label class="block text-xs text-gray-500 mb-1">
+                        Charge absences from this month onwards
+                    </label>
+                    <input type="month" name="absences_from"
+                           value="{{ $attendanceRules['absences_from'] }}"
+                           class="border p-2 rounded">
+                    <p class="text-xs text-gray-500 mt-1">
+                        Months before this are never charged for. Every working day
+                        with no attendance record counts as absent, and old months
+                        are full of them - days before this system was used, days
+                        before somebody joined - so moving this back can put a
+                        month's pay against a name. Leave it on the month you
+                        switch the rule on.
+                    </p>
+                </div>
+
+                <label class="flex items-start gap-2 text-sm">
+                    <input type="checkbox" name="auto_clock_out" value="1" class="mt-1"
+                           {{ $attendanceRules['auto_clock_out'] ? 'checked' : '' }}>
+                    <span>
+                        <strong>Close open shifts automatically (off).</strong>
+                        Stamping a clock-out at the end of every open shift hid the
+                        very thing the half day rule catches, so it is switched off
+                        and is no longer scheduled. Turning it back on needs the
+                        schedule restored as well.
+                    </span>
+                </label>
+
+            </div>
+
+            <div class="md:col-span-2">
+                <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
+                    Save Attendance Rules
+                </button>
+            </div>
+
+        </form>
+
+    </div>
+
     {{-- Daily report timing --}}
     <div class="bg-white shadow rounded p-5 mb-6">
 

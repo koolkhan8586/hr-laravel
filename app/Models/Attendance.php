@@ -19,7 +19,10 @@ class Attendance extends Model
         'clock_out_latitude',
         'clock_out_longitude',
         'status',
-        'total_hours'
+        'total_hours',
+        // Set by Allow Overtime: the day ends later than the shift says, so
+        // nothing is late or missing until this has passed.
+        'overtime_allowed_until',
     ];
 
     /*

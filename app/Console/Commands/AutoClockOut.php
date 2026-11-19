@@ -16,6 +16,23 @@ class AutoClockOut extends Command
 
     public function handle()
     {
+        /*
+        | Off by default, and no longer scheduled.
+        |
+        | Stamping a clock-out at the end of every open shift made a day
+        | nobody closed look exactly like one they did, which is the very
+        | thing the half day rule is there to catch. A shift with no
+        | clock-out now stays open and attendance:charge-missing-clockout
+        | charges half a day for it instead.
+        |
+        | The command is kept, and can be switched back on from Settings, so
+        | a cron entry left behind on a server cannot quietly resurrect it.
+        */
+        if (! \App\Support\AttendanceRules::autoClockOutEnabled()) {
+            $this->info('Auto clock-out is switched off. No shifts were closed.');
+            return self::SUCCESS;
+        }
+
         $now = Carbon::now('Asia/Karachi');
 
         $attendances = Attendance::whereNull('clock_out')

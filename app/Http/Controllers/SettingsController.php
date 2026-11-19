@@ -32,7 +32,17 @@ class SettingsController extends Controller
 
         $recentRuns = DailyReportRun::orderByDesc('report_date')->limit(7)->get();
 
+        $attendanceRules = [
+            'early_minutes'   => \App\Support\AttendanceRules::earlyMinutes(),
+            'missing_minutes' => \App\Support\AttendanceRules::missingMinutes(),
+            'deduct_absences' => \App\Support\AttendanceRules::deductsAbsences(),
+            'absences_from'   => \App\Support\AttendanceRules::absencesFrom()?->format('Y-m')
+                ?? Carbon::now(\App\Support\AttendanceRules::TIMEZONE)->format('Y-m'),
+            'auto_clock_out'  => \App\Support\AttendanceRules::autoClockOutEnabled(),
+        ];
+
         return view('admin.settings.index', compact(
+            'attendanceRules',
             'wahaStatus',
             'mailStatus',
             'dailyNumbers',
@@ -43,6 +53,45 @@ class SettingsController extends Controller
             'todayRun',
             'recentRuns'
         ));
+    }
+
+    /**
+     * What a short day costs, and whether a plain absence costs anything.
+     */
+    public function saveAttendanceRules(Request $request)
+    {
+        $data = $request->validate([
+            'early_minutes'   => 'required|integer|min:1|max:480',
+            'missing_minutes' => 'required|integer|min:1|max:480',
+            'deduct_absences' => 'nullable|boolean',
+            'absences_from'   => 'nullable|date_format:Y-m',
+            'auto_clock_out'  => 'nullable|boolean',
+        ]);
+
+        $deductAbsences = $request->boolean('deduct_absences');
+
+        // Without a month to start from, absences would be charged for every
+        // month on file. Default to this one, so the rule only looks forward.
+        $from = $data['absences_from']
+            ?? \App\Models\AppSetting::get(\App\Support\AttendanceRules::ABSENCES_FROM)
+            ?? Carbon::now(\App\Support\AttendanceRules::TIMEZONE)->format('Y-m');
+
+        \App\Support\AttendanceRules::save([
+            \App\Support\AttendanceRules::EARLY_MINUTES   => (int) $data['early_minutes'],
+            \App\Support\AttendanceRules::MISSING_MINUTES => (int) $data['missing_minutes'],
+            \App\Support\AttendanceRules::DEDUCT_ABSENCES => $deductAbsences ? 1 : 0,
+            \App\Support\AttendanceRules::ABSENCES_FROM   => $from,
+            \App\Support\AttendanceRules::AUTO_CLOCK_OUT  => $request->boolean('auto_clock_out') ? 1 : 0,
+        ]);
+
+        $message = 'Attendance rules saved.';
+
+        if ($deductAbsences) {
+            $message .= ' Days absent with no leave are deducted from '
+                .Carbon::parse($from.'-01')->format('F Y').' onwards.';
+        }
+
+        return back()->with('success', $message);
     }
 
     /**
