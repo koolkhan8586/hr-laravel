@@ -265,32 +265,98 @@ if (!$attendance) {
 
     $attendance->save();
 
+    /*
+    |--------------------------------------------------------------------------
+    | Leaving early
+    |--------------------------------------------------------------------------
+    | Clocking out well before the shift ends costs half a day, taken off the
+    | annual balance or, with none left, without pay. Clocking out at all -
+    | even late - takes back a charge already made for not marking one.
+    */
+    $endsAt = \App\Support\DutyRoster::endsAt($attendance->user, $attendance->date ?: $now);
+
+    $earlyBy = $endsAt && $now->lt($endsAt)
+        ? $now->diffInMinutes($endsAt)
+        : 0;
+
+    $charged = null;
+
+    if ($earlyBy >= \App\Support\AttendanceRules::earlyMinutes()) {
+
+        $charged = \App\Support\HalfDayCharge::charge(
+            $attendance,
+            \App\Support\AttendanceRules::EARLY_CLOCK_OUT
+        );
+
+    } else {
+
+        \App\Support\HalfDayCharge::reverse(
+            $attendance,
+            \App\Support\AttendanceRules::MISSING_CLOCK_OUT
+        );
+    }
+
+    $attendance->refresh();
+
+    $lines = [
+        'Clock Out Successful',
+        '',
+        'Date: '.$now->toDateString(),
+        'Clock In: '.$attendance->clock_in,
+        'Clock Out: '.$attendance->clock_out,
+        'Total Hours: '.$attendance->total_hours,
+    ];
+
+    if ($endsAt) {
+        $lines[] = 'Shift Ends: '.$endsAt->format('h:i A');
+    }
+
+    $reply = 'Clock-out successful!';
+
+    if ($charged) {
+
+        $cost = $charged->type === 'annual'
+            ? 'Half a day has been taken off your annual leave balance.'
+            : 'You have no annual leave left, so this half day is without pay.';
+
+        $lines[] = '';
+        $lines[] = 'You clocked out '.$earlyBy.' minutes before your shift ended, so half a day has been charged.';
+        $lines[] = $cost;
+
+        $reply = 'Clock-out recorded. You left '.$earlyBy.' minutes early, so half a day has been charged. '.$cost;
+    }
+
+    $body = implode("\n", $lines)
+        ."\nCheckout Location: ".$request->latitude.", ".$request->longitude;
+
     // Send Email
     try {
-        Mail::raw(
-            "Clock Out Successful\n\n".
-            "Date: ".$now->toDateString()."\n".
-            "Clock In: ".$attendance->clock_in."\n".
-            "Clock Out: ".$attendance->clock_out."\n".
-            "Total Hours: ".$attendance->total_hours."\n".
-            "Checkout Location: ".$request->latitude.", ".$request->longitude,
-            function ($message) {
-                $message->to(auth()->user()->email)
-                        ->subject('Clock Out Confirmation');
-            }
-        );
+        Mail::raw($body, function ($message) {
+            $message->to(auth()->user()->email)
+                    ->subject('Clock Out Confirmation');
+        });
     } catch (\Exception $e) {
         Log::error('ClockOut Mail Error: '.$e->getMessage());
+    }
+
+    // And on WhatsApp, where there is a number on file.
+    try {
+        if (filled(auth()->user()->mobile)) {
+            app(\App\Services\WahaService::class)
+                ->sendToMobile(auth()->user()->mobile, implode("\n", $lines)."\n\n- LSAF HR");
+        }
+    } catch (\Throwable $e) {
+        Log::error('ClockOut WhatsApp Error: '.$e->getMessage());
     }
 
     // Both the dashboard and the attendance page post this over fetch and
     // read JSON back, same as clock-in.
     return response()->json([
         'success' => true,
-        'message' => 'Clock-out successful!',
+        'message' => $reply,
     ]);
 
-    
+
 }   /*
     |--------------------------------------------------------------------------
     | Admin Edit Attendance

@@ -184,7 +184,7 @@
              have to be worked out and copied across by hand. --}}
         <form method="POST" action="{{ route('admin.salary.sheet.pull.wop') }}"
               class="flex items-center gap-1"
-              onsubmit="return confirm('Fill the Extra Leaves column from leave taken without pay in {{ \Carbon\Carbon::create($year, $month, 1)->format('F Y') }}? Posted rows are left alone, and you can still edit any figure afterwards.');">
+              onsubmit="return confirm('Fill the Extra Leaves column from unpaid days in {{ \Carbon\Carbon::create($year, $month, 1)->format('F Y') }} - leave without pay, and days absent with no leave? Posted rows are left alone, and you can still edit any figure afterwards.');">
             @csrf
             <input type="hidden" name="month" value="{{ $month }}">
             <input type="hidden" name="year" value="{{ $year }}">
@@ -202,7 +202,7 @@
 
             <button class="bg-rose-700 hover:bg-rose-800 text-white px-4 py-2 rounded text-sm"
                     style="background:#be123c;">
-                Update Extra Leaves from Unpaid Leave
+                Update Extra Leaves from Unpaid Days
             </button>
         </form>
 
@@ -439,6 +439,18 @@
                 $wop = $withoutPay[$user->id] ?? null;
                 $wopDays = $wop['days'] ?? 0;
                 $wopAmount = $wop['amount'] ?? 0;
+
+                // Unpaid leave and unexplained absence are both deducted, so
+                // the hint says which of the two the figure is made of.
+                $wopParts = [];
+
+                if (($wop['leave_days'] ?? 0) > 0) {
+                    $wopParts[] = \App\Support\WithoutPayLeave::niceDays($wop['leave_days']).' day(s) leave without pay';
+                }
+
+                if (($wop['absent_days'] ?? 0) > 0) {
+                    $wopParts[] = \App\Support\WithoutPayLeave::niceDays($wop['absent_days']).' day(s) absent with no leave';
+                }
             @endphp
             <td class="border p-0">
                 <input type="text" inputmode="decimal" data-col="extra_leaves"
@@ -447,10 +459,10 @@
                        data-wop-amount="{{ $wopAmount }}"
                        placeholder="{{ $wopAmount > 0 ? number_format($wopAmount) : '' }}"
                        title="{{ $wopDays > 0
-                            ? rtrim(rtrim(number_format($wopDays, 1), '0'), '.').' day(s) leave without pay - Rs '
+                            ? implode(' + ', $wopParts).' - Rs '
                               .number_format($wop['monthly']).' ('.$wop['source'].') over '.$wop['basis_days']
                               .' days = Rs '.number_format($wop['rate'], 2).' a day'
-                            : 'No leave without pay this month' }}"
+                            : 'Nothing unpaid this month' }}"
                        class="deduction w-24 p-1 text-right border-0 {{ $roCls }}
                               {{ $wopAmount > 0 ? 'has-wop' : '' }}">
             </td>

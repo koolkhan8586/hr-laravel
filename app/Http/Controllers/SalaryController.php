@@ -406,7 +406,7 @@ public function employeeIndex()
 
         $period = \Carbon\Carbon::create($year, $month, 1)->format('F Y');
 
-        $message = "Extra Leaves updated from unpaid leave for {$applied} employee(s) on {$period}.";
+        $message = "Extra Leaves updated from unpaid days for {$applied} employee(s) on {$period}.";
 
         if ($stale) {
 
@@ -414,7 +414,7 @@ public function employeeIndex()
                 ? implode(', ', array_slice($stale, 0, 5)).' and '.(count($stale) - 5).' more'
                 : implode(', ', $stale);
 
-            $message .= ' '.count($stale).' row(s) still carry an Extra Leaves figure with no unpaid leave'
+            $message .= ' '.count($stale).' row(s) still carry an Extra Leaves figure with nothing unpaid'
                 .' this month and were left as they are - check '.$names.'.';
         }
 
@@ -423,11 +423,11 @@ public function employeeIndex()
         }
 
         if ($noRow) {
-            $message .= " {$noRow} employee(s) with unpaid leave have no salary row for {$period} yet.";
+            $message .= " {$noRow} employee(s) with unpaid days have no salary row for {$period} yet.";
         }
 
         if ($noPay) {
-            $message .= " {$noPay} employee(s) have unpaid leave but no salary to work a daily rate from.";
+            $message .= " {$noPay} employee(s) have unpaid days but no salary to work a daily rate from.";
         }
 
         return back()->with($applied ? 'success' : 'error', $message);

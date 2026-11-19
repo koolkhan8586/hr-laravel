@@ -37,16 +37,19 @@ Schedule::command('attendance:mark-absent')
 
 /*
 |--------------------------------------------------------------------------
-| Auto Clock-Out
+| Missing Clock-Out
 |--------------------------------------------------------------------------
-| Runs every minute to check:
-| - employee shift end time
-| - overtime allowed by admin
-| - 30 minute margin
+| Auto clock-out is gone. It used to stamp a clock-out at the end of every
+| open shift, so a day nobody closed looked exactly like one they did.
+|
+| A shift with no clock-out now stays open, and half an hour after it should
+| have ended half a day is charged for it - off the annual balance, or
+| without pay when there is none left. The command still exists and can be
+| switched back on from Settings; it is simply not scheduled.
 */
 
-Schedule::command('attendance:auto-clockout')
-    ->everyMinute()
+Schedule::command('attendance:charge-missing-clockout')
+    ->everyFiveMinutes()
     ->timezone('Asia/Karachi')
     ->withoutOverlapping();
 

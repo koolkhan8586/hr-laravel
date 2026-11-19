@@ -7,6 +7,7 @@ use App\Models\Holiday;
 use App\Models\Leave;
 use App\Models\Salary;
 use App\Models\Staff;
+use App\Models\User;
 use App\Models\WeeklySchedule;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -46,7 +47,7 @@ class WithoutPayLeave
      * per employee, because the calendar draws forty rows at a time.
      *
      * @param  \Illuminate\Support\Collection<int, \App\Models\User>  $users
-     * @return array<int, array{days: float, rate: float, amount: float, basis_days: int, monthly: float, source: string}>
+     * @return array<int, array{days: float, leave_days: float, absent_days: float, rate: float, amount: float, basis_days: int, monthly: float, source: string}>
      */
     public static function forMonth(Collection $users, Carbon $month, ?string $basis = null): array
     {
@@ -72,9 +73,11 @@ class WithoutPayLeave
 
         $result = [];
 
+        $deductAbsences = AttendanceRules::deductsAbsencesIn($start);
+
         foreach ($users as $user) {
 
-            $days = self::countDays(
+            $leaveDays = self::countDays(
                 $leaves[$user->id] ?? collect(),
                 $start,
                 $end,
@@ -83,22 +86,65 @@ class WithoutPayLeave
                 $user->id
             );
 
+            // A day absent with nothing behind it - no leave applied for, no
+            // holiday, not their day off - is a day's pay not earned.
+            $absentDays = $deductAbsences
+                ? self::absentDays($user, $start)
+                : 0.0;
+
+            $days = $leaveDays + $absentDays;
+
             [$monthly, $source] = $monthlyPay[$user->id] ?? [0.0, 'none'];
 
             $rate = $basisDays > 0 ? $monthly / $basisDays : 0.0;
 
             $result[$user->id] = [
-                'days'       => $days,
-                'rate'       => round($rate, 2),
+                'days'        => $days,
+                'leave_days'  => $leaveDays,
+                'absent_days' => $absentDays,
+                'rate'        => round($rate, 2),
                 // Whole rupees: this goes on a salary sheet, not a ledger.
-                'amount'     => (float) round($rate * $days),
-                'basis_days' => $basisDays,
-                'monthly'    => $monthly,
-                'source'     => $source,
+                'amount'      => (float) round($rate * $days),
+                'basis_days'  => $basisDays,
+                'monthly'     => $monthly,
+                'source'      => $source,
             ];
         }
 
         return $result;
+    }
+
+    /**
+     * Days absent with no leave behind them.
+     *
+     * Counted by the monthly attendance sheet, which is what the employee's
+     * own report and the admin summary print, so what is deducted is what
+     * those screens show. It already leaves out weekly offs, holidays, leave,
+     * work from home and days that have not happened yet.
+     *
+     * Two things it does not know are checked here, because both would take
+     * money off somebody who owes none: payroll-only staff never mark
+     * attendance at all, and nobody is absent before the day they joined.
+     */
+    protected static function absentDays(User $user, Carbon $month): float
+    {
+        if ($user->tracks_attendance === false) {
+            return 0.0;
+        }
+
+        $sheet = MonthlyAttendanceSheet::build($user, $month->copy());
+
+        $joined = $user->staff->joining_date ?? null;
+
+        if (!$joined) {
+            return (float) ($sheet['totals']['absent'] ?? 0);
+        }
+
+        $joined = Carbon::parse($joined)->startOfDay();
+
+        return (float) collect($sheet['days'])
+            ->filter(fn ($day) => $day['bucket'] === 'absent' && $day['date']->gte($joined))
+            ->count();
     }
 
     /**

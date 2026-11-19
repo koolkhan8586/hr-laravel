@@ -655,6 +655,8 @@ public function attendanceCalendar(Request $request)
 
     $wopBasisLabel = \App\Support\WithoutPayLeave::basisLabel($start->copy());
 
+    $deductAbsences = \App\Support\AttendanceRules::deductsAbsences();
+
     /*
     |--------------------------------------------------------------------------
     | FINAL RETURN (ONLY ONE)
@@ -670,6 +672,7 @@ public function attendanceCalendar(Request $request)
         'wfhData',
         'withoutPay',
         'wopBasisLabel',
+        'deductAbsences',
         'start',
         'end',
         'month',

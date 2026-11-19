@@ -180,6 +180,40 @@ class DutyRoster
             ->addMinutes((int) ($shift->grace_minutes ?? 0));
     }
 
+    /**
+     * When the employee was due to finish on that date.
+     *
+     * Null when they were not rostered. A shift that ends before it starts
+     * runs past midnight - 11:30am to 08:30pm is one day, 09:00pm to 05:00am
+     * is not - so that one finishes on the following date.
+     */
+    public static function endsAt(User $user, $date): ?Carbon
+    {
+        $shift = self::shiftFor($user, $date);
+
+        if (!$shift || !$shift->end_time) {
+            return null;
+        }
+
+        $date = Carbon::parse($date)->startOfDay();
+
+        $end = Carbon::parse($shift->end_time, self::TIMEZONE);
+
+        $endsAt = $date->copy()
+            ->setTime((int) $end->format('H'), (int) $end->format('i'), (int) $end->format('s'));
+
+        if ($shift->start_time) {
+
+            $start = Carbon::parse($shift->start_time, self::TIMEZONE);
+
+            if ($end->format('H:i:s') <= $start->format('H:i:s')) {
+                $endsAt->addDay();
+            }
+        }
+
+        return $endsAt;
+    }
+
     /** "09:00 AM - 05:30 PM", or nothing when no shift is set. */
     public static function timing(?Shift $shift): ?string
     {

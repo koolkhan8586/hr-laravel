@@ -32,6 +32,11 @@ class WithoutPayLeaveTest extends TestCase
 
         $this->month = Carbon::parse('2026-09-01');
         Carbon::setTestNow(Carbon::parse('2026-10-05 10:00:00'));
+
+        // This file is about leave taken without pay. Days absent with no
+        // leave are unpaid too, and would otherwise be added to every figure
+        // here; they have their own tests in AttendanceRulesTest.
+        \App\Models\AppSetting::put(\App\Support\AttendanceRules::DEDUCT_ABSENCES, 0);
     }
 
     protected function tearDown(): void
@@ -343,7 +348,7 @@ class WithoutPayLeaveTest extends TestCase
         $this->assertEquals(4500, $salary->fresh()->extra_leaves);
 
         $this->assertStringContainsString(
-            'no unpaid leave',
+            'nothing unpaid',
             session('success')
         );
 
