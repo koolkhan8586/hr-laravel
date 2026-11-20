@@ -507,6 +507,125 @@ class AttendanceRulesTest extends TestCase
 
     /*
     |--------------------------------------------------------------------------
+    | The nudge before the charge
+    |--------------------------------------------------------------------------
+    */
+
+    public function test_a_reminder_goes_out_ten_minutes_after_the_shift_ends(): void
+    {
+        $user = $this->employee(balance: 5);
+        $attendance = $this->clockedIn($user);
+
+        $whatsapp = $this->fakeWhatsApp();
+
+        // Shift ends 17:00, so the reminder is due at 17:10.
+        Carbon::setTestNow(Carbon::parse($this->date.' 17:05:00', AttendanceRules::TIMEZONE));
+        $this->artisan('attendance:clockout-reminder')->assertSuccessful();
+
+        $this->assertCount(0, $whatsapp['sent'], 'Too early for a reminder.');
+
+        Carbon::setTestNow(Carbon::parse($this->date.' 17:10:00', AttendanceRules::TIMEZONE));
+        $this->artisan('attendance:clockout-reminder')->assertSuccessful();
+
+        $this->assertCount(1, $whatsapp['sent']);
+
+        $text = $whatsapp['sent'][0]['text'];
+
+        $this->assertStringContainsString('Your shift ended at 05:00 PM', $text);
+        $this->assertStringContainsString('no clock-out has been marked', $text);
+
+        // And it says what it will cost, and when.
+        $this->assertStringContainsString('still not marked by 05:30 PM', $text);
+        $this->assertStringContainsString('half a day will be charged', $text);
+
+        $mail = $this->mails()[0] ?? null;
+
+        $this->assertNotNull($mail);
+        $this->assertSame('Please mark your clock-out', $mail['subject']);
+        $this->assertStringContainsString('Your shift ended at 05:00 PM', $mail['body']);
+
+        $this->assertNotNull($attendance->fresh()->clock_out_reminded_at);
+    }
+
+    public function test_the_reminder_is_sent_once_however_often_the_job_runs(): void
+    {
+        $user = $this->employee(balance: 5);
+        $this->clockedIn($user);
+
+        $whatsapp = $this->fakeWhatsApp();
+
+        Carbon::setTestNow(Carbon::parse($this->date.' 17:10:00', AttendanceRules::TIMEZONE));
+
+        $this->artisan('attendance:clockout-reminder')->assertSuccessful();
+        $this->artisan('attendance:clockout-reminder')->assertSuccessful();
+        $this->artisan('attendance:clockout-reminder')->assertSuccessful();
+
+        $this->assertCount(1, $whatsapp['sent']);
+    }
+
+    public function test_somebody_who_clocked_out_is_not_reminded(): void
+    {
+        $user = $this->employee(balance: 5);
+
+        $attendance = $this->clockedIn($user);
+        $attendance->update(['clock_out' => $this->date.' 17:02:00', 'total_hours' => 8.1]);
+
+        $whatsapp = $this->fakeWhatsApp();
+
+        Carbon::setTestNow(Carbon::parse($this->date.' 17:10:00', AttendanceRules::TIMEZONE));
+        $this->artisan('attendance:clockout-reminder')->assertSuccessful();
+
+        $this->assertCount(0, $whatsapp['sent']);
+    }
+
+    public function test_the_reminder_lands_before_the_charge(): void
+    {
+        $user = $this->employee(balance: 5);
+        $this->clockedIn($user);
+
+        $whatsapp = $this->fakeWhatsApp();
+
+        // Reminder at 17:10, charge at 17:30.
+        Carbon::setTestNow(Carbon::parse($this->date.' 17:10:00', AttendanceRules::TIMEZONE));
+        $this->artisan('attendance:clockout-reminder')->assertSuccessful();
+        $this->artisan('attendance:charge-missing-clockout')->assertSuccessful();
+
+        $this->assertCount(1, $whatsapp['sent']);
+        $this->assertSame(0, Leave::where('user_id', $user->id)->count());
+
+        Carbon::setTestNow(Carbon::parse($this->date.' 17:35:00', AttendanceRules::TIMEZONE));
+        $this->artisan('attendance:charge-missing-clockout')->assertSuccessful();
+
+        $this->assertSame(1, Leave::where('user_id', $user->id)->count());
+    }
+
+    public function test_a_reminder_set_later_than_the_charge_is_pulled_back(): void
+    {
+        AppSetting::put(AttendanceRules::REMIND_MINUTES, 90);
+        AppSetting::put(AttendanceRules::MISSING_MINUTES, 30);
+
+        $this->assertSame(29, AttendanceRules::reminderMinutes());
+    }
+
+    public function test_reminders_can_be_switched_off(): void
+    {
+        AppSetting::put(AttendanceRules::REMIND_CLOCK_OUT, 0);
+
+        $user = $this->employee(balance: 5);
+        $this->clockedIn($user);
+
+        $whatsapp = $this->fakeWhatsApp();
+
+        Carbon::setTestNow(Carbon::parse($this->date.' 17:10:00', AttendanceRules::TIMEZONE));
+        $this->artisan('attendance:clockout-reminder')
+            ->expectsOutputToContain('switched off')
+            ->assertSuccessful();
+
+        $this->assertCount(0, $whatsapp['sent']);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
     | Proving the balance moved
     |--------------------------------------------------------------------------
     */
