@@ -181,6 +181,74 @@ class DutyRoster
     }
 
     /**
+     * Which dates in a range each employee was due in on.
+     *
+     * The weekly pattern, with a date set individually overriding it
+     * outright - including one with no shift on it, which is how an
+     * alternating Saturday is expressed. Exactly the order shiftFor() uses,
+     * but for a whole range of dates and a whole list of employees in four
+     * queries rather than one per day.
+     *
+     * Employees with no roster on file at all come back as "unknown": there
+     * is no pattern to say when they were due in, so nothing should claim
+     * they were absent from a day.
+     *
+     * @param  \Illuminate\Support\Collection<int, User>|array<int, User>  $users
+     * @return array<int, array{rostered: array<string, bool>, known: bool}>
+     */
+    public static function workingDatesFor($users, $start, $end): array
+    {
+        $users = collect($users);
+
+        $start = Carbon::parse($start)->startOfDay();
+        $end   = Carbon::parse($end)->startOfDay();
+
+        $userIds = $users->pluck('id');
+
+        $weekly = WeeklySchedule::whereIn('user_id', $userIds)
+            ->with('shift')
+            ->orderBy('updated_at')
+            ->orderBy('id')
+            ->get()
+            ->groupBy('user_id');
+
+        $dated = EmployeeSchedule::forUsersBetween($userIds, $start, $end);
+
+        $result = [];
+
+        foreach ($users as $user) {
+
+            $byDay = [];
+
+            foreach ($weekly[$user->id] ?? [] as $row) {
+                if ($day = WeeklySchedule::normaliseDay($row->day_of_week)) {
+                    $byDay[$day] = $row;
+                }
+            }
+
+            $overrides = $dated[$user->id] ?? [];
+
+            $rostered = [];
+
+            for ($day = $start->copy(); $day->lte($end); $day->addDay()) {
+
+                $date = $day->toDateString();
+
+                $rostered[$date] = array_key_exists($date, $overrides)
+                    ? (bool) $overrides[$date]->shift_id
+                    : (bool) ($byDay[$day->format('l')]->shift_id ?? false);
+            }
+
+            $result[$user->id] = [
+                'rostered' => $rostered,
+                'known'    => !empty($byDay) || !empty($overrides),
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
      * When the employee was due to finish on that date.
      *
      * Null when they were not rostered. A shift that ends before it starts

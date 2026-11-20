@@ -659,6 +659,21 @@ public function attendanceCalendar(Request $request)
 
     /*
     |--------------------------------------------------------------------------
+    | Who was due in, and when
+    |--------------------------------------------------------------------------
+    | The grid used to grey out every Saturday and Sunday, whoever the
+    | employee was, while the unpaid columns counted the roster. Somebody
+    | rostered on a Saturday who did not come in therefore read as a quiet
+    | dash and still lost a day's pay. Both now come from the same place.
+    */
+    $roster = \App\Support\DutyRoster::workingDatesFor($users, $start, $end);
+
+    // Nobody has said when these people are due in, so nothing is counted
+    // against them - but somebody should set their schedule.
+    $withoutRoster = $users->filter(fn ($u) => !$roster[$u->id]['known'])->values();
+
+    /*
+    |--------------------------------------------------------------------------
     | FINAL RETURN (ONLY ONE)
     |--------------------------------------------------------------------------
     */
@@ -673,6 +688,8 @@ public function attendanceCalendar(Request $request)
         'withoutPay',
         'wopBasisLabel',
         'deductAbsences',
+        'roster',
+        'withoutRoster',
         'start',
         'end',
         'month',

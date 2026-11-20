@@ -6,7 +6,6 @@ use App\Models\Attendance;
 use App\Models\Holiday;
 use App\Models\Leave;
 use App\Models\User;
-use App\Models\WeeklySchedule;
 use App\Models\WorkFromHome;
 use Carbon\Carbon;
 
@@ -50,14 +49,26 @@ class MonthlyAttendanceSheet
         $leaves   = self::leavesInRange($user, $start, $end);
         $wfh      = self::wfhInRange($user, $start, $end);
         $holidays = self::holidaysInRange($user, $start, $end);
-        $offDays  = self::weeklyOffDays($user);
+
+        /*
+        | Which days this employee was due in on, resolved the way every other
+        | screen resolves it: the weekly pattern, with a date set individually
+        | winning outright.
+        |
+        | This used to read the weekly pattern alone, so a Saturday an admin
+        | had switched off for one employee on the monthly schedule - the
+        | alternating Saturday - still counted as a working day they had
+        | failed to turn up for. On the report that was a stray Absent; once
+        | absences started coming off the pay it was a day's salary.
+        */
+        $roster = DutyRoster::workingDatesFor([$user], $start, $end)[$user->id];
 
         $days   = [];
         $totals = self::emptyTotals();
 
         for ($day = $start->copy(); $day->lte($end); $day->addDay()) {
 
-            $row = self::describe($day, $records, $leaves, $wfh, $holidays, $offDays);
+            $row = self::describe($day, $records, $leaves, $wfh, $holidays, $roster);
 
             $days[] = $row;
 
@@ -86,7 +97,7 @@ class MonthlyAttendanceSheet
         $leaves,
         $wfh,
         $holidays,
-        array $offDays
+        array $roster
     ): array {
 
         $date = $day->toDateString();
@@ -116,7 +127,7 @@ class MonthlyAttendanceSheet
         // A day they were never rostered on, and did not come in for, is a day
         // off whatever else covers it. Counting the Sunday inside a week's
         // leave as leave would overstate the leave taken.
-        if (!$worked && self::isOffDay($day, $offDays)) {
+        if (!$worked && !self::wasDueIn($day, $roster)) {
             return array_merge($base, ['label' => 'Weekly Off', 'bucket' => 'off']);
         }
 
@@ -226,35 +237,30 @@ class MonthlyAttendanceSheet
             && Carbon::parse($to)->startOfDay()->gte($day);
     }
 
-    /**
-     * Days of the week the employee is not rostered on.
-     *
-     * Taken from their weekly schedule where one exists, since not everybody
-     * is off on the same days. With no schedule on file, Sunday is treated as
-     * the weekly off rather than assuming a Saturday-Sunday weekend.
-     *
-     * @return array<int, string>
-     */
-    protected static function weeklyOffDays(User $user): array
+    /** Has anybody said when this employee is due in? */
+    public static function hasRoster(User $user): bool
     {
-        $rostered = WeeklySchedule::where('user_id', $user->id)
-            ->whereNotNull('shift_id')
-            ->pluck('day_of_week')
-            ->map(fn ($d) => strtolower((string) $d))
-            ->all();
-
-        if (empty($rostered)) {
-            return ['sunday'];
-        }
-
-        $week = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-
-        return array_values(array_diff($week, $rostered));
+        return DutyRoster::workingDatesFor(
+            [$user],
+            Carbon::now(self::TIMEZONE)->startOfMonth(),
+            Carbon::now(self::TIMEZONE)->startOfMonth()
+        )[$user->id]['known'];
     }
 
-    protected static function isOffDay(Carbon $day, array $offDays): bool
+    /**
+     * Was the employee due in on this date?
+     *
+     * With no roster on file at all nobody can say, so the day is treated as
+     * one they were not due in on rather than marking them absent - and,
+     * since absences now cost a day's pay, charging them for a guess.
+     */
+    protected static function wasDueIn(Carbon $day, array $roster): bool
     {
-        return in_array(strtolower($day->format('l')), $offDays, true);
+        if (!($roster['known'] ?? false)) {
+            return false;
+        }
+
+        return (bool) ($roster['rostered'][$day->toDateString()] ?? false);
     }
 
     /** @return array<string, \App\Models\Attendance> */

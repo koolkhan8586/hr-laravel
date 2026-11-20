@@ -64,7 +64,8 @@ Print / Export
 <span class="text-rose-700 font-bold" style="color:#be123c;">💸 Without Pay (deducted)</span>
 <span class="text-indigo-600 font-bold">🏠 Work From Home</span>
 <span class="text-red-600 font-bold">🎉 Holiday</span>
-<span class="text-gray-400 font-bold">- Weekend / Future</span>
+<span class="text-gray-400 font-bold">- Day Off / Future</span>
+<span class="text-gray-400 font-bold">? No Schedule Set</span>
 <span class="text-red-600 font-bold">✖ Absent</span>
 
 </div>
@@ -96,7 +97,10 @@ checked>
 
 <thead class="bg-gray-200">
 
-<tr class="employee-row" data-id="{{ $user->id }}">
+{{-- The heading row, not an employee's. It used to carry employee-row and
+     the id of whoever came last in the list, so Show / Hide for that one
+     employee hid the column headings and never their own row. --}}
+<tr>
 
 <th class="border p-2 sticky left-0 bg-gray-200 z-10">
 Employee
@@ -160,7 +164,14 @@ $isToday = $dayDate->toDateString() == now()->toDateString();
 $date = $start->copy()->day($d)->toDateString();
 $today = now()->toDateString();
 $dayDate = $start->copy()->day($d);
-$isWeekend = $dayDate->isWeekend();
+
+/* Was this employee due in? Their own roster, not the calendar's idea of a
+   weekend: somebody rostered on a Saturday who did not come in is absent,
+   and somebody whose day off is a Tuesday is off on it. With no roster on
+   file nobody can say, so the day is left blank rather than called absent. */
+$rosterKnown = $roster[$user->id]['known'] ?? false;
+$dueIn = $rosterKnown && ($roster[$user->id]['rostered'][$date] ?? false);
+$isOffDay = $rosterKnown && !$dueIn;
 
 /* Attendance */
 
@@ -238,7 +249,7 @@ break;
 @endphp
 
 <td
-class="border text-center cursor-pointer hover:bg-blue-50 {{ $isWeekend ? 'bg-red-50' : '' }}"
+class="border text-center cursor-pointer hover:bg-blue-50 {{ $isOffDay ? 'bg-red-50' : '' }}"
 onclick="showAttendance('{{ $user->id }}','{{ $date }}','{{ $user->name }}')"
 >
 
@@ -327,13 +338,17 @@ title="Full Day Leave (paid)">🌴</span>
 
 @endif
 
-@elseif($isWeekend)
+@elseif($isOffDay)
 
-<span class="text-gray-300">-</span>
+<span class="text-gray-300" title="Not rostered on this day">-</span>
+
+@elseif(!$rosterKnown)
+
+<span class="text-gray-300" title="No weekly schedule set for this employee, so nothing is counted">?</span>
 
 @else
 
-<span class="text-red-500 font-bold" title="Absent">✖</span>
+<span class="text-red-500 font-bold" title="Absent - no leave applied for">✖</span>
 
 @endif
 
@@ -404,6 +419,17 @@ Leave without pay, and days absent with no leave
 </table>
 
 </div>
+
+@if($withoutRoster->isNotEmpty())
+<div class="p-3 rounded mt-3" style="background:#fef9c3; color:#a16207;">
+    <strong>No weekly schedule set for
+    {{ $withoutRoster->count() }} employee(s):</strong>
+    {{ $withoutRoster->pluck('name')->implode(', ') }}.
+    Their days show as <strong>?</strong> and nothing is counted against them,
+    because there is no roster to say when they were due in. Set it under
+    Schedule Management and they will be counted from then on.
+</div>
+@endif
 
 <p class="text-sm text-gray-500 mt-3">
 Unpaid days are leave taken without pay{{ $deductAbsences ? ', and days absent with no leave applied for' : '' }}.
