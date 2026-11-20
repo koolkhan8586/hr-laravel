@@ -206,7 +206,7 @@ class CalendarRosterTest extends TestCase
 
     public function test_saturdays_can_be_put_back_on_the_weekly_pattern(): void
     {
-        \App\Models\AppSetting::put(\App\Support\AttendanceRules::SATURDAY_SET, 0);
+        \App\Models\AppSetting::put(\App\Support\AttendanceRules::DAYS_SET, 'sunday');
 
         $user = $this->employee(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']);
         $this->worked($user, skip: [14]);
@@ -215,6 +215,93 @@ class CalendarRosterTest extends TestCase
 
         $this->assertSame(1.0, $wop['absent_days']);
         $this->assertSame('✖', $this->cell($user, 14));
+    }
+
+    public function test_a_sunday_in_one_weekly_schedule_is_still_nobody_absence(): void
+    {
+        // Sunday is off for everybody, but this schedule has it as a working
+        // day - which used to cost this employee, and only this employee, a
+        // day's pay every Sunday.
+        $user = $this->employee(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Sunday']);
+
+        foreach (range(1, 20) as $d) {
+
+            $day = Carbon::create(2026, 11, $d);
+
+            if ($day->isWeekend()) {
+                continue;
+            }
+
+            Attendance::create([
+                'user_id' => $user->id,
+                'date' => $day->toDateString(),
+                'clock_in' => $day->toDateString().' 08:55:00',
+                'clock_out' => $day->toDateString().' 17:05:00',
+                'total_hours' => 8.17,
+                'status' => 'present',
+            ]);
+        }
+
+        $wop = WithoutPayLeave::forMonth(collect([$user]), Carbon::parse('2026-11-01'))[$user->id];
+
+        $this->assertSame(0.0, $wop['absent_days']);
+        $this->assertEquals(0, $wop['amount']);
+
+        // The 1st, 8th and 15th of November 2026 are Sundays.
+        foreach ([1, 8, 15] as $sunday) {
+            $this->assertSame('-', $this->cell($user, $sunday));
+        }
+
+        // And the screen says why those days are blank.
+        $this->actingAs(User::factory()->create(['role' => 'admin']))
+            ->get(route('admin.attendance.calendar', ['month' => '2026-11']))
+            ->assertSee('count only when that date is set on the monthly');
+    }
+
+    public function test_a_sunday_somebody_was_put_on_still_counts(): void
+    {
+        $user = $this->employee(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']);
+
+        $shift = Shift::firstOrCreate(
+            ['name' => '9 to 5'],
+            ['start_time' => '09:00:00', 'end_time' => '17:00:00', 'grace_minutes' => 15]
+        );
+
+        $this->worked($user);
+
+        // Called in for that one Sunday, and did not come.
+        EmployeeSchedule::setFor($user->id, '2026-11-15', $shift->id);
+
+        $wop = WithoutPayLeave::forMonth(collect([$user]), Carbon::parse('2026-11-01'))[$user->id];
+
+        $this->assertSame(1.0, $wop['absent_days']);
+        $this->assertSame('✖', $this->cell($user, 15));
+    }
+
+    public function test_which_days_need_scheduling_is_a_setting(): void
+    {
+        $this->assertSame(['saturday', 'sunday'], \App\Support\AttendanceRules::daysNeedingSchedule());
+        $this->assertSame('Saturday and Sunday', \App\Support\AttendanceRules::daysNeedingScheduleLabel());
+
+        $this->actingAs(User::factory()->create(['role' => 'admin']))
+            ->post(route('admin.settings.attendance-rules.save'), [
+                'early_minutes' => 25,
+                'missing_minutes' => 30,
+                'days_set' => ['sunday'],
+                'deduct_absences' => 1,
+                'absences_from' => '2026-11',
+            ])
+            ->assertSessionHas('success');
+
+        $this->assertSame(['sunday'], \App\Support\AttendanceRules::daysNeedingSchedule());
+
+        // With Saturday back on the weekly pattern, a missed one counts again.
+        $user = $this->employee(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']);
+        $this->worked($user, skip: [14]);
+
+        $wop = WithoutPayLeave::forMonth(collect([$user]), Carbon::parse('2026-11-01'))[$user->id];
+
+        $this->assertSame(1.0, $wop['absent_days']);
     }
 
     public function test_a_weekday_off_is_not_an_absence(): void

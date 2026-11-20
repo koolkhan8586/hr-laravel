@@ -672,6 +672,8 @@ public function attendanceCalendar(Request $request)
     // against them - but somebody should set their schedule.
     $withoutRoster = $users->filter(fn ($u) => !$roster[$u->id]['known'])->values();
 
+    $offDayRuleLabel = \App\Support\AttendanceRules::daysNeedingScheduleLabel();
+
     /*
     |--------------------------------------------------------------------------
     | FINAL RETURN (ONLY ONE)
@@ -690,6 +692,7 @@ public function attendanceCalendar(Request $request)
         'deductAbsences',
         'roster',
         'withoutRoster',
+        'offDayRuleLabel',
         'start',
         'end',
         'month',

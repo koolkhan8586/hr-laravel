@@ -436,7 +436,11 @@ Leave without pay, and days absent with no leave
 <p class="text-sm text-gray-500 mt-3">
 Unpaid days are leave taken without pay{{ $deductAbsences ? ', and days absent with no leave applied for' : '' }}.
 A day's pay is the month's gross divided by {{ $wopBasisLabel }}. A weekly
-off or a holiday is never charged for. Hover a figure to see how it was
+off or a holiday is never charged for.
+@if($offDayRuleLabel !== 'no days')
+    {{ $offDayRuleLabel }} count only when that date is set on the monthly
+    schedule, so an unscheduled one is nobody's absence.
+@endif Hover a figure to see how it was
 worked out, and enter it on the salary sheet under <strong>Extra
 Leaves</strong> - the sheet can fill the whole column itself with
 <em>Update Extra Leaves from Unpaid Days</em>.

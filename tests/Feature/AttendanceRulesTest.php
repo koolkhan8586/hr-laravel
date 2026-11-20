@@ -426,7 +426,7 @@ class AttendanceRulesTest extends TestCase
                 'early_minutes' => 20,
                 'missing_minutes' => 30,
                 'rules_from' => '2026-11-20',
-                'saturday_set' => 1,
+                'days_set' => ['saturday', 'sunday'],
             ])
             ->assertSessionHas('success');
 

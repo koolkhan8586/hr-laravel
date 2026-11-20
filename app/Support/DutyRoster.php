@@ -231,10 +231,11 @@ class DutyRoster
             $rostered = [];
             $source   = [];
 
-            // Saturdays can be made to need a date of their own, because
-            // which Saturdays are worked is decided month by month rather
-            // than by the weekly pattern.
-            $saturdayNeedsSchedule = AttendanceRules::saturdayNeedsSchedule();
+            // Some days of the week count only when the date itself is
+            // scheduled - Saturday, because which Saturdays are worked is
+            // decided month by month, and Sunday, which is off for
+            // everybody whatever a weekly schedule happens to say.
+            $needScheduling = AttendanceRules::daysNeedingSchedule();
 
             for ($day = $start->copy(); $day->lte($end); $day->addDay()) {
 
@@ -248,10 +249,10 @@ class DutyRoster
                     continue;
                 }
 
-                if ($saturdayNeedsSchedule && $day->isSaturday()) {
+                if (in_array(strtolower($day->format('l')), $needScheduling, true)) {
 
                     $rostered[$date] = false;
-                    $source[$date]   = 'no Saturday set for this date';
+                    $source[$date]   = 'no '.$day->format('l').' set for this date';
 
                     continue;
                 }

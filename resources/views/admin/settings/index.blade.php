@@ -120,18 +120,27 @@
 
             <div class="md:col-span-2 space-y-2">
 
-                <label class="flex items-start gap-2 text-sm">
-                    <input type="checkbox" name="saturday_set" value="1" class="mt-1"
-                           {{ $attendanceRules['saturday_set'] ? 'checked' : '' }}>
-                    <span>
-                        <strong>A Saturday only counts when it is set for that date.</strong>
-                        Which Saturdays are worked is decided month by month, so
-                        a Saturday with no shift set against it on the monthly
-                        schedule is nobody's absence, whatever the weekly
-                        pattern says. Anybody who does come in on a Saturday can
-                        still clock in, and the day shows as worked.
-                    </span>
-                </label>
+                <div class="text-sm">
+                    <strong>These days count only when the date itself is scheduled.</strong>
+                    <p class="text-xs text-gray-500 mt-1 mb-2">
+                        Sunday is off for everybody, and which Saturdays are
+                        worked is decided month by month - so a day ticked here
+                        is nobody's absence unless somebody put them on that
+                        exact date from the monthly schedule, whatever their
+                        weekly schedule happens to say. Anybody who does come in
+                        can still clock in, and the day shows as worked.
+                    </p>
+
+                    <div style="display:flex; gap:14px; flex-wrap:wrap;">
+                        @foreach(\App\Support\AttendanceRules::WEEK as $day)
+                            <label class="flex items-center gap-1">
+                                <input type="checkbox" name="days_set[]" value="{{ $day }}"
+                                       {{ in_array($day, $attendanceRules['days_set'], true) ? 'checked' : '' }}>
+                                {{ ucfirst($day) }}
+                            </label>
+                        @endforeach
+                    </div>
+                </div>
 
                 <label class="flex items-start gap-2 text-sm">
                     <input type="checkbox" name="deduct_absences" value="1" class="mt-1"
