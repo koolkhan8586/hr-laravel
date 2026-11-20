@@ -34,11 +34,15 @@ class ChargeMissingClockOut extends Command
         $after = AttendanceRules::missingMinutes();
 
         // Yesterday as well as today, for shifts that run past midnight and
-        // for the first run after a quiet night.
+        // for the first run after a quiet night - but never before the day
+        // the rules were switched on, or the first run would charge for
+        // every open shift still sitting in the table from before.
+        $from = $now->copy()->subDay()->startOfDay()->max(AttendanceRules::rulesFrom());
+
         $open = Attendance::with('user')
             ->whereNotNull('clock_in')
             ->whereNull('clock_out')
-            ->whereDate('date', '>=', $now->copy()->subDay()->toDateString())
+            ->whereDate('date', '>=', $from->toDateString())
             ->whereDate('date', '<=', $now->toDateString())
             ->get();
 

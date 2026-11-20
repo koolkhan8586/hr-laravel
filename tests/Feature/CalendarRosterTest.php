@@ -122,9 +122,14 @@ class CalendarRosterTest extends TestCase
 
     public function test_a_rostered_saturday_nobody_came_in_for_shows_as_absent(): void
     {
-        // Six day week, missing Saturday the 14th.
+        // Six day week, put on that Saturday, and missing from it.
         $user = $this->employee(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']);
         $this->worked($user, skip: [14]);
+
+        EmployeeSchedule::setFor($user->id, '2026-11-14', Shift::firstOrCreate(
+            ['name' => '9 to 5'],
+            ['start_time' => '09:00:00', 'end_time' => '17:00:00', 'grace_minutes' => 15]
+        )->id);
 
         $wop = WithoutPayLeave::forMonth(collect([$user]), Carbon::parse('2026-11-01'))[$user->id];
 
@@ -161,6 +166,55 @@ class CalendarRosterTest extends TestCase
         $this->assertEquals(0, $wop['amount']);
 
         $this->assertSame('-', $this->cell($user, 14));
+    }
+
+    public function test_a_saturday_nobody_scheduled_is_nobody_absence(): void
+    {
+        // Saturday is in the weekly pattern, but nothing is set for the 14th
+        // on the monthly schedule - so nobody said that Saturday was worked.
+        $user = $this->employee(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']);
+        $this->worked($user, skip: [7, 14]);
+
+        $wop = WithoutPayLeave::forMonth(collect([$user]), Carbon::parse('2026-11-01'))[$user->id];
+
+        $this->assertSame(0.0, $wop['absent_days']);
+        $this->assertEquals(0, $wop['amount']);
+
+        $this->assertSame('-', $this->cell($user, 14));
+    }
+
+    public function test_a_saturday_that_was_scheduled_still_counts(): void
+    {
+        $user = $this->employee(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']);
+        $this->worked($user, skip: [14]);
+
+        // The admin put them on that Saturday, and they did not come in.
+        $shift = Shift::firstOrCreate(
+            ['name' => '9 to 5'],
+            ['start_time' => '09:00:00', 'end_time' => '17:00:00', 'grace_minutes' => 15]
+        );
+
+        EmployeeSchedule::setFor($user->id, '2026-11-14', $shift->id);
+
+        $wop = WithoutPayLeave::forMonth(collect([$user]), Carbon::parse('2026-11-01'))[$user->id];
+
+        $this->assertSame(1.0, $wop['absent_days']);
+        $this->assertEquals(2667, $wop['amount']);
+
+        $this->assertSame('✖', $this->cell($user, 14));
+    }
+
+    public function test_saturdays_can_be_put_back_on_the_weekly_pattern(): void
+    {
+        \App\Models\AppSetting::put(\App\Support\AttendanceRules::SATURDAY_SET, 0);
+
+        $user = $this->employee(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']);
+        $this->worked($user, skip: [14]);
+
+        $wop = WithoutPayLeave::forMonth(collect([$user]), Carbon::parse('2026-11-01'))[$user->id];
+
+        $this->assertSame(1.0, $wop['absent_days']);
+        $this->assertSame('✖', $this->cell($user, 14));
     }
 
     public function test_a_weekday_off_is_not_an_absence(): void

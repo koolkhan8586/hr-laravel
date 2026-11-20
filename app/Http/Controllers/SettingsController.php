@@ -35,6 +35,8 @@ class SettingsController extends Controller
         $attendanceRules = [
             'early_minutes'   => \App\Support\AttendanceRules::earlyMinutes(),
             'missing_minutes' => \App\Support\AttendanceRules::missingMinutes(),
+            'rules_from'      => \App\Support\AttendanceRules::rulesFrom()->toDateString(),
+            'saturday_set'    => \App\Support\AttendanceRules::saturdayNeedsSchedule(),
             'deduct_absences' => \App\Support\AttendanceRules::deductsAbsences(),
             'absences_from'   => \App\Support\AttendanceRules::absencesFrom()?->format('Y-m')
                 ?? Carbon::now(\App\Support\AttendanceRules::TIMEZONE)->format('Y-m'),
@@ -63,12 +65,19 @@ class SettingsController extends Controller
         $data = $request->validate([
             'early_minutes'   => 'required|integer|min:1|max:480',
             'missing_minutes' => 'required|integer|min:1|max:480',
+            'rules_from'      => 'nullable|date_format:Y-m-d',
+            'saturday_set'    => 'nullable|boolean',
             'deduct_absences' => 'nullable|boolean',
             'absences_from'   => 'nullable|date_format:Y-m',
             'auto_clock_out'  => 'nullable|boolean',
         ]);
 
         $deductAbsences = $request->boolean('deduct_absences');
+
+        // Left out means "leave it where it is", which for a setting that has
+        // never been saved is today - the rules never reach backwards.
+        $rulesFrom = $data['rules_from']
+            ?? \App\Support\AttendanceRules::rulesFrom()->toDateString();
 
         // Without a month to start from, absences would be charged for every
         // month on file. Default to this one, so the rule only looks forward.
@@ -79,12 +88,15 @@ class SettingsController extends Controller
         \App\Support\AttendanceRules::save([
             \App\Support\AttendanceRules::EARLY_MINUTES   => (int) $data['early_minutes'],
             \App\Support\AttendanceRules::MISSING_MINUTES => (int) $data['missing_minutes'],
+            \App\Support\AttendanceRules::RULES_FROM      => $rulesFrom,
+            \App\Support\AttendanceRules::SATURDAY_SET    => $request->boolean('saturday_set') ? 1 : 0,
             \App\Support\AttendanceRules::DEDUCT_ABSENCES => $deductAbsences ? 1 : 0,
             \App\Support\AttendanceRules::ABSENCES_FROM   => $from,
             \App\Support\AttendanceRules::AUTO_CLOCK_OUT  => $request->boolean('auto_clock_out') ? 1 : 0,
         ]);
 
-        $message = 'Attendance rules saved.';
+        $message = 'Attendance rules saved. Half days are charged from '
+            .Carbon::parse($rulesFrom)->format('d M Y').' onwards.';
 
         if ($deductAbsences) {
             $message .= ' Days absent with no leave are deducted from '

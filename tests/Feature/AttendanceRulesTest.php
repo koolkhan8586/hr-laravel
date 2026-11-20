@@ -39,6 +39,16 @@ class AttendanceRulesTest extends TestCase
         config(['mail.default' => 'array']);
 
         Carbon::setTestNow(Carbon::parse($this->date.' 16:00:00', AttendanceRules::TIMEZONE));
+
+        /*
+        | The rules ship with a start date of the day they are deployed, so
+        | they never reach backwards. These tests work in 2026, well before
+        | that, and are about the rules themselves rather than when they were
+        | switched on - so they say so plainly. The tests that are about the
+        | start dates set their own.
+        */
+        AppSetting::put(AttendanceRules::RULES_FROM, '2020-01-01');
+        AppSetting::put(AttendanceRules::ABSENCES_FROM, '2020-01');
     }
 
     protected function tearDown(): void
@@ -363,6 +373,71 @@ class AttendanceRulesTest extends TestCase
 
     /*
     |--------------------------------------------------------------------------
+    | Only from the day the rules start
+    |--------------------------------------------------------------------------
+    */
+
+    public function test_a_day_before_the_start_date_is_never_charged(): void
+    {
+        AppSetting::put(AttendanceRules::RULES_FROM, '2026-09-02');
+
+        $user = $this->employee(balance: 5);
+        $this->clockedIn($user);           // the 1st, the day before
+
+        Carbon::setTestNow(Carbon::parse($this->date.' 16:00:00', AttendanceRules::TIMEZONE));
+
+        $this->clockOut($user)->assertOk();
+
+        $this->assertSame(0, Leave::where('user_id', $user->id)->count());
+        $this->assertEquals(5, LeaveBalance::where('user_id', $user->id)->value('remaining_leaves'));
+    }
+
+    public function test_an_open_shift_from_before_the_start_date_is_left_alone(): void
+    {
+        AppSetting::put(AttendanceRules::RULES_FROM, '2026-09-02');
+
+        $user = $this->employee(balance: 5);
+        $this->clockedIn($user);           // open shift on the 1st
+
+        Carbon::setTestNow(Carbon::parse('2026-09-02 09:00:00', AttendanceRules::TIMEZONE));
+
+        $this->artisan('attendance:charge-missing-clockout')->assertSuccessful();
+
+        $this->assertSame(0, Leave::where('user_id', $user->id)->count());
+    }
+
+    public function test_the_start_date_defaults_to_today(): void
+    {
+        AppSetting::where('key', AttendanceRules::RULES_FROM)->delete();
+
+        $this->assertSame(
+            Carbon::now(AttendanceRules::TIMEZONE)->toDateString(),
+            AttendanceRules::rulesFrom()->toDateString()
+        );
+
+        $this->assertTrue(AttendanceRules::rulesApplyOn(Carbon::now(AttendanceRules::TIMEZONE)));
+        $this->assertFalse(AttendanceRules::rulesApplyOn(Carbon::now(AttendanceRules::TIMEZONE)->subDay()));
+    }
+
+    public function test_the_start_date_is_saved_from_settings(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => 'admin']))
+            ->post(route('admin.settings.attendance-rules.save'), [
+                'early_minutes' => 20,
+                'missing_minutes' => 30,
+                'rules_from' => '2026-11-20',
+                'saturday_set' => 1,
+            ])
+            ->assertSessionHas('success');
+
+        $this->assertSame('2026-11-20', AttendanceRules::rulesFrom()->toDateString());
+        $this->assertSame(20, AttendanceRules::earlyMinutes());
+        $this->assertTrue(AttendanceRules::saturdayNeedsSchedule());
+        $this->assertStringContainsString('20 Nov 2026 onwards', session('success'));
+    }
+
+    /*
+    |--------------------------------------------------------------------------
     | What is never charged
     |--------------------------------------------------------------------------
     */
@@ -503,6 +578,9 @@ class AttendanceRulesTest extends TestCase
     public function test_switching_the_rule_on_starts_from_this_month(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-10-05 10:00:00', AttendanceRules::TIMEZONE));
+
+        // Never saved before, so saving it now pins it to this month.
+        AppSetting::where('key', AttendanceRules::ABSENCES_FROM)->delete();
 
         $this->actingAs(User::factory()->create(['role' => 'admin']))
             ->post(route('admin.settings.attendance-rules.save'), [

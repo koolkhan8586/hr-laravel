@@ -194,7 +194,7 @@ class DutyRoster
      * they were absent from a day.
      *
      * @param  \Illuminate\Support\Collection<int, User>|array<int, User>  $users
-     * @return array<int, array{rostered: array<string, bool>, known: bool}>
+     * @return array<int, array{rostered: array<string, bool>, source: array<string, string>, known: bool}>
      */
     public static function workingDatesFor($users, $start, $end): array
     {
@@ -229,18 +229,40 @@ class DutyRoster
             $overrides = $dated[$user->id] ?? [];
 
             $rostered = [];
+            $source   = [];
+
+            // Saturdays can be made to need a date of their own, because
+            // which Saturdays are worked is decided month by month rather
+            // than by the weekly pattern.
+            $saturdayNeedsSchedule = AttendanceRules::saturdayNeedsSchedule();
 
             for ($day = $start->copy(); $day->lte($end); $day->addDay()) {
 
                 $date = $day->toDateString();
 
-                $rostered[$date] = array_key_exists($date, $overrides)
-                    ? (bool) $overrides[$date]->shift_id
-                    : (bool) ($byDay[$day->format('l')]->shift_id ?? false);
+                if (array_key_exists($date, $overrides)) {
+
+                    $rostered[$date] = (bool) $overrides[$date]->shift_id;
+                    $source[$date]   = 'monthly schedule';
+
+                    continue;
+                }
+
+                if ($saturdayNeedsSchedule && $day->isSaturday()) {
+
+                    $rostered[$date] = false;
+                    $source[$date]   = 'no Saturday set for this date';
+
+                    continue;
+                }
+
+                $rostered[$date] = (bool) ($byDay[$day->format('l')]->shift_id ?? false);
+                $source[$date]   = 'weekly schedule';
             }
 
             $result[$user->id] = [
                 'rostered' => $rostered,
+                'source'   => $source,
                 'known'    => !empty($byDay) || !empty($overrides),
             ];
         }

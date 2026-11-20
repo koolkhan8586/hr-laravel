@@ -27,6 +27,8 @@ class AttendanceRules
     public const MISSING_MINUTES  = 'attendance_missing_clock_out_minutes';
     public const DEDUCT_ABSENCES  = 'attendance_deduct_absences';
     public const ABSENCES_FROM    = 'attendance_deduct_absences_from';
+    public const RULES_FROM       = 'attendance_half_day_rules_from';
+    public const SATURDAY_SET     = 'attendance_saturday_needs_schedule';
 
     /** Why a half day was charged. */
     public const EARLY_CLOCK_OUT   = 'early_clock_out';
@@ -55,6 +57,49 @@ class AttendanceRules
     public static function missingMinutes(): int
     {
         return max(1, (int) AppSetting::get(self::MISSING_MINUTES, 30));
+    }
+
+    /**
+     * The first day the half day rules bite.
+     *
+     * Leaving early and not marking a clock-out are rules about how people
+     * work from now on, not a verdict on days already behind us. Without a
+     * line in the sand, switching them on would charge half a day for every
+     * open shift still sitting in the table from before anybody was told.
+     *
+     * Defaults to today, so nothing is ever charged backwards by accident.
+     */
+    public static function rulesFrom(): \Carbon\Carbon
+    {
+        $from = AppSetting::get(self::RULES_FROM);
+
+        return $from
+            ? \Carbon\Carbon::parse($from, self::TIMEZONE)->startOfDay()
+            : \Carbon\Carbon::now(self::TIMEZONE)->startOfDay();
+    }
+
+    /** Do the half day rules apply to this date at all? */
+    public static function rulesApplyOn($date): bool
+    {
+        return \Carbon\Carbon::parse($date)->startOfDay()->gte(self::rulesFrom());
+    }
+
+    /**
+     * Does a Saturday only count when it is set for that date?
+     *
+     * Saturdays here are not a fixed thing. Some people work every one, some
+     * work every other one, and which it is gets decided month by month on
+     * the monthly schedule. With this on, a Saturday counts as a working day
+     * only when that date has a shift set against it - so a Saturday nobody
+     * scheduled is nobody's absence, whatever the weekly pattern says.
+     *
+     * It changes what is counted, never who may clock in: anybody who comes
+     * in on a Saturday can still clock in, and the day they worked shows as
+     * worked.
+     */
+    public static function saturdayNeedsSchedule(): bool
+    {
+        return (bool) AppSetting::get(self::SATURDAY_SET, true);
     }
 
     /** Is a day absent with no leave behind it taken off the pay? */

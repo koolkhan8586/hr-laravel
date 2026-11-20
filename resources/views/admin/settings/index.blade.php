@@ -104,7 +104,34 @@
                        class="border p-2 rounded w-full">
             </div>
 
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">
+                    Charge half days from this date onwards
+                </label>
+                <input type="date" name="rules_from" required
+                       value="{{ $attendanceRules['rules_from'] }}"
+                       class="border p-2 rounded w-full">
+                <p class="text-xs text-gray-500 mt-1">
+                    Days before this are left exactly as they are. These are
+                    rules about how people work from now on, not a verdict on
+                    days already behind us.
+                </p>
+            </div>
+
             <div class="md:col-span-2 space-y-2">
+
+                <label class="flex items-start gap-2 text-sm">
+                    <input type="checkbox" name="saturday_set" value="1" class="mt-1"
+                           {{ $attendanceRules['saturday_set'] ? 'checked' : '' }}>
+                    <span>
+                        <strong>A Saturday only counts when it is set for that date.</strong>
+                        Which Saturdays are worked is decided month by month, so
+                        a Saturday with no shift set against it on the monthly
+                        schedule is nobody's absence, whatever the weekly
+                        pattern says. Anybody who does come in on a Saturday can
+                        still clock in, and the day shows as worked.
+                    </span>
+                </label>
 
                 <label class="flex items-start gap-2 text-sm">
                     <input type="checkbox" name="deduct_absences" value="1" class="mt-1"
