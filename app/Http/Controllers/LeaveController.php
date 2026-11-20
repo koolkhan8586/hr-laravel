@@ -773,7 +773,7 @@ public function destroy($id)
 
     public function adminTransactions()
     {
-        $transactions = LeaveTransaction::with('user','leave')
+        $transactions = LeaveTransaction::with('user', 'leave', 'processor')
             ->latest()
             ->get();
 

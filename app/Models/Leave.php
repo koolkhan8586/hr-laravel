@@ -45,6 +45,32 @@ class Leave extends Model
         return filled($this->auto_reason);
     }
 
+    /** "Left early" / "No clock-out marked", for the screens. */
+    public function autoReasonLabel(): ?string
+    {
+        return $this->isAutoCharged()
+            ? \App\Support\AttendanceRules::label($this->auto_reason)
+            : null;
+    }
+
+    /**
+     * Where this half day was taken from, in a few words.
+     *
+     * Annual comes off the leave balance and shows on the transaction
+     * report; without pay comes off the salary instead, and never reaches
+     * that report because no balance moved.
+     */
+    public function chargedAgainstLabel(): ?string
+    {
+        if (!$this->isAutoCharged()) {
+            return null;
+        }
+
+        return $this->type === 'annual'
+            ? 'Taken off the leave balance'
+            : 'No balance left, so taken without pay';
+    }
+
     // ✅ ADD THIS
     public function user()
     {
@@ -56,6 +82,12 @@ class Leave extends Model
      */
     public function decidedByLabel(): ?string
     {
+        // Charged by the system rather than decided by a person, so say so
+        // instead of leaving a dash where the approver's name goes.
+        if ($this->isAutoCharged()) {
+            return 'System';
+        }
+
         if (!filled($this->decided_by_email)) {
             return null;
         }
@@ -93,6 +125,10 @@ class Leave extends Model
      */
     public function decidedViaLabel(): ?string
     {
+        if ($this->isAutoCharged()) {
+            return $this->autoReasonLabel();
+        }
+
         return match ($this->decided_via) {
             'dashboard' => 'Dashboard',
             'email' => 'Email',
