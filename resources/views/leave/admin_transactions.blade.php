@@ -50,6 +50,7 @@
             <thead class="bg-gray-100 text-gray-700 uppercase text-xs">
                 <tr>
                     <th class="p-3">User</th>
+                    <th class="p-3">Leave</th>
                     <th class="p-3">Days</th>
                     <th class="p-3">Before</th>
                     <th class="p-3">After</th>
@@ -63,6 +64,29 @@
                 @forelse($transactions as $t)
                     <tr class="hover:bg-gray-50">
                         <td class="p-3">{{ $t->user->name ?? '-' }}</td>
+
+                        {{-- Which leave moved the balance, and whether a
+                             person or the system charged it. --}}
+                        <td class="p-3">
+                            @if($t->leave)
+                                <div>
+                                    {{ $t->leave->start_date?->format('d M Y') }}
+                                    @if($t->leave->duration_type === 'half_day')
+                                        <span class="text-xs text-gray-500">(half day)</span>
+                                    @endif
+                                </div>
+                                @if($t->leave->isAutoCharged())
+                                    <span style="display:inline-block; margin-top:2px; padding:1px 7px;
+                                                 border-radius:9999px; font-size:11px;
+                                                 background:#fef9c3; color:#a16207;">
+                                        Auto - {{ $t->leave->autoReasonLabel() }}
+                                    </span>
+                                @endif
+                            @else
+                                <span class="text-gray-400">-</span>
+                            @endif
+                        </td>
+
                         <td class="p-3">{{ $t->days }}</td>
                         <td class="p-3">{{ $t->balance_before }}</td>
                         <td class="p-3">{{ $t->balance_after }}</td>
@@ -75,7 +99,16 @@
                             </span>
                         </td>
                         <td class="p-3">
-                            {{ \App\Models\User::find($t->processed_by)->name ?? '-' }}
+                            @if($t->processor)
+                                {{ $t->processor->name }}
+                            @elseif($t->leave?->isAutoCharged())
+                                System
+                                <div class="text-xs text-gray-500">
+                                    {{ $t->leave->autoReasonLabel() }}
+                                </div>
+                            @else
+                                <span class="text-gray-400">-</span>
+                            @endif
                         </td>
                         <td class="p-3">
                             {{ $t->created_at->format('d M Y') }}
@@ -83,7 +116,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="p-6 text-center text-gray-500">
+                        <td colspan="8" class="p-6 text-center text-gray-500">
                             No transactions found.
                         </td>
                     </tr>

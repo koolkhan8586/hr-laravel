@@ -11,7 +11,7 @@ class LeaveTransactionsExport implements FromCollection, WithHeadings, WithMappi
 {
     public function collection()
     {
-        return LeaveTransaction::with(['user', 'leave'])
+        return LeaveTransaction::with(['user', 'leave', 'processor'])
             ->orderBy('created_at', 'desc')
             ->get();
     }
@@ -21,11 +21,12 @@ class LeaveTransactionsExport implements FromCollection, WithHeadings, WithMappi
         return [
             'Employee Name',
             'Leave Type',
+            'Leave Date',
+            'Charged By',
             'Days Deducted',
             'Balance Before',
             'Balance After',
             'Action',
-            'Processed By',
             'Date'
         ];
     }
@@ -34,12 +35,15 @@ class LeaveTransactionsExport implements FromCollection, WithHeadings, WithMappi
     {
         return [
             $transaction->user->name,
-            $transaction->leave->type,
+            $transaction->leave->type ?? '',
+            $transaction->leave?->start_date?->format('Y-m-d') ?? '',
+            $transaction->leave?->isAutoCharged()
+                ? 'System - '.$transaction->leave->autoReasonLabel()
+                : ($transaction->processor->name ?? ''),
             $transaction->days,
             $transaction->balance_before,
             $transaction->balance_after,
             ucfirst($transaction->action),
-            $transaction->processed_by,
             $transaction->created_at->format('Y-m-d H:i'),
         ];
     }

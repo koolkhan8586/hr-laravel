@@ -47,6 +47,12 @@ class EmployeeController extends Controller
     {
         $employee = User::findOrFail($id);
 
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
+            'early_leave_allowance_minutes' => 'nullable|integer|min:1|max:480',
+        ]);
+
         $employee->update([
             'name' => $request->name,
             'email' => $request->email,
@@ -59,6 +65,12 @@ class EmployeeController extends Controller
             // ✅ TEMPORARY PERMISSION
             'attendance_override_until' => $request->attendance_override_until
                 ? Carbon::parse($request->attendance_override_until)
+                : null,
+
+            // How early this one may leave before half a day is charged.
+            // Blank puts them back on the company rule.
+            'early_leave_allowance_minutes' => $request->filled('early_leave_allowance_minutes')
+                ? max(1, min(480, (int) $request->early_leave_allowance_minutes))
                 : null,
         ]);
 

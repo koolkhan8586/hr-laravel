@@ -281,7 +281,12 @@ if (!$attendance) {
 
     $charged = null;
 
-    if ($earlyBy >= \App\Support\AttendanceRules::earlyMinutes()) {
+    // This employee's own allowance where they have one, else the company
+    // rule - somebody with a standing arrangement to leave earlier is not
+    // charged half a day for keeping to it.
+    $earlyLimit = \App\Support\AttendanceRules::earlyMinutesFor($attendance->user);
+
+    if ($earlyBy >= $earlyLimit) {
 
         $charged = \App\Support\HalfDayCharge::charge(
             $attendance,

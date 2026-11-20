@@ -438,6 +438,139 @@ class AttendanceRulesTest extends TestCase
 
     /*
     |--------------------------------------------------------------------------
+    | One employee's own allowance
+    |--------------------------------------------------------------------------
+    */
+
+    public function test_an_employee_allowed_to_leave_earlier_is_not_charged(): void
+    {
+        $user = $this->employee(balance: 5);
+        $user->forceFill(['early_leave_allowance_minutes' => 60])->save();
+
+        $this->clockedIn($user);
+
+        // 35 minutes early: past the company's 25, inside their own 60.
+        Carbon::setTestNow(Carbon::parse($this->date.' 16:25:00', AttendanceRules::TIMEZONE));
+
+        $this->clockOut($user)->assertOk();
+
+        $this->assertSame(0, Leave::where('user_id', $user->id)->count());
+        $this->assertEquals(5, LeaveBalance::where('user_id', $user->id)->value('remaining_leaves'));
+    }
+
+    public function test_the_allowance_still_has_an_end(): void
+    {
+        $user = $this->employee(balance: 5);
+        $user->forceFill(['early_leave_allowance_minutes' => 60])->save();
+
+        $this->clockedIn($user);
+
+        // 70 minutes early, past their own allowance.
+        Carbon::setTestNow(Carbon::parse($this->date.' 15:50:00', AttendanceRules::TIMEZONE));
+
+        $this->clockOut($user)->assertOk();
+
+        $this->assertSame(1, Leave::where('user_id', $user->id)->count());
+        $this->assertEquals(4.5, LeaveBalance::where('user_id', $user->id)->value('remaining_leaves'));
+    }
+
+    public function test_the_allowance_is_set_on_the_employee_profile(): void
+    {
+        $user = $this->employee();
+
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)
+            ->get(route('employees.edit', $user->id))
+            ->assertOk()
+            ->assertSee('Leaving Early Costs Half a Day From');
+
+        $this->actingAs($admin)
+            ->post(route('employees.update', $user->id), [
+                'name' => $user->name,
+                'email' => $user->email,
+                'early_leave_allowance_minutes' => 45,
+            ])
+            ->assertRedirect(route('employees.index'));
+
+        $this->assertSame(45, (int) $user->fresh()->early_leave_allowance_minutes);
+        $this->assertSame(45, AttendanceRules::earlyMinutesFor($user->fresh()));
+
+        // Cleared again, they are back on the company rule.
+        $this->actingAs($admin)
+            ->post(route('employees.update', $user->id), [
+                'name' => $user->name,
+                'email' => $user->email,
+                'early_leave_allowance_minutes' => '',
+            ]);
+
+        $this->assertNull($user->fresh()->early_leave_allowance_minutes);
+        $this->assertSame(25, AttendanceRules::earlyMinutesFor($user->fresh()));
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Saying what the system charged
+    |--------------------------------------------------------------------------
+    */
+
+    public function test_a_charged_half_day_says_the_system_charged_it(): void
+    {
+        $user = $this->employee(balance: 5);
+        $this->clockedIn($user);
+
+        Carbon::setTestNow(Carbon::parse($this->date.' 16:00:00', AttendanceRules::TIMEZONE));
+        $this->clockOut($user)->assertOk();
+
+        $leave = Leave::where('user_id', $user->id)->firstOrFail();
+
+        $this->assertTrue($leave->isAutoCharged());
+        $this->assertSame('System', $leave->decidedByLabel());
+        $this->assertSame('Left early', $leave->decidedViaLabel());
+        $this->assertSame('Taken off the leave balance', $leave->chargedAgainstLabel());
+
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        // On the leave list.
+        $this->actingAs($admin)
+            ->get(route('admin.leave.index'))
+            ->assertOk()
+            ->assertSee('Auto - Left early')
+            ->assertSee('Taken off the leave balance');
+
+        // And on the transaction report, where the balance moved.
+        $this->actingAs($admin)
+            ->get(route('admin.leave.transactions'))
+            ->assertOk()
+            ->assertSee('Auto - Left early')
+            ->assertSee('System');
+    }
+
+    public function test_an_unpaid_half_day_says_where_it_went_instead(): void
+    {
+        $user = $this->employee(balance: 0);
+        $this->clockedIn($user);
+
+        Carbon::setTestNow(Carbon::parse($this->date.' 16:00:00', AttendanceRules::TIMEZONE));
+        $this->clockOut($user)->assertOk();
+
+        $leave = Leave::where('user_id', $user->id)->firstOrFail();
+
+        $this->assertSame('without_pay', $leave->type);
+        $this->assertSame('No balance left, so taken without pay', $leave->chargedAgainstLabel());
+
+        // No balance moved, so there is nothing on the transaction report -
+        // the leave list is where it shows.
+        $this->assertSame(0, \App\Models\LeaveTransaction::where('user_id', $user->id)->count());
+
+        $this->actingAs(User::factory()->create(['role' => 'admin']))
+            ->get(route('admin.leave.index'))
+            ->assertOk()
+            ->assertSee('No balance left, so taken without pay');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
     | What is never charged
     |--------------------------------------------------------------------------
     */

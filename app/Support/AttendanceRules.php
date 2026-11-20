@@ -58,6 +58,20 @@ class AttendanceRules
         return max(1, (int) AppSetting::get(self::EARLY_MINUTES, 25));
     }
 
+    /**
+     * The same, for one employee.
+     *
+     * Somebody with an allowance of their own is held to that instead of the
+     * company number - a standing arrangement to leave earlier, rather than
+     * half a day charged every evening.
+     */
+    public static function earlyMinutesFor(?\App\Models\User $user): int
+    {
+        $own = $user?->early_leave_allowance_minutes;
+
+        return $own > 0 ? (int) $own : self::earlyMinutes();
+    }
+
     /** No clock-out this long after the shift ended costs half a day. */
     public static function missingMinutes(): int
     {

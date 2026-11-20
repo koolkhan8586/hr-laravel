@@ -89,6 +89,20 @@
                     {{-- Type --}}
                     <td class="p-3 capitalize">
                         {{ str_replace('_',' ', $leave->type) }}
+
+                        {{-- Half days the system charged itself, and where
+                             they were taken from. --}}
+                        @if($leave->isAutoCharged())
+                            <div class="mt-1">
+                                <span style="display:inline-block; padding:1px 7px; border-radius:9999px;
+                                             font-size:11px; background:#fef9c3; color:#a16207;">
+                                    Auto - {{ $leave->autoReasonLabel() }}
+                                </span>
+                            </div>
+                            <div class="text-xs text-gray-500 mt-1 normal-case">
+                                {{ $leave->chargedAgainstLabel() }}
+                            </div>
+                        @endif
                     </td>
 
                     {{-- Dates --}}
@@ -127,10 +141,12 @@
 
                     {{-- Decided By --}}
                     <td class="p-3">
-                        @if($leave->status !== 'pending' && $leave->decidedByLabel())
+                        @if(($leave->status !== 'pending' || $leave->isAutoCharged()) && $leave->decidedByLabel())
                             <div class="font-medium">{{ $leave->decidedByLabel() }}</div>
                             @if($leave->decidedViaLabel())
-                                <div class="text-xs text-gray-500">via {{ $leave->decidedViaLabel() }}</div>
+                                <div class="text-xs text-gray-500">
+                                    {{ $leave->isAutoCharged() ? '' : 'via ' }}{{ $leave->decidedViaLabel() }}
+                                </div>
                             @endif
                         @else
                             <span class="text-gray-400 text-xs">—</span>

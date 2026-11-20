@@ -35,6 +35,9 @@ class User extends Authenticatable
         'allow_anywhere_attendance',
         'attendance_override_until',
         'tracks_attendance',
+        // How early this employee may leave before half a day is charged.
+        // Blank means the company rule applies.
+        'early_leave_allowance_minutes',
 
         // Payroll / salary sheet details
         'salary_category',
