@@ -29,6 +29,11 @@ class AttendanceRules
     public const ABSENCES_FROM    = 'attendance_deduct_absences_from';
     public const RULES_FROM       = 'attendance_half_day_rules_from';
     public const SATURDAY_SET     = 'attendance_saturday_needs_schedule';
+    public const DAYS_SET         = 'attendance_days_needing_schedule';
+
+    public const WEEK = [
+        'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
+    ];
 
     /** Why a half day was charged. */
     public const EARLY_CLOCK_OUT   = 'early_clock_out';
@@ -99,7 +104,65 @@ class AttendanceRules
      */
     public static function saturdayNeedsSchedule(): bool
     {
-        return (bool) AppSetting::get(self::SATURDAY_SET, true);
+        return in_array('saturday', self::daysNeedingSchedule(), true);
+    }
+
+    /**
+     * Days of the week that count only when the date itself is scheduled.
+     *
+     * Saturday and Sunday by default. Sunday is off for everybody here, and
+     * Saturdays are decided month by month, so neither is a day an employee
+     * can be absent from unless somebody put them on it.
+     *
+     * This is deliberately a rule about the week rather than about each
+     * person, because the weekly schedules disagree with the practice: a
+     * couple of employees have Sunday sitting in theirs as a working day,
+     * left over from however the schedule was first filled in, and every
+     * Sunday was counting against them - and only them - as an absence.
+     *
+     * @return array<int, string>
+     */
+    public static function daysNeedingSchedule(): array
+    {
+        $stored = AppSetting::get(self::DAYS_SET);
+
+        if ($stored !== null) {
+
+            $days = collect(explode(',', (string) $stored))
+                ->map(fn ($d) => strtolower(trim($d)))
+                ->filter(fn ($d) => in_array($d, self::WEEK, true))
+                ->unique()
+                ->values()
+                ->all();
+
+            return $days;
+        }
+
+        // Nothing stored yet: honour the older Saturday-only setting if it
+        // was turned off, and add Sunday, which is off for everyone.
+        $saturday = AppSetting::get(self::SATURDAY_SET);
+
+        return $saturday !== null && !$saturday
+            ? ['sunday']
+            : ['saturday', 'sunday'];
+    }
+
+    /** "Saturday and Sunday", for the screen. */
+    public static function daysNeedingScheduleLabel(): string
+    {
+        $days = array_map('ucfirst', self::daysNeedingSchedule());
+
+        if (empty($days)) {
+            return 'no days';
+        }
+
+        if (count($days) === 1) {
+            return $days[0];
+        }
+
+        $last = array_pop($days);
+
+        return implode(', ', $days).' and '.$last;
     }
 
     /** Is a day absent with no leave behind it taken off the pay? */
