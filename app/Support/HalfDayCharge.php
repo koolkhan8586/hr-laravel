@@ -57,6 +57,12 @@ class HalfDayCharge
             return null;
         }
 
+        // The rules look forward only. Days before the date they were
+        // switched on are left exactly as they are, whatever is on them.
+        if (!AttendanceRules::rulesApplyOn($date)) {
+            return null;
+        }
+
         if (!self::chargeable($user, $date)) {
             return null;
         }

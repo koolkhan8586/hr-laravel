@@ -172,6 +172,7 @@ $dayDate = $start->copy()->day($d);
 $rosterKnown = $roster[$user->id]['known'] ?? false;
 $dueIn = $rosterKnown && ($roster[$user->id]['rostered'][$date] ?? false);
 $isOffDay = $rosterKnown && !$dueIn;
+$rosterSource = $roster[$user->id]['source'][$date] ?? 'weekly schedule';
 
 /* Attendance */
 
@@ -340,7 +341,7 @@ title="Full Day Leave (paid)">🌴</span>
 
 @elseif($isOffDay)
 
-<span class="text-gray-300" title="Not rostered on this day">-</span>
+<span class="text-gray-300" title="Not rostered on this day ({{ $rosterSource }})">-</span>
 
 @elseif(!$rosterKnown)
 
@@ -348,7 +349,8 @@ title="Full Day Leave (paid)">🌴</span>
 
 @else
 
-<span class="text-red-500 font-bold" title="Absent - no leave applied for">✖</span>
+<span class="text-red-500 font-bold"
+title="Absent - no leave applied for. Due in by the {{ $rosterSource }}.">✖</span>
 
 @endif
 
