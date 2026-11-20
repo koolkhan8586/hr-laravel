@@ -36,6 +36,8 @@ class SettingsController extends Controller
             'early_minutes'   => \App\Support\AttendanceRules::earlyMinutes(),
             'missing_minutes' => \App\Support\AttendanceRules::missingMinutes(),
             'rules_from'      => \App\Support\AttendanceRules::rulesFrom()->toDateString(),
+            'remind_clock_out' => \App\Support\AttendanceRules::remindsAboutClockOut(),
+            'remind_minutes'   => \App\Support\AttendanceRules::reminderMinutes(),
             'days_set'        => \App\Support\AttendanceRules::daysNeedingSchedule(),
             'deduct_absences' => \App\Support\AttendanceRules::deductsAbsences(),
             'absences_from'   => \App\Support\AttendanceRules::absencesFrom()?->format('Y-m')
@@ -66,6 +68,8 @@ class SettingsController extends Controller
             'early_minutes'   => 'required|integer|min:1|max:480',
             'missing_minutes' => 'required|integer|min:1|max:480',
             'rules_from'      => 'nullable|date_format:Y-m-d',
+            'remind_clock_out' => 'nullable|boolean',
+            'remind_minutes'   => 'nullable|integer|min:1|max:480',
             'days_set'        => 'nullable|array',
             'days_set.*'      => 'in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
             'deduct_absences' => 'nullable|boolean',
@@ -90,6 +94,9 @@ class SettingsController extends Controller
             \App\Support\AttendanceRules::EARLY_MINUTES   => (int) $data['early_minutes'],
             \App\Support\AttendanceRules::MISSING_MINUTES => (int) $data['missing_minutes'],
             \App\Support\AttendanceRules::RULES_FROM      => $rulesFrom,
+            \App\Support\AttendanceRules::REMIND_CLOCK_OUT => $request->boolean('remind_clock_out') ? 1 : 0,
+            \App\Support\AttendanceRules::REMIND_MINUTES   => (int) ($data['remind_minutes']
+                ?? \App\Support\AttendanceRules::reminderMinutes()),
             \App\Support\AttendanceRules::DAYS_SET       => implode(',', $data['days_set'] ?? []),
             \App\Support\AttendanceRules::DEDUCT_ABSENCES => $deductAbsences ? 1 : 0,
             \App\Support\AttendanceRules::ABSENCES_FROM   => $from,

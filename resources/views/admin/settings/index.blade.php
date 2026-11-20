@@ -106,6 +106,26 @@
 
             <div>
                 <label class="block text-xs text-gray-500 mb-1">
+                    Remind about a missing clock-out this many minutes after the shift ends
+                </label>
+                <input type="number" name="remind_minutes" min="1" max="480"
+                       value="{{ $attendanceRules['remind_minutes'] }}"
+                       class="border p-2 rounded w-full">
+                <label class="flex items-center gap-2 text-sm mt-2">
+                    <input type="checkbox" name="remind_clock_out" value="1"
+                           {{ $attendanceRules['remind_clock_out'] ? 'checked' : '' }}>
+                    Send the reminder
+                </label>
+                <p class="text-xs text-gray-500 mt-1">
+                    An email, and a WhatsApp where there is a number on file,
+                    saying the shift has ended and when the half day will be
+                    charged. Once per day. Always sent before the charge: a
+                    number past it is pulled back.
+                </p>
+            </div>
+
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">
                     Charge half days from this date onwards
                 </label>
                 <input type="date" name="rules_from" required

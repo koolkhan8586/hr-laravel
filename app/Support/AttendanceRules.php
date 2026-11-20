@@ -28,6 +28,8 @@ class AttendanceRules
     public const DEDUCT_ABSENCES  = 'attendance_deduct_absences';
     public const ABSENCES_FROM    = 'attendance_deduct_absences_from';
     public const RULES_FROM       = 'attendance_half_day_rules_from';
+    public const REMIND_CLOCK_OUT = 'attendance_clock_out_reminder';
+    public const REMIND_MINUTES   = 'attendance_clock_out_reminder_minutes';
     public const SATURDAY_SET     = 'attendance_saturday_needs_schedule';
     public const DAYS_SET         = 'attendance_days_needing_schedule';
 
@@ -76,6 +78,32 @@ class AttendanceRules
     public static function missingMinutes(): int
     {
         return max(1, (int) AppSetting::get(self::MISSING_MINUTES, 30));
+    }
+
+    /**
+     * Is a reminder sent before the half day is charged?
+     *
+     * Most people who never mark a clock-out simply walked out and forgot.
+     * A nudge a few minutes after the shift ends costs nothing and saves the
+     * charge, so it is on by default.
+     */
+    public static function remindsAboutClockOut(): bool
+    {
+        return (bool) AppSetting::get(self::REMIND_CLOCK_OUT, true);
+    }
+
+    /**
+     * How long after the shift ends the reminder goes out.
+     *
+     * Deliberately before the charge: there is no point reminding somebody
+     * about something they have already been charged for, so if it is set
+     * later than the charge it is pulled back to just before it.
+     */
+    public static function reminderMinutes(): int
+    {
+        $minutes = max(1, (int) AppSetting::get(self::REMIND_MINUTES, 10));
+
+        return min($minutes, max(1, self::missingMinutes() - 1));
     }
 
     /**

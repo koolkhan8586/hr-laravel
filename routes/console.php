@@ -53,6 +53,20 @@ Schedule::command('attendance:charge-missing-clockout')
     ->timezone('Asia/Karachi')
     ->withoutOverlapping();
 
+/*
+|--------------------------------------------------------------------------
+| Clock-Out Reminder
+|--------------------------------------------------------------------------
+| Every minute, so the nudge lands close to the minute it is due. Ten
+| minutes after the shift ends by default - before the half day above, and
+| once per employee per day.
+*/
+
+Schedule::command('attendance:clockout-reminder')
+    ->everyMinute()
+    ->timezone('Asia/Karachi')
+    ->withoutOverlapping();
+
 
 /*
 |--------------------------------------------------------------------------
