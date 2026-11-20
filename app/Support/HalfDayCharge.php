@@ -10,6 +10,7 @@ use App\Models\LeaveTransaction;
 use App\Models\User;
 use App\Services\WahaService;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
@@ -202,24 +203,36 @@ class HalfDayCharge
         return $leave;
     }
 
+    /**
+     * Take the half day off the balance, and record that it was taken.
+     *
+     * Both together or neither. The balance used to be written first and the
+     * record second, so when the record was refused - the action column was
+     * an enum that did not know the word "deducted" - the day came off the
+     * employee's leave with nothing on the transaction report to show for
+     * it, which is the one screen that proves the balance moved.
+     */
     protected static function takeFromBalance(Leave $leave, LeaveBalance $balance): void
     {
-        $before = $balance->remaining_leaves;
+        DB::transaction(function () use ($leave, $balance) {
 
-        $balance->update([
-            'used_leaves'      => $balance->used_leaves + self::DAYS,
-            'remaining_leaves' => $before - self::DAYS,
-        ]);
+            $before = $balance->remaining_leaves;
 
-        LeaveTransaction::create([
-            'user_id'        => $leave->user_id,
-            'leave_id'       => $leave->id,
-            'days'           => self::DAYS,
-            'balance_before' => $before,
-            'balance_after'  => $balance->remaining_leaves,
-            'action'         => 'deducted',
-            'processed_by'   => null,
-        ]);
+            LeaveTransaction::create([
+                'user_id'        => $leave->user_id,
+                'leave_id'       => $leave->id,
+                'days'           => self::DAYS,
+                'balance_before' => $before,
+                'balance_after'  => $before - self::DAYS,
+                'action'         => 'deducted',
+                'processed_by'   => null,
+            ]);
+
+            $balance->update([
+                'used_leaves'      => $balance->used_leaves + self::DAYS,
+                'remaining_leaves' => $before - self::DAYS,
+            ]);
+        });
     }
 
     /** The balance, counted back from the approved annual leave that remains. */

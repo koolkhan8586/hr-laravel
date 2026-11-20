@@ -310,6 +310,32 @@
 
 </div>
 
+<div class="mt-3">
+
+    <!-- ⏳ How early this one may leave before half a day is charged -->
+    <label class="block mb-1 font-semibold">
+        Leaving Early Costs Half a Day From
+    </label>
+
+    <div style="display:flex; align-items:center; gap:8px;">
+        <input type="number"
+               name="early_leave_allowance_minutes"
+               min="1" max="480"
+               value="{{ $staff->user->early_leave_allowance_minutes }}"
+               placeholder="{{ \App\Support\AttendanceRules::earlyMinutes() }}"
+               class="border p-2 rounded" style="width:120px;">
+        <span class="text-sm text-gray-600">minutes before their shift ends</span>
+    </div>
+
+    <p class="text-xs text-gray-500 mt-1">
+        Leave blank to use the company rule, currently
+        <strong>{{ \App\Support\AttendanceRules::earlyMinutes() }} minutes</strong>.
+        Put a bigger number here for somebody allowed to go earlier - at 60,
+        they can leave up to 59 minutes early and nothing is charged.
+    </p>
+
+</div>
+
         </div>
 
         <div class="mt-8">

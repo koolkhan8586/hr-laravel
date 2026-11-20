@@ -474,6 +474,96 @@ class AttendanceRulesTest extends TestCase
         $this->assertEquals(4.5, LeaveBalance::where('user_id', $user->id)->value('remaining_leaves'));
     }
 
+    public function test_the_allowance_is_set_on_the_staff_screen(): void
+    {
+        $user = $this->employee();
+
+        $staff = \App\Models\Staff::where('user_id', $user->id)->firstOrFail();
+
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)
+            ->get(route('admin.staff.edit', $staff->id))
+            ->assertOk()
+            ->assertSee('Leaving Early Costs Half a Day From');
+
+        $this->actingAs($admin)
+            ->put(route('admin.staff.update', $staff->id), [
+                'name' => $user->name,
+                'email' => $user->email,
+                'employee_code' => $user->employee_code ?: 'E'.$user->id,
+                'department' => 'IT',
+                'designation' => 'Officer',
+                'salary' => 60000,
+                'role' => 'employee',
+                'joining_date' => '2024-01-01',
+                'early_leave_allowance_minutes' => 50,
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(50, (int) $user->fresh()->early_leave_allowance_minutes);
+        $this->assertSame(50, AttendanceRules::earlyMinutesFor($user->fresh()));
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Proving the balance moved
+    |--------------------------------------------------------------------------
+    */
+
+    public function test_the_charge_is_written_to_the_transaction_report(): void
+    {
+        $user = $this->employee(balance: 5);
+        $this->clockedIn($user);
+
+        Carbon::setTestNow(Carbon::parse($this->date.' 16:00:00', AttendanceRules::TIMEZONE));
+        $this->clockOut($user)->assertOk();
+
+        $transaction = \App\Models\LeaveTransaction::where('user_id', $user->id)->firstOrFail();
+
+        // The word the column refused on MySQL, which lost the row and left
+        // the balance reduced with nothing to show for it.
+        $this->assertSame('deducted', $transaction->action);
+        $this->assertEquals(0.5, $transaction->days);
+        $this->assertEquals(5, $transaction->balance_before);
+        $this->assertEquals(4.5, $transaction->balance_after);
+        $this->assertNull($transaction->processed_by);
+
+        $this->assertEquals(4.5, LeaveBalance::where('user_id', $user->id)->value('remaining_leaves'));
+
+        $this->actingAs(User::factory()->create(['role' => 'admin']))
+            ->get(route('admin.leave.transactions'))
+            ->assertOk()
+            ->assertSee('Auto - Left early')
+            ->assertSee('deducted');
+    }
+
+    public function test_the_balance_is_not_touched_if_the_record_cannot_be_written(): void
+    {
+        $user = $this->employee(balance: 5);
+        $this->clockedIn($user);
+
+        // Whatever goes wrong writing the record, the balance must not move
+        // without it: the two are one piece of work now.
+        \Illuminate\Support\Facades\DB::statement(
+            "CREATE TRIGGER tx_guard BEFORE INSERT ON leave_transactions
+             BEGIN SELECT RAISE(ABORT, 'nope'); END"
+        );
+
+        Carbon::setTestNow(Carbon::parse($this->date.' 16:00:00', AttendanceRules::TIMEZONE));
+
+        try {
+            $this->clockOut($user);
+        } catch (\Throwable $e) {
+            // The failure is the point; what matters is what it left behind.
+        }
+
+        \Illuminate\Support\Facades\DB::statement('DROP TRIGGER tx_guard');
+
+        $this->assertEquals(5, LeaveBalance::where('user_id', $user->id)->value('remaining_leaves'));
+        $this->assertSame(0, \App\Models\LeaveTransaction::where('user_id', $user->id)->count());
+    }
+
     public function test_the_allowance_is_set_on_the_employee_profile(): void
     {
         $user = $this->employee();
