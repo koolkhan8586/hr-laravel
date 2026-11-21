@@ -405,7 +405,7 @@ class LoanController extends Controller
     public function create(Request $request)
 {
     $selectedUserId = $request->user_id;
-    $employees = \App\Models\User::where('role','employee')->get();
+    $employees = \App\Models\User::where('role','employee')->orderBy('name')->get();
     return view('loan.create',compact('employees', 'selectedUserId'));
 }
 

@@ -619,6 +619,19 @@
 
     </form>
 
+    @if($includeLeft ?? false)
+    <div class="mt-6 bg-amber-50 border border-amber-200 rounded p-4 no-print">
+        <p class="text-sm text-amber-800">
+            <strong>Employees who have left are being shown.</strong>
+            Enter a final salary where one is owed, then
+            <a class="underline font-semibold"
+               href="{{ request()->fullUrlWithQuery(['include_left' => null]) }}">
+                hide them again
+            </a>.
+        </p>
+    </div>
+    @endif
+
     @if($missing->isNotEmpty())
     <div class="mt-6 bg-amber-50 border border-amber-200 rounded p-4 no-print">
         <p class="font-semibold text-amber-800 text-sm mb-2">
@@ -643,6 +656,19 @@
             <a href="{{ route('admin.staff.index') }}" class="underline font-semibold">staff record</a>,
             or pick <strong>All</strong> above to see everyone at once.
         </p>
+
+        @if(($leftOff ?? collect())->isNotEmpty())
+        <p class="text-xs text-amber-700 mt-2">
+            Somebody who has left is off the sheet so a figure is not entered
+            for them by mistake. A leaver who already has a row this month
+            keeps it - their final salary is still payable. Put them all back
+            with
+            <a class="underline font-semibold"
+               href="{{ request()->fullUrlWithQuery(['include_left' => 1]) }}">
+                show employees who have left
+            </a>.
+        </p>
+        @endif
     </div>
     @endif
 

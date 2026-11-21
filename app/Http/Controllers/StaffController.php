@@ -41,7 +41,7 @@ class StaffController extends Controller
         // Sortable columns. Name lives on the user, the rest on the staff row.
         $sort = in_array($request->sort, ['code', 'name', 'department', 'designation', 'salary', 'status'])
             ? $request->sort
-            : 'code';
+            : 'name';
 
         $dir = $request->dir === 'desc' ? 'desc' : 'asc';
 

@@ -66,7 +66,7 @@ class SalaryController extends Controller
 
         $salaries = $query->get();
 
-        $employees = User::where('role', 'employee')->get();
+        $employees = User::where('role', 'employee')->orderBy('name')->get();
 
         $totalSalaries   = $salaries->count();
         $totalNet        = $salaries->where('is_posted', true)->sum('net_salary');
@@ -114,7 +114,7 @@ public function employeeIndex()
     */
     public function create()
     {
-        $users = User::where('role', 'employee')->get();
+        $users = User::where('role', 'employee')->orderBy('name')->get();
         return view('salary.create', compact('users'));
     }
 
@@ -220,7 +220,36 @@ public function employeeIndex()
 
         [$sort, $dir] = $this->sheetSort($request);
 
+        // Existing rows for this period, keyed by user so the sheet reopens
+        // with whatever was last saved.
+        $existing = Salary::where('month', $month)
+            ->where('year', $year)
+            ->get()
+            ->keyBy('user_id');
+
+        /*
+        | Somebody marked left or resigned is off the sheet: they are not
+        | being paid next month and a leaver sitting in the list is a figure
+        | waiting to be entered by mistake.
+        |
+        | Two things keep that safe. A leaver who already has a row for this
+        | month stays - their final salary is mid-entry, and hiding a row
+        | that already has figures on it would quietly change the totals.
+        | And ?include_left=1 brings them all back, for the month somebody
+        | leaves and still has to be paid.
+        */
+        $includeLeft = $request->boolean('include_left');
+
         $query = User::with('staff')->where('role', 'employee');
+
+        if (! $includeLeft) {
+            $query->where(function ($q) use ($existing) {
+                // Only those explicitly marked left are dropped; an employee
+                // with no staff record at all is left where they are.
+                $q->whereDoesntHave('staff', fn ($s) => $s->where('status', '!=', 'active'))
+                  ->orWhereIn('id', $existing->keys());
+            });
+        }
 
         if ($category !== 'all') {
             $query->where('salary_category', $category);
@@ -230,12 +259,14 @@ public function employeeIndex()
 
         $users = $query->get();
 
-        // Existing rows for this period, keyed by user so the sheet reopens
-        // with whatever was last saved.
-        $existing = Salary::where('month', $month)
-            ->where('year', $year)
-            ->get()
-            ->keyBy('user_id');
+        // Leavers held off this sheet, so their absence is explained rather
+        // than silently done.
+        $leftOff = User::with('staff')->where('role', 'employee')
+            ->whereHas('staff', fn ($s) => $s->where('status', '!=', 'active'))
+            ->whereNotIn('id', $users->pluck('id'))
+            ->when($category !== 'all', fn ($q) => $q->where('salary_category', $category))
+            ->orderBy('name')
+            ->get();
 
         $columns   = \App\Models\SalaryColumn::forCategory($category);
         $taxSlabs  = \App\Models\TaxSlab::activeSlabs();
@@ -271,9 +302,11 @@ public function employeeIndex()
             ->get()
             ->map(fn ($u) => [
                 'user'   => $u,
-                'reason' => $u->role !== 'employee'
-                    ? 'Role is "'.$u->role.'", not Employee'
-                    : 'On the '.ucfirst($u->salary_category ?: 'staff').' sheet',
+                'reason' => match (true) {
+                    $u->role !== 'employee' => 'Role is "'.$u->role.'", not Employee',
+                    $leftOff->contains('id', $u->id) => 'Left / resigned',
+                    default => 'On the '.ucfirst($u->salary_category ?: 'staff').' sheet',
+                },
             ]);
 
         return view('salary.sheet', compact(
@@ -291,7 +324,9 @@ public function employeeIndex()
             'loanBalances',
             'insurancePortions',
             'withoutPay',
-            'wopBasis'
+            'wopBasis',
+            'leftOff',
+            'includeLeft'
         ));
     }
 
@@ -442,9 +477,11 @@ public function employeeIndex()
     /** Whitelisted sort column and direction from the request. */
     private function sheetSort(Request $request): array
     {
+        // Alphabetical unless asked otherwise: a list of people is read by
+        // looking for a name, not by remembering a code.
         $sort = in_array($request->sort, ['code', 'name', 'doj'])
             ? $request->sort
-            : 'code';
+            : 'name';
 
         $dir = $request->dir === 'desc' ? 'desc' : 'asc';
 
@@ -2042,7 +2079,7 @@ public function destroy($id)
     public function edit($id)
 {
     $salary = Salary::findOrFail($id);
-    $users = User::where('role','employee')->get();
+    $users = User::where('role','employee')->orderBy('name')->get();
 
     return view('salary.edit', compact('salary','users'));
 }

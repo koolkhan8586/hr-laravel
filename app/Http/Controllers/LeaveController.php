@@ -715,7 +715,7 @@ public function destroy($id)
 
     public function recalculateBalances()
     {
-        $employees = User::where('role','employee')->get();
+        $employees = User::where('role','employee')->orderBy('name')->get();
 
         foreach ($employees as $employee) {
             $this->recalculateUserLeaveBalance($employee->id);
@@ -730,7 +730,7 @@ public function destroy($id)
         'bulk_balance' => 'required|numeric|min:0'
     ]);
 
-    $employees = User::where('role','employee')->get();
+    $employees = User::where('role','employee')->orderBy('name')->get();
 
     foreach ($employees as $employee) {
 
