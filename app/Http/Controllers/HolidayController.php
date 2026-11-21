@@ -146,7 +146,7 @@ return back()->with('success','Holiday added successfully');
 {
 
 $holiday = Holiday::findOrFail($id);
-$employees = User::where('role','employee')->get();
+$employees = User::where('role','employee')->orderBy('name')->get();
 
 return view('holidays.edit',compact('holiday','employees'));
 
