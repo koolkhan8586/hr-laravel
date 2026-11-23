@@ -451,6 +451,10 @@
                 if (($wop['absent_days'] ?? 0) > 0) {
                     $wopParts[] = \App\Support\WithoutPayLeave::niceDays($wop['absent_days']).' day(s) absent with no leave';
                 }
+
+                if (($wop['shortfall_days'] ?? 0) > 0) {
+                    $wopParts[] = \App\Support\WithoutPayLeave::niceDays($wop['shortfall_days']).' day(s) time short over the month';
+                }
             @endphp
             <td class="border p-0">
                 <input type="text" inputmode="decimal" data-col="extra_leaves"

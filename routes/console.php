@@ -110,3 +110,23 @@ Schedule::command('app:send-daily-attendance-summary')
     ->dailyAt('21:00')
     ->timezone('Asia/Karachi')
     ->withoutOverlapping();
+
+
+/*
+|--------------------------------------------------------------------------
+| Time Short Over the Month
+|--------------------------------------------------------------------------
+| Minutes are counted every day but charged only once the month has closed,
+| because that is the only point at which the arithmetic is fair: twenty
+| minutes late on a Monday is twenty minutes, while the same twenty minutes
+| every working day is seven hours.
+|
+| On the first of the month, for the month just gone. It charges nothing
+| unless the time rule is switched on, and a month already settled is left
+| exactly as it was, so running it again is safe.
+*/
+
+Schedule::command('attendance:charge-shortfall')
+    ->monthlyOn(1, '02:30')
+    ->timezone('Asia/Karachi')
+    ->withoutOverlapping();

@@ -82,6 +82,17 @@
                                         Auto - {{ $t->leave->autoReasonLabel() }}
                                     </span>
                                 @endif
+                            @elseif(filled($t->note))
+                                {{-- A balance move with no leave behind it: a
+                                     month's time short is not a day off, so
+                                     the note is the only thing that explains
+                                     it. --}}
+                                <div class="text-sm">{{ $t->note }}</div>
+                                <span style="display:inline-block; margin-top:2px; padding:1px 7px;
+                                             border-radius:9999px; font-size:11px;
+                                             background:#fef9c3; color:#a16207;">
+                                    Auto - Time short
+                                </span>
                             @else
                                 <span class="text-gray-400">-</span>
                             @endif
@@ -106,6 +117,9 @@
                                 <div class="text-xs text-gray-500">
                                     {{ $t->leave->autoReasonLabel() }}
                                 </div>
+                            @elseif(filled($t->note))
+                                System
+                                <div class="text-xs text-gray-500">Month-end time total</div>
                             @else
                                 <span class="text-gray-400">-</span>
                             @endif

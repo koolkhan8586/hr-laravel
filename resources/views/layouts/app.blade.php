@@ -188,6 +188,10 @@ Attendance Calendar
 Attendance Devices
 </a>
 
+<a href="{{ route('admin.attendance.shortfall') }}" class="block py-1 hover:text-blue-600">
+Time Short
+</a>
+
 <a href="{{ route('admin.attendance.index') }}" class="block py-1 hover:text-blue-600">
 Attendance Management
 </a>
@@ -447,6 +451,10 @@ My Schedule
 
 <a href="{{ route('attendance.index') }}" class="block py-1 hover:text-blue-600">
 My Attendance
+</a>
+
+<a href="{{ route('timing.my') }}" class="block py-1 hover:text-blue-600">
+My Timing
 </a>
 
 <a href="{{ route('location-requests.mine') }}" class="block py-1 hover:text-blue-600">

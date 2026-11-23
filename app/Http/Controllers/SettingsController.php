@@ -45,6 +45,12 @@ class SettingsController extends Controller
             'auto_clock_out'  => \App\Support\AttendanceRules::autoClockOutEnabled(),
             'require_mobile'  => \App\Support\AttendanceDevice::requiresMobile(),
             'one_per_device'  => \App\Support\AttendanceDevice::onePerDevice(),
+
+            // Half a day per offence, or the time actually missed.
+            'charge_mode'        => \App\Support\TimeShortfall::mode(),
+            'early_grace'        => \App\Support\TimeShortfall::earlyGraceMinutes(),
+            'hours_per_half_day' => \App\Support\TimeShortfall::hoursPerHalfDay(),
+            'time_rules_from'    => \App\Support\TimeShortfall::rulesFrom()->toDateString(),
         ];
 
         return view('admin.settings.index', compact(
@@ -79,9 +85,22 @@ class SettingsController extends Controller
             'auto_clock_out'  => 'nullable|boolean',
             'require_mobile'  => 'nullable|boolean',
             'one_per_device'  => 'nullable|boolean',
+            'charge_mode'        => 'nullable|in:half_day,time',
+            'early_grace'        => 'nullable|integer|min:0|max:480',
+            'hours_per_half_day' => 'nullable|numeric|min:0.5|max:12',
+            'time_rules_from'    => 'nullable|date_format:Y-m-d',
         ]);
 
         $deductAbsences = $request->boolean('deduct_absences');
+
+        $chargeMode = $data['charge_mode'] ?? \App\Support\TimeShortfall::mode();
+
+        // Like every other rule here, the time rule only ever looks forward:
+        // left blank it keeps the date it already has, and a rule that has
+        // never been saved starts today rather than reaching back over months
+        // nobody was told about.
+        $timeFrom = $data['time_rules_from']
+            ?? \App\Support\TimeShortfall::rulesFrom()->toDateString();
 
         // Left out means "leave it where it is", which for a setting that has
         // never been saved is today - the rules never reach backwards.
@@ -110,6 +129,15 @@ class SettingsController extends Controller
             // through a remote desktop session on an office computer.
             \App\Support\AttendanceDevice::REQUIRE_MOBILE => $request->boolean('require_mobile') ? 1 : 0,
             \App\Support\AttendanceDevice::ONE_PER_DEVICE => $request->boolean('one_per_device') ? 1 : 0,
+
+            // How a short day is paid for: half a day on the spot, or the
+            // minutes counted and the month settled at the end of it.
+            \App\Support\TimeShortfall::MODE => $chargeMode,
+            \App\Support\TimeShortfall::EARLY_GRACE => (int) ($data['early_grace']
+                ?? \App\Support\TimeShortfall::earlyGraceMinutes()),
+            \App\Support\TimeShortfall::HOURS_PER_HALF_DAY => (float) ($data['hours_per_half_day']
+                ?? \App\Support\TimeShortfall::hoursPerHalfDay()),
+            \App\Support\TimeShortfall::RULES_FROM => $timeFrom,
         ]);
 
         $message = 'Attendance rules saved. Half days are charged from '
@@ -127,6 +155,12 @@ class SettingsController extends Controller
         if ($request->boolean('one_per_device')) {
             $message .= ' One device can mark attendance for one employee a day.';
         }
+
+        $message .= $chargeMode === \App\Support\TimeShortfall::MODE_TIME
+            ? ' Short time is counted in minutes from '
+                .Carbon::parse($timeFrom)->format('d M Y')
+                .' and settled at the end of each month.'
+            : ' Short days are charged half a day at a time.';
 
         return back()->with('success', $message);
     }

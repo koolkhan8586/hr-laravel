@@ -13,6 +13,9 @@ class LeaveTransaction extends Model
         'balance_before',
         'balance_after',
         'action',
+        // Why the balance moved, when no leave stands behind it - a month's
+        // missed time is not a day off, so there is nothing else to say it.
+        'note',
         'processed_by',
     ];
 

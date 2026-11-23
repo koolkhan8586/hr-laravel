@@ -141,6 +141,10 @@ Route::get('/salary/download/{id}', [SalaryController::class,'download'])->name(
 /* My Schedule (Employee) - the signed-in user's own duty timings */
 Route::get('/my-schedule', [MyScheduleController::class, 'index'])->name('schedule.my');
 
+/* My Timing (Employee) - the month's time short, while there is still time
+   to make it up. The same figure the office sees. */
+Route::get('/my-timing', [\App\Http\Controllers\MyTimingController::class, 'index'])->name('timing.my');
+
 /* My Work Locations (Employee) - see where they may clock in, and ask to change it */
 Route::get('/my-locations', [LocationChangeRequestController::class, 'mine'])->name('location-requests.mine');
 Route::post('/my-locations', [LocationChangeRequestController::class, 'store'])->name('location-requests.store');
@@ -372,6 +376,25 @@ Route::post('/allow-overtime',
 Route::get('/attendance-devices',
     [AdminAttendanceController::class,'devices']
 )->name('attendance.devices');
+
+/*
+|--------------------------------------------------------------------------
+| Time Short Over the Month
+|--------------------------------------------------------------------------
+|
+| Minutes counted every day, settled once the month has closed. During the
+| month this is a warning anybody can still act on; afterwards it is the
+| record of what was charged.
+|
+*/
+
+Route::get('/time-short',
+    [AdminAttendanceController::class,'shortfall']
+)->name('attendance.shortfall');
+
+Route::post('/time-short/charge',
+    [AdminAttendanceController::class,'chargeShortfall']
+)->name('attendance.shortfall.charge');
 
 /*
 |--------------------------------------------------------------------------

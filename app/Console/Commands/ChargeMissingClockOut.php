@@ -29,6 +29,14 @@ class ChargeMissingClockOut extends Command
 
     public function handle(): int
     {
+        // Under the time rule a missing clock-out is worth half the shift in
+        // minutes, counted on the day and settled with the rest of the month
+        // at the end of it. Nothing is charged here at all.
+        if (\App\Support\TimeShortfall::enabled()) {
+            $this->info('Time is counted instead of half days charged, so nothing is charged here.');
+            return self::SUCCESS;
+        }
+
         $now = Carbon::now(AttendanceRules::TIMEZONE);
 
         $after = AttendanceRules::missingMinutes();
