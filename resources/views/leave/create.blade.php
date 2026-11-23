@@ -11,6 +11,26 @@
         </div>
     @endif
 
+    @if(session('warning'))
+        <div class="p-3 rounded mb-4" style="background:#fef9c3; color:#a16207;">
+            {{ session('warning') }}
+        </div>
+    @endif
+
+    @if($errors->any())
+        <div class="p-3 rounded mb-4" style="background:#fee2e2; color:#b91c1c;">
+            {{ $errors->first() }}
+        </div>
+    @endif
+
+    @php
+        // Annual leave left, per employee, so the form can say up front that
+        // a request bigger than the balance is taken without pay.
+        $balanceMap = ($balances ?? collect())->map(fn ($d) => (float) $d);
+    @endphp
+
+    <div id="balanceNote" class="p-3 rounded mb-4" style="background:#eff6ff; color:#1d4ed8;"></div>
+
     <form method="POST" action="{{ route('leave.store') }}">
         @csrf
 
@@ -19,6 +39,7 @@
             <div class="mb-4">
                 <label class="block font-semibold mb-2">Select Employee</label>
                 <select name="employee_id"
+                        id="employee_id"
                         class="w-full border rounded px-3 py-2"
                         required>
                     <option value="">-- Select Employee --</option>
@@ -36,6 +57,7 @@
         <div class="mb-4">
             <label class="block font-semibold mb-2">Leave Type</label>
             <select name="type"
+                    id="leave_type"
                     class="w-full border rounded px-3 py-2"
                     required>
                 <option value="annual">Annual</option>
@@ -49,6 +71,7 @@
             <label class="block font-semibold mb-2">From Date</label>
             <input type="date"
                    name="start_date"
+                   id="start_date"
                    class="w-full border rounded px-3 py-2"
                    required>
         </div>
@@ -59,6 +82,7 @@
             <label class="block font-semibold mb-2">To Date</label>
             <input type="date"
                    name="end_date"
+                   id="end_date"
                    class="w-full border rounded px-3 py-2"
                    required>
         </div>
@@ -108,6 +132,80 @@
     </form>
 
 </div>
+
+{{-- Says, before the form is sent, whether this request fits the balance --}}
+<script>
+(function () {
+
+    const balances = @json($balanceMap);
+    const ownId    = {{ auth()->id() }};
+
+    const note      = document.getElementById('balanceNote');
+    const employee  = document.getElementById('employee_id');
+    const typeField = document.getElementById('leave_type');
+    const from      = document.getElementById('start_date');
+    const to        = document.getElementById('end_date');
+    const duration  = document.getElementById('duration_type');
+
+    const nice = (n) => String(Math.round(n * 10) / 10).replace(/\.0$/, '');
+
+    function daysAsked() {
+        if (duration && duration.value === 'half_day') return 0.5;
+        if (!from.value || !to.value) return null;
+
+        const start = new Date(from.value), end = new Date(to.value);
+        if (end < start) return null;
+
+        return Math.round((end - start) / 86400000) + 1;
+    }
+
+    function update() {
+        const id = employee ? employee.value : ownId;
+
+        if (!id || !(id in balances)) {
+            note.style.display = 'none';
+            return;
+        }
+
+        const left = balances[id];
+
+        if (typeField.value !== 'annual') {
+            note.style.display = '';
+            note.style.background = '#eff6ff';
+            note.style.color = '#1d4ed8';
+            note.textContent = 'Leave without pay is deducted from the salary. '
+                + nice(left) + ' day(s) of annual leave are left.';
+            return;
+        }
+
+        const asked = daysAsked();
+
+        note.style.display = '';
+
+        if (asked !== null && asked > left) {
+            note.style.background = '#fef9c3';
+            note.style.color = '#a16207';
+            note.textContent = 'Only ' + nice(left) + ' day(s) of annual leave are left and '
+                + nice(asked) + ' have been asked for, so this leave will be recorded as '
+                + 'Without Pay and deducted from the salary.';
+        } else {
+            note.style.background = '#eff6ff';
+            note.style.color = '#1d4ed8';
+            note.textContent = nice(left) + ' day(s) of annual leave are left'
+                + (asked !== null ? ', and ' + nice(asked) + ' are being asked for.' : '.');
+        }
+    }
+
+    [employee, typeField, from, to, duration].forEach(function (field) {
+        if (field) {
+            field.addEventListener('change', update);
+            field.addEventListener('input', update);
+        }
+    });
+
+    update();
+})();
+</script>
 
 {{-- Half Day JS --}}
 <script>

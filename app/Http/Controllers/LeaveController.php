@@ -54,7 +54,13 @@ class LeaveController extends Controller
             $employees = collect([auth()->user()]);
         }
 
-        return view('leave.create', compact('employees'));
+        // What each of them has left, so the form can say up front that a
+        // request bigger than the balance will be taken without pay.
+        $balances = $employees->mapWithKeys(fn ($employee) => [
+            $employee->id => \App\Support\LeaveEntitlement::remainingFor($employee->id),
+        ]);
+
+        return view('leave.create', compact('employees', 'balances'));
     }
 
     public function history()
@@ -133,9 +139,18 @@ public function store(Request $request)
         ? 0.5
         : $start->diffInDays($end) + 1;
 
+    /*
+    | Annual leave is paid out of a balance. Asking for more than is left
+    | used to be accepted and then stall - the application sat pending and
+    | the approver was told "Insufficient leave balance" with nothing they
+    | could do about it. It is decided here instead: not enough balance
+    | means the leave is without pay, and the employee is told so now.
+    */
+    $entitlement = \App\Support\LeaveEntitlement::resolve($userId, $request->type, $days);
+
     $leave = Leave::create([
         'user_id'        => $userId,
-        'type'           => $request->type,
+        'type'           => $entitlement['type'],
         'start_date'     => $request->start_date,
         'end_date'       => $request->end_date,
         'duration_type'  => $request->duration_type,
@@ -201,18 +216,24 @@ public function store(Request $request)
         }
 
         if (!empty($hints)) {
-            return back()->with('success', 'Leave Created Successfully')
-                ->with('error', implode(' | ', $hints).'. You can Resend WhatsApp from Leave Management.');
+
+            $redirect = back()->with('success', 'Leave Created Successfully');
+
+            if ($entitlement['converted']) {
+                $redirect->with('warning', \App\Support\LeaveEntitlement::notice($entitlement, $days));
+            }
+
+            return $redirect->with(
+                'error',
+                implode(' | ', $hints).'. You can Resend WhatsApp from Leave Management.'
+            );
         }
     }
 
     if(auth()->user()->role === 'admin'){
-        $approved = $this->processApproval($leave);
-
-        if (!$approved) {
-            $leave->delete();
-            return back()->with('error','Insufficient leave balance.');
-        }
+        // Never refused for want of balance now: it is taken without pay
+        // instead, decided above before the leave was written.
+        $this->processApproval($leave);
 
         // Entered by an admin means it is already approved, so the employee
         // gets the same notice they would have had from an approval - which
@@ -220,7 +241,15 @@ public function store(Request $request)
         $this->notifyLeaveOwner($leave, 'approved');
     }
 
-    return back()->with('success','Leave Created Successfully');
+    $message = 'Leave Created Successfully';
+
+    if ($entitlement['converted']) {
+        return back()
+            ->with('success', $message)
+            ->with('warning', \App\Support\LeaveEntitlement::notice($entitlement, $days));
+    }
+
+    return back()->with('success', $message);
 }
 
 /*
@@ -263,19 +292,19 @@ public function store(Request $request)
     {
         $leave = Leave::findOrFail($id);
 
+        $wasAnnual = $leave->type === 'annual';
+
         if ($leave->status === 'approved') {
             return redirect()
                 ->route('admin.leave.index')
                 ->with('error', 'Already Approved');
         }
 
-        $approved = $this->processApproval($leave);
+        // Short of balance now means the leave is taken without pay, not
+        // that the approval is refused.
+        $this->processApproval($leave);
 
-        if (!$approved) {
-            return redirect()
-                ->route('admin.leave.index')
-                ->with('error', 'Insufficient leave balance.');
-        }
+        $leave->refresh();
 
         $leave->update([
             'status' => 'approved',
@@ -288,7 +317,9 @@ public function store(Request $request)
 
         return redirect()
             ->route('admin.leave.index')
-            ->with('success', 'Leave Approved');
+            ->with('success', $leave->type === 'without_pay' && $wasAnnual
+                ? 'Leave approved. There was not enough annual balance left, so it was approved as Without Pay.'
+                : 'Leave Approved');
     }
 
 /*
@@ -342,14 +373,12 @@ public function store(Request $request)
         }
 
         if ($decision === 'approve') {
-            $approved = $this->processApproval($leave);
 
-            if (!$approved) {
-                return view('leave.email-decision-result', [
-                    'status' => 'insufficient',
-                    'leave' => $leave,
-                ]);
-            }
+            // Not enough balance turns the leave into one without pay; it
+            // never leaves the approver stuck on a page that only says no.
+            $this->processApproval($leave);
+
+            $leave->refresh();
 
             $leave->update([
                 'status' => 'approved',
@@ -497,8 +526,18 @@ public function store(Request $request)
             ]
         );
 
-        if ($balance->remaining_leaves < $leave->calculated_days) {
-            return false;
+        /*
+        | The balance can have gone since the day they applied - another
+        | leave approved first, or the allocation changed. Rather than
+        | refusing the approval and leaving the application stuck, it
+        | becomes leave without pay, the same as if it had been applied for
+        | today. The employee is told which it was when they are notified.
+        */
+        if (\App\Support\LeaveEntitlement::remainingFor($leave->user_id, $leave->id) < $leave->calculated_days) {
+
+            $leave->update(['type' => 'without_pay']);
+
+            return true;
         }
 
         $before = $balance->remaining_leaves;
@@ -855,8 +894,18 @@ public function adminUpdate(Request $request, $id)
         ? 0.5
         : $start->diffInDays($end) + 1;
 
+    // The same rule as applying: annual only while the balance covers it.
+    // The leave's own days are left out of the sum, since they are its to
+    // spend again.
+    $entitlement = \App\Support\LeaveEntitlement::resolve(
+        $leave->user_id,
+        $request->type,
+        $days,
+        $leave->id
+    );
+
     $leave->update([
-        'type'            => $request->type,
+        'type'            => $entitlement['type'],
         'start_date'      => $request->start_date,
         'end_date'        => $request->end_date,
         'duration_type'   => $request->duration_type,
@@ -871,7 +920,13 @@ public function adminUpdate(Request $request, $id)
     // Recalculate Leave Balance for this specific user
     $this->recalculateUserLeaveBalance($leave->user_id);
 
-    return redirect()->back()->with('success', 'Leave updated successfully');
+    $redirect = redirect()->back()->with('success', 'Leave updated successfully');
+
+    if ($entitlement['converted']) {
+        $redirect->with('warning', \App\Support\LeaveEntitlement::notice($entitlement, $days));
+    }
+
+    return $redirect;
   }
 
   /*
