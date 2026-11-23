@@ -221,7 +221,8 @@
                         @foreach($rows as $row)
                             <tr class="border-t">
                                 <td class="p-2">
-                                    {{ $row['user']->name }}
+                                    <a href="{{ route('admin.attendance.shortfall.employee', ['user' => $row['user']->id, 'month' => $month->format('Y-m')]) }}"
+                                       class="text-blue-700 hover:underline font-medium">{{ $row['user']->name }}</a>
                                     @if($row['user']->employee_code)
                                         <span class="text-xs text-gray-500">({{ $row['user']->employee_code }})</span>
                                     @endif

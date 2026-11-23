@@ -1353,6 +1353,17 @@ protected function buildStaffLeaveReport(string $month, bool $includePayrollOnly
         return view('admin.attendance.shortfall', $this->buildShortfall($request));
     }
 
+    /** One employee's own page, as the office sees it. */
+    public function shortfallEmployee(Request $request, \App\Models\User $user)
+    {
+        return view('attendance.my-timing', MyTimingController::data($user, $request, true));
+    }
+
+    public function exportShortfallEmployee(Request $request, \App\Models\User $user)
+    {
+        return MyTimingController::download($user, $request);
+    }
+
     /**
      * The same figures as an Excel sheet, for the month and employee on screen.
      * One row per employee, with the days that cost time spelled out in the

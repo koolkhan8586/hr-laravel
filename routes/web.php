@@ -144,6 +144,7 @@ Route::get('/my-schedule', [MyScheduleController::class, 'index'])->name('schedu
 /* My Timing (Employee) - the month's time short, while there is still time
    to make it up. The same figure the office sees. */
 Route::get('/my-timing', [\App\Http\Controllers\MyTimingController::class, 'index'])->name('timing.my');
+Route::get('/my-timing/export', [\App\Http\Controllers\MyTimingController::class, 'export'])->name('timing.my.export');
 
 /* My Work Locations (Employee) - see where they may clock in, and ask to change it */
 Route::get('/my-locations', [LocationChangeRequestController::class, 'mine'])->name('location-requests.mine');
@@ -391,6 +392,14 @@ Route::get('/attendance-devices',
 Route::get('/time-short',
     [AdminAttendanceController::class,'shortfall']
 )->name('attendance.shortfall');
+
+Route::get('/time-short/employee/{user}',
+    [AdminAttendanceController::class,'shortfallEmployee']
+)->name('attendance.shortfall.employee');
+
+Route::get('/time-short/employee/{user}/export',
+    [AdminAttendanceController::class,'exportShortfallEmployee']
+)->name('attendance.shortfall.employee.export');
 
 Route::get('/time-short/export',
     [AdminAttendanceController::class,'exportShortfall']
