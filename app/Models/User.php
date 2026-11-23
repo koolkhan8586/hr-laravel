@@ -38,6 +38,9 @@ class User extends Authenticatable
         // How early this employee may leave before half a day is charged.
         // Blank means the company rule applies.
         'early_leave_allowance_minutes',
+        // Let through the phone-only and one-device-one-employee rules, for
+        // somebody who genuinely marks from a shared office computer.
+        'attendance_device_exempt',
 
         // Payroll / salary sheet details
         'salary_category',
@@ -87,6 +90,7 @@ class User extends Authenticatable
             'tracks_attendance' => 'boolean',
             'can_manage_salary' => 'boolean',
             'can_manage_loan' => 'boolean',
+            'attendance_device_exempt' => 'boolean',
         ];
     }
 

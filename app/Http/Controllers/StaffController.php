@@ -219,6 +219,7 @@ class StaffController extends Controller
         'office_location_ids'   => 'nullable|array',
         'office_location_ids.*' => 'integer|exists:office_locations,id',
         'early_leave_allowance_minutes' => 'nullable|integer|min:1|max:480',
+        'attendance_device_exempt' => 'nullable|boolean',
     ]);
 
     /*
@@ -261,6 +262,10 @@ class StaffController extends Controller
         'early_leave_allowance_minutes' => $request->filled('early_leave_allowance_minutes')
             ? (int) $request->early_leave_allowance_minutes
             : null,
+
+        // Let this one past the device rules - a shared gate computer, or
+        // somebody with no phone of their own.
+        'attendance_device_exempt' => $request->boolean('attendance_device_exempt'),
     ]);
 
     $staff->user->role = $request->role;

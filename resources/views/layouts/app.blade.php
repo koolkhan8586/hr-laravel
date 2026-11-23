@@ -184,6 +184,10 @@ Attendance Dashboard
 Attendance Calendar
 </a>
 
+<a href="{{ route('admin.attendance.devices') }}" class="block py-1 hover:text-blue-600">
+Attendance Devices
+</a>
+
 <a href="{{ route('admin.attendance.index') }}" class="block py-1 hover:text-blue-600">
 Attendance Management
 </a>

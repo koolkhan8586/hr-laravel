@@ -64,6 +64,37 @@ function closeAttendanceModal() {
 }
 
 /**
+ * This browser's own token.
+ *
+ * Kept in the browser's storage so the same browser is recognisable from
+ * one day to the next. It says nothing about who is using it - it is there
+ * so that one office computer marking attendance for five different people
+ * can be seen for what it is.
+ */
+function attendanceDeviceId() {
+
+    const key = 'lsaf_attendance_device';
+
+    try {
+        let id = window.localStorage.getItem(key);
+
+        if (!id) {
+            id = (window.crypto && window.crypto.randomUUID)
+                ? window.crypto.randomUUID()
+                : 'd-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 12);
+
+            window.localStorage.setItem(key, id);
+        }
+
+        return id;
+    } catch (e) {
+        // Private windows and blocked storage: no token rather than no
+        // attendance. The server still sees the browser and the address.
+        return null;
+    }
+}
+
+/**
  * Clock in or out without leaving the page.
  *
  * The button is disabled while it is in flight, because tapping twice on a
@@ -105,6 +136,10 @@ function attendanceAction(url, button) {
                 body: JSON.stringify({
                     latitude: position.coords.latitude,
                     longitude: position.coords.longitude,
+                    device_id: attendanceDeviceId(),
+                    // A phone has a touch screen; a desktop browser
+                    // dressed as one usually forgets to say so.
+                    touch_points: navigator.maxTouchPoints ?? 0,
                 }),
             })
             .then(res => res.json().catch(() => ({
