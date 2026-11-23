@@ -88,7 +88,7 @@
 
             {{-- Which rule is in force. Everything below reads differently
                  depending on this, so it comes first. --}}
-            @php($timeRule = $attendanceRules['charge_mode'] === \App\Support\TimeShortfall::MODE_TIME)
+            @php $timeRule = $attendanceRules['charge_mode'] === \App\Support\TimeShortfall::MODE_TIME; @endphp
 
             <div class="md:col-span-2 border rounded p-4 bg-gray-50">
 

@@ -49,6 +49,22 @@
         </div>
     @endunless
 
+    {{-- Days before the start date are skipped; say so rather than let a
+         short list read as a clean month. --}}
+    @php $from = \App\Support\TimeShortfall::rulesFrom(); @endphp
+    @if($enabled && $from->gt($month->copy()->startOfMonth()))
+        <div class="bg-yellow-50 border border-yellow-200 rounded p-4 text-sm mb-6">
+            <strong>Only days from {{ $from->format('d M Y') }} are being counted.</strong>
+            Anything in {{ $month->format('F Y') }} before that is skipped, so
+            the figures below cover part of the month. To count the whole month,
+            set <em>Count time from this date onwards</em> to
+            {{ $month->copy()->startOfMonth()->format('d M Y') }} in
+            <a href="{{ route('admin.settings.index') }}" class="text-blue-600 underline">Settings</a>.
+            Earlier days with no clock-out marked will each count 4 hours, so
+            check the list before charging the month.
+        </div>
+    @endif
+
     {{-- Where the month stands --}}
     @php
         $totalMinutes = $rows->sum('minutes');
