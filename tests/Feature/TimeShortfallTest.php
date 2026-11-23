@@ -749,6 +749,84 @@ class TimeShortfallTest extends TestCase
             ->assertOk();
     }
 
+    public function test_clicking_an_employee_opens_their_own_page_for_the_admin(): void
+    {
+        $user = $this->employee(name: 'Abdul Ahid');
+        $this->worked($user, '2026-11-02', '09:25', '17:00');
+
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        // The list links to it.
+        $this->actingAs($admin)
+            ->get(route('admin.attendance.shortfall', ['month' => $this->month]))
+            ->assertSee(route('admin.attendance.shortfall.employee', ['user' => $user->id, 'month' => $this->month]), false);
+
+        $page = $this->actingAs($admin)
+            ->get(route('admin.attendance.shortfall.employee', ['user' => $user->id, 'month' => $this->month]))
+            ->assertOk();
+
+        $this->assertTrue($page->viewData('asAdmin'));
+        $this->assertSame(25, $page->viewData('sheet')['minutes']);
+
+        $page->assertSee('Abdul Ahid');
+        $page->assertSee('Came 25 m late');
+        $page->assertSee('window.print()', false);
+        $page->assertSee('Export Excel');
+        $page->assertSee("Everybody's time short", false);
+    }
+
+    public function test_the_employee_can_print_and_export_their_own_timing(): void
+    {
+        $user = $this->employee(name: 'Abdul Ahid');
+        $this->worked($user, '2026-11-02', '09:25', '17:00');
+
+        $this->actingAs($user)
+            ->get(route('timing.my', ['month' => $this->month]))
+            ->assertOk()
+            ->assertSee('window.print()', false)
+            ->assertSee('Export Excel');
+
+        $export = $this->actingAs($user)
+            ->get(route('timing.my.export', ['month' => $this->month]))
+            ->assertOk();
+
+        $this->assertStringContainsString(
+            'timing_2026-11_abdul-ahid.xlsx',
+            $export->headers->get('content-disposition')
+        );
+    }
+
+    public function test_an_employee_only_ever_gets_their_own_timing(): void
+    {
+        $me    = $this->employee(name: 'Abdul Ahid');
+        $other = $this->employee(name: 'Kashif Vicky');
+
+        $this->worked($other, '2026-11-02', '10:30', '17:00');
+
+        // The export takes no employee: it is always the signed-in user's.
+        $export = $this->actingAs($me)
+            ->get(route('timing.my.export', ['month' => $this->month, 'user_id' => $other->id]))
+            ->assertOk();
+
+        $this->assertStringContainsString('abdul-ahid', $export->headers->get('content-disposition'));
+
+        $page = $this->actingAs($me)
+            ->get(route('timing.my', ['month' => $this->month, 'user_id' => $other->id]))
+            ->assertOk();
+
+        $this->assertSame($me->id, $page->viewData('subject')->id);
+        $this->assertSame(0, $page->viewData('sheet')['minutes']);
+
+        // And the admin pages are closed to them.
+        $this->actingAs($me)
+            ->get(route('admin.attendance.shortfall.employee', ['user' => $other->id]))
+            ->assertForbidden();
+
+        $this->actingAs($me)
+            ->get(route('admin.attendance.shortfall.employee.export', ['user' => $other->id]))
+            ->assertForbidden();
+    }
+
     public function test_an_admin_can_settle_the_month_by_hand(): void
     {
         $user = $this->employee(balance: 5);

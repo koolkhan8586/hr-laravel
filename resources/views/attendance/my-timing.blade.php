@@ -1,34 +1,83 @@
 <x-app-layout>
 
+<style>
+@media print {
+    aside, nav, header, .fixed.bottom-0, .no-print { display: none !important; }
+    .print-only { display: block !important; }
+    body, main { background: white !important; color: black !important; }
+    .shadow { box-shadow: none !important; }
+    .p-6 { padding: 0 !important; }
+    table { font-size: 11px; }
+}
+</style>
+
 <div class="p-6">
 
-    <div class="flex items-start justify-between flex-wrap gap-4 mb-5">
+    @php
+        $your     = $asAdmin ? 'their' : 'your';
+        $Your     = $asAdmin ? 'Their' : 'Your';
+        $you      = $asAdmin ? 'they' : 'you';
+        $exportTo = $asAdmin
+            ? route('admin.attendance.shortfall.employee.export', ['user' => $subject->id, 'month' => $month->format('Y-m')])
+            : route('timing.my.export', ['month' => $month->format('Y-m')]);
+    @endphp
+
+    <div class="print-only mb-4" style="display:none;">
+        <h1 class="text-xl font-bold">LSAF HR - {{ $asAdmin ? 'Time Short' : 'My Timing' }}</h1>
+        <p>{{ $subject->name }}{{ $subject->employee_code ? ' ('.$subject->employee_code.')' : '' }} - {{ $month->format('F Y') }}</p>
+        <p>Printed on {{ now()->format('d M Y h:i A') }}</p>
+    </div>
+
+    @if($asAdmin)
+        <a href="{{ route('admin.attendance.shortfall', ['month' => $month->format('Y-m')]) }}"
+           class="no-print text-sm text-blue-600 underline">&larr; Everybody's time short</a>
+    @endif
+
+    <div class="flex items-start justify-between flex-wrap gap-4 mb-5 mt-1 no-print">
         <div>
-            <h2 class="text-2xl font-bold">My Timing</h2>
+            <h2 class="text-2xl font-bold">
+                {{ $asAdmin ? $subject->name : 'My Timing' }}
+                @if($asAdmin && $subject->employee_code)
+                    <span class="text-base font-normal text-gray-500">({{ $subject->employee_code }})</span>
+                @endif
+            </h2>
             <p class="text-sm text-gray-600 mt-1 max-w-3xl">
-                Your whole month, and the time you were short. Nothing is
+                {{ $asAdmin ? 'Their' : 'Your' }} whole month, and the time
+                {{ $asAdmin ? 'they were' : 'you were' }} short. Nothing is
                 deducted while the month is still running - the total is worked
-                out once, at the end of it - so anything you see here is
-                something you still have time to make up.
+                out once, at the end of it - so anything here is something
+                {{ $asAdmin ? 'they still have' : 'you still have' }} time to make up.
             </p>
         </div>
 
-        <form method="GET" class="flex items-end gap-2">
-            <div>
-                <label class="block text-xs text-gray-500 mb-1">Month</label>
-                <select name="month" class="border p-2 rounded" onchange="this.form.submit()">
-                    @foreach($months as $option)
-                        <option value="{{ $option->format('Y-m') }}"
-                            {{ $option->format('Y-m') === $month->format('Y-m') ? 'selected' : '' }}>
-                            {{ $option->format('F Y') }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-            <noscript>
-                <button class="bg-blue-600 text-white px-4 py-2 rounded text-sm">Show</button>
-            </noscript>
-        </form>
+        <div class="flex items-end gap-2 flex-wrap">
+            <form method="GET" class="flex items-end gap-2">
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">Month</label>
+                    <select name="month" class="border p-2 rounded" onchange="this.form.submit()">
+                        @foreach($months as $option)
+                            <option value="{{ $option->format('Y-m') }}"
+                                {{ $option->format('Y-m') === $month->format('Y-m') ? 'selected' : '' }}>
+                                {{ $option->format('F Y') }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <noscript>
+                    <button class="bg-blue-600 text-white px-4 py-2 rounded text-sm">Show</button>
+                </noscript>
+            </form>
+
+            <button type="button" onclick="window.print()"
+                    class="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded text-sm">
+                Print
+            </button>
+
+            <a href="{{ $exportTo }}"
+               class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm">
+                Export Excel
+            </a>
+        </div>
     </div>
 
     @unless($enabled)
@@ -75,7 +124,7 @@
         </div>
 
         <div class="bg-white shadow rounded p-4">
-            <div class="text-xs text-gray-500">Your annual leave balance</div>
+            <div class="text-xs text-gray-500">{{ $asAdmin ? 'Annual leave balance' : 'Your annual leave balance' }}</div>
             <div class="text-3xl font-bold">
                 {{ \App\Support\LeaveEntitlement::days($sheet['balance']) }}
                 <span class="text-base font-normal">day(s)</span>
@@ -100,13 +149,13 @@
                     {{ \App\Support\LeaveEntitlement::days((float) $charge->days_charged) }} day(s).
                     @if($charge->days_from_balance > 0)
                         {{ \App\Support\LeaveEntitlement::days((float) $charge->days_from_balance) }}
-                        day(s) came off your annual leave balance.
+                        day(s) came off {{ $your }} annual leave balance.
                     @endif
                     @if($charge->days_without_pay > 0)
                         <span class="text-red-700">
                             There was no balance left for
                             {{ \App\Support\LeaveEntitlement::days((float) $charge->days_without_pay) }}
-                            day(s), so that much is without pay and is deducted from your salary.
+                            day(s), so that much is without pay and is deducted from {{ $your }} salary.
                         </span>
                     @endif
                 @elseif($sheet['closed'])
@@ -118,11 +167,11 @@
                     If the month ended today it would come to
                     {{ \App\Support\LeaveEntitlement::days($sheet['days_charged']) }} day(s) -
                     @if($sheet['without_pay'] > 0)
-                        {{ \App\Support\LeaveEntitlement::days($sheet['from_balance']) }} off your
+                        {{ \App\Support\LeaveEntitlement::days($sheet['from_balance']) }} off {{ $your }}
                         balance and {{ \App\Support\LeaveEntitlement::days($sheet['without_pay']) }}
-                        without pay, because your balance does not cover it.
+                        without pay, because {{ $your }} balance does not cover it.
                     @else
-                        taken off your annual leave balance.
+                        taken off {{ $your }} annual leave balance.
                     @endif
                     There are still days left in the month.
                 @endif
@@ -149,7 +198,7 @@
                     <thead>
                         <tr class="bg-gray-50 text-left">
                             <th class="p-2">Date</th>
-                            <th class="p-2">Your timing</th>
+                            <th class="p-2">{{ $Your }} timing</th>
                             <th class="p-2">Clock in</th>
                             <th class="p-2">Clock out</th>
                             <th class="p-2">What happened</th>
@@ -203,24 +252,24 @@
     </div>
 
     {{-- How it is worked out, in plain words --}}
-    <div class="bg-blue-50 border border-blue-200 rounded p-4 text-sm">
+    <div class="no-print bg-blue-50 border border-blue-200 rounded p-4 text-sm">
         <strong>How this is worked out</strong>
         <ul class="mt-2 space-y-1 text-gray-700 list-disc list-inside">
             <li>
-                Arriving within your shift's grace costs nothing. Past it, the
-                whole lateness counts from your shift's start time.
+                Arriving within {{ $your }} shift's grace costs nothing. Past it, the
+                whole lateness counts from {{ $your }} shift's start time.
             </li>
             <li>
                 Leaving less than
-                {{ \App\Support\TimeShortfall::earlyGraceFor(auth()->user()) }} minutes
-                before your shift ends costs nothing. Past that, the whole of it counts.
+                {{ \App\Support\TimeShortfall::earlyGraceFor($subject) }} minutes
+                before {{ $your }} shift ends costs nothing. Past that, the whole of it counts.
             </li>
             <li>
                 A day with no clock-out marked counts half the shift, because
-                there is no record of when you left. Mark it and it does not.
+                there is no record of when {{ $you }} left. Mark it and it does not.
             </li>
             <li>
-                Holidays, approved leave and your weekly off are never counted.
+                Holidays, approved leave and {{ $your }} weekly off are never counted.
                 A day absent with no leave is a separate rule.
             </li>
             <li>
@@ -232,7 +281,7 @@
         </ul>
         <p class="text-xs text-gray-600 mt-2">
             Counted from {{ $rulesFrom->format('d M Y') }} onwards. Speak to HR if
-            anything here looks wrong - a timing that is set incorrectly on your
+            anything here looks wrong - a timing that is set incorrectly on {{ $your }}
             schedule is the usual reason.
         </p>
     </div>
