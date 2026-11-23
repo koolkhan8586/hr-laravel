@@ -122,6 +122,11 @@
                             Attendance Calendar
                             </a>
 
+                            <a href="{{ route('admin.attendance.devices') }}"
+                            class="block px-4 py-2 hover:bg-gray-100">
+                            Attendance Devices
+                            </a>
+
                             <a href="{{ route('admin.leave.index') }}"
                                class="block px-4 py-2 hover:bg-gray-100">
                                 Manage Leaves

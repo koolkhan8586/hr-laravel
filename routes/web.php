@@ -361,6 +361,20 @@ Route::post('/allow-overtime',
 
 /*
 |--------------------------------------------------------------------------
+| Attendance Devices
+|--------------------------------------------------------------------------
+|
+| What marked the attendance, not just where it was marked from. The one
+| screen that shows an office computer marking for five different people.
+|
+*/
+
+Route::get('/attendance-devices',
+    [AdminAttendanceController::class,'devices']
+)->name('attendance.devices');
+
+/*
+|--------------------------------------------------------------------------
 | Dashboard
 |--------------------------------------------------------------------------
 */

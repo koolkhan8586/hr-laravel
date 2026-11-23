@@ -23,6 +23,15 @@ class Attendance extends Model
         // Set by Allow Overtime: the day ends later than the shift says, so
         // nothing is late or missing until this has passed.
         'overtime_allowed_until',
+
+        // What marked it. Location alone cannot catch somebody who connects
+        // to an office computer from home: the machine is in the office, so
+        // its position and its address are both right. The machine is what
+        // gives it away.
+        'device_id',
+        'device_kind',
+        'device_ip',
+        'device_agent',
     ];
 
     /*

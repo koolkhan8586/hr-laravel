@@ -1241,5 +1241,98 @@ protected function buildStaffLeaveReport(string $month, bool $includePayrollOnly
 
     return view('admin.attendance.live-map', compact('employees','locations'));
 }
-    
+
+    /**
+     * What marked the attendance.
+     *
+     * Every location rule passes for somebody who connects to an office
+     * computer from home and marks attendance on it: the machine is standing
+     * in the office, so its position and its address are both right. What
+     * gives it away is the machine - a desktop browser rather than a phone,
+     * and usually one that several employees have marked from.
+     *
+     * This is that list. One row per device, with the employees it has marked
+     * for; the ones to look at are the devices with more than one name on
+     * them and the marks that came from a computer.
+     */
+    public function devices(Request $request)
+    {
+        $month = $request->month ?? \Carbon\Carbon::now(\App\Support\AttendanceRules::TIMEZONE)->format('Y-m');
+
+        $start = \Carbon\Carbon::parse($month.'-01')->startOfMonth();
+        $end   = \Carbon\Carbon::parse($month.'-01')->endOfMonth();
+
+        $marks = \App\Models\Attendance::with('user:id,name,employee_code,attendance_device_exempt')
+            ->whereBetween('date', [$start->toDateString(), $end->toDateString()])
+            ->where(function ($q) {
+                $q->whereNotNull('device_id')->orWhereNotNull('device_kind');
+            })
+            ->orderByDesc('date')
+            ->get();
+
+        // Marks from before this was recorded have nothing to show, so say so
+        // rather than drawing an empty table and letting it read as "clean".
+        $recorded = $marks->count();
+
+        $unrecorded = \App\Models\Attendance::whereBetween('date', [$start->toDateString(), $end->toDateString()])
+            ->whereNull('device_id')
+            ->whereNull('device_kind')
+            ->count();
+
+        $devices = $marks
+            ->filter(fn ($mark) => filled($mark->device_id))
+            ->groupBy('device_id')
+            ->map(function ($rows, $deviceId) {
+
+                $people = $rows->pluck('user')->filter()->unique('id')->values();
+
+                return [
+                    'id'       => $deviceId,
+                    'kind'     => $rows->first()->device_kind,
+                    'agent'    => $rows->sortByDesc('date')->first()->device_agent,
+                    'ips'      => $rows->pluck('device_ip')->filter()->unique()->values(),
+                    'people'   => $people,
+                    'marks'    => $rows->count(),
+                    'first'    => $rows->min('date'),
+                    'last'     => $rows->max('date'),
+                    // The thing worth looking at: one device, several names.
+                    'shared'   => $people->count() > 1,
+                    'days'     => $rows->groupBy(fn ($row) => (string) $row->date)
+                        ->map(fn ($dayRows) => $dayRows->pluck('user.name')->filter()->unique()->values())
+                        ->filter(fn ($names) => $names->count() > 1),
+                ];
+            })
+            // Shared devices first, then the busiest.
+            ->sortBy([
+                fn ($a, $b) => ($b['shared'] <=> $a['shared']),
+                fn ($a, $b) => ($b['marks'] <=> $a['marks']),
+            ])
+            ->values();
+
+        // Everybody who has marked from something that is not a phone, with
+        // how many of their marks came from one.
+        $fromComputer = $marks
+            ->filter(fn ($mark) => $mark->device_kind === 'computer')
+            ->groupBy('user_id')
+            ->map(fn ($rows) => [
+                'user'  => $rows->first()->user,
+                'marks' => $rows->count(),
+                'last'  => $rows->max('date'),
+                'agent' => $rows->sortByDesc('date')->first()->device_agent,
+            ])
+            ->sortByDesc('marks')
+            ->values();
+
+        return view('admin.attendance.devices', [
+            'month'        => $month,
+            'devices'      => $devices,
+            'fromComputer' => $fromComputer,
+            'recorded'     => $recorded,
+            'unrecorded'   => $unrecorded,
+            'sharedCount'  => $devices->where('shared', true)->count(),
+            'requireMobile' => \App\Support\AttendanceDevice::requiresMobile(),
+            'onePerDevice'  => \App\Support\AttendanceDevice::onePerDevice(),
+        ]);
+    }
+
 }

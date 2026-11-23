@@ -95,6 +95,34 @@ class AttendanceController extends Controller
         ], 403);
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | WHAT IS MARKING IT
+    |--------------------------------------------------------------------------
+    | Where somebody is cannot catch an office computer being driven from
+    | home: the machine is in the office, so the position and the address
+    | are both right. What it is can - a desktop browser is not a phone, and
+    | an office machine that has already marked somebody else today is not
+    | this employee's own device.
+    */
+    $device = \App\Support\AttendanceDevice::describe($request);
+
+    $deviceCheck = \App\Support\AttendanceDevice::check($user, $device, $now);
+
+    if (!$deviceCheck['allowed']) {
+
+        \Illuminate\Support\Facades\Log::warning('Attendance refused by device rule', [
+            'user_id' => $user->id,
+            'reason'  => $deviceCheck['reason'],
+            'device'  => $device,
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => $deviceCheck['message'],
+        ], 403);
+    }
+
     $locationStatus = $location['reason'] === 'inside'
         ? 'inside'
         : ($location['reason'] === 'override' ? 'override' : 'anywhere');
@@ -136,7 +164,7 @@ class AttendanceController extends Controller
         $attendance->clock_in_longitude = $lng;
         $attendance->location_status = $locationStatus;
         $attendance->status = 'late';
-        $attendance->save();
+        $attendance->forceFill(self::deviceColumns($device))->save();
 
         return response()->json([
             'success' => true,
@@ -166,7 +194,7 @@ class AttendanceController extends Controller
     // No start time on the shift means there is nothing to be late for.
     $status = $lateAfter && $now->gt($lateAfter) ? 'late' : 'present';
 
-    $attendance = Attendance::create([
+    $attendance = Attendance::create(self::deviceColumns($device) + [
         'user_id' => $user->id,
         'date' => $today,
         'clock_in' => $now,
@@ -207,6 +235,22 @@ class AttendanceController extends Controller
         'message' => 'Clock-in successful! Attendance marked.',
     ]);
 }
+    /**
+     * The device columns to write onto an attendance row.
+     *
+     * @param  array{id: ?string, kind: string, ip: ?string, agent: ?string}  $device
+     * @return array<string, ?string>
+     */
+    protected static function deviceColumns(array $device): array
+    {
+        return [
+            'device_id'    => $device['id'],
+            'device_kind'  => $device['kind'],
+            'device_ip'    => $device['ip'],
+            'device_agent' => $device['agent'],
+        ];
+    }
+
     /*
     |--------------------------------------------------------------------------
     | Clock Out
@@ -245,9 +289,35 @@ if (!$attendance) {
 
     $now = Carbon::now('Asia/Karachi');
 
+    // Same question as clocking in: what is marking this?
+    $device = \App\Support\AttendanceDevice::describe($request);
+
+    $deviceCheck = \App\Support\AttendanceDevice::check(auth()->user(), $device, $now);
+
+    if (!$deviceCheck['allowed']) {
+
+        Log::warning('Clock-out refused by device rule', [
+            'user_id' => auth()->id(),
+            'reason'  => $deviceCheck['reason'],
+            'device'  => $device,
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => $deviceCheck['message'],
+        ], 403);
+    }
+
     $attendance->clock_out = $now;
     $attendance->clock_out_latitude = $request->latitude;
     $attendance->clock_out_longitude = $request->longitude;
+
+    // The device that closed the day, where none was recorded opening it.
+    foreach (self::deviceColumns($device) as $column => $value) {
+        if (blank($attendance->$column)) {
+            $attendance->$column = $value;
+        }
+    }
 
     // Safe Carbon calculation
     $clockIn = Carbon::parse($attendance->clock_in);

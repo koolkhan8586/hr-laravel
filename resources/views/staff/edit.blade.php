@@ -336,6 +336,29 @@
 
 </div>
 
+<div class="mt-3">
+
+    <!-- 🖥 Let this one past the device rules -->
+    <label class="flex items-start gap-2">
+        <input type="checkbox"
+               name="attendance_device_exempt"
+               value="1"
+               class="mt-1"
+               {{ $staff->user->attendance_device_exempt ? 'checked' : '' }}>
+        <span>
+            <strong>May mark attendance from a shared computer</strong>
+            <span class="block text-xs text-gray-500 mt-1">
+                Leave this off for almost everybody. Ticking it lets this one
+                past both device rules - "only from a phone" and "one device,
+                one employee a day" - for the few who genuinely have to use a
+                shared office machine, or have no phone of their own. Their
+                marks still record which device they came from.
+            </span>
+        </span>
+    </label>
+
+</div>
+
         </div>
 
         <div class="mt-8">

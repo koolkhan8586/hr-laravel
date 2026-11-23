@@ -202,6 +202,47 @@
                     </span>
                 </label>
 
+                {{-- Marking attendance from somewhere you are not --}}
+                <div class="md:col-span-2 border-t pt-4 mt-2">
+                    <h4 class="font-semibold text-sm mb-1">What may mark attendance</h4>
+                    <p class="text-xs text-gray-500 mb-3">
+                        Checking <em>where</em> a mark came from cannot catch somebody
+                        who connects to an office computer from home and marks
+                        attendance on it: the office machine is standing in the
+                        office, so its position and its address are both perfect.
+                        What gives it away is the machine itself. Every mark now
+                        records the device it came from - see
+                        <a href="{{ route('admin.attendance.devices') }}"
+                           class="text-blue-600 underline">Attendance Devices</a>
+                        - and these two rules can be switched on against it.
+                    </p>
+
+                    <label class="flex items-start gap-2 text-sm mb-3">
+                        <input type="checkbox" name="require_mobile" value="1" class="mt-1"
+                               {{ $attendanceRules['require_mobile'] ? 'checked' : '' }}>
+                        <span>
+                            <strong>Only allow attendance from a phone.</strong>
+                            A remote desktop session is a computer, so it is refused
+                            and nothing is recorded. Switch this on only once
+                            everybody marks from their own phone - anybody who has
+                            to use a shared computer needs the exemption on their
+                            staff record first.
+                        </span>
+                    </label>
+
+                    <label class="flex items-start gap-2 text-sm">
+                        <input type="checkbox" name="one_per_device" value="1" class="mt-1"
+                               {{ $attendanceRules['one_per_device'] ? 'checked' : '' }}>
+                        <span>
+                            <strong>One device, one employee a day.</strong>
+                            A device that has already marked somebody else today
+                            cannot mark again, which is what a shared office
+                            computer always has. The employee is told whose
+                            attendance that device already marked.
+                        </span>
+                    </label>
+                </div>
+
             </div>
 
             <div class="md:col-span-2">

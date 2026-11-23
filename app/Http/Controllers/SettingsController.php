@@ -43,6 +43,8 @@ class SettingsController extends Controller
             'absences_from'   => \App\Support\AttendanceRules::absencesFrom()?->format('Y-m')
                 ?? Carbon::now(\App\Support\AttendanceRules::TIMEZONE)->format('Y-m'),
             'auto_clock_out'  => \App\Support\AttendanceRules::autoClockOutEnabled(),
+            'require_mobile'  => \App\Support\AttendanceDevice::requiresMobile(),
+            'one_per_device'  => \App\Support\AttendanceDevice::onePerDevice(),
         ];
 
         return view('admin.settings.index', compact(
@@ -75,6 +77,8 @@ class SettingsController extends Controller
             'deduct_absences' => 'nullable|boolean',
             'absences_from'   => 'nullable|date_format:Y-m',
             'auto_clock_out'  => 'nullable|boolean',
+            'require_mobile'  => 'nullable|boolean',
+            'one_per_device'  => 'nullable|boolean',
         ]);
 
         $deductAbsences = $request->boolean('deduct_absences');
@@ -101,6 +105,11 @@ class SettingsController extends Controller
             \App\Support\AttendanceRules::DEDUCT_ABSENCES => $deductAbsences ? 1 : 0,
             \App\Support\AttendanceRules::ABSENCES_FROM   => $from,
             \App\Support\AttendanceRules::AUTO_CLOCK_OUT  => $request->boolean('auto_clock_out') ? 1 : 0,
+
+            // What may mark attendance, against somebody marking it from home
+            // through a remote desktop session on an office computer.
+            \App\Support\AttendanceDevice::REQUIRE_MOBILE => $request->boolean('require_mobile') ? 1 : 0,
+            \App\Support\AttendanceDevice::ONE_PER_DEVICE => $request->boolean('one_per_device') ? 1 : 0,
         ]);
 
         $message = 'Attendance rules saved. Half days are charged from '
@@ -109,6 +118,14 @@ class SettingsController extends Controller
         if ($deductAbsences) {
             $message .= ' Days absent with no leave are deducted from '
                 .Carbon::parse($from.'-01')->format('F Y').' onwards.';
+        }
+
+        if ($request->boolean('require_mobile')) {
+            $message .= ' Attendance can only be marked from a phone.';
+        }
+
+        if ($request->boolean('one_per_device')) {
+            $message .= ' One device can mark attendance for one employee a day.';
         }
 
         return back()->with('success', $message);
