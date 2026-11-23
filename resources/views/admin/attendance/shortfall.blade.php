@@ -1,8 +1,25 @@
 <x-app-layout>
 
+<style>
+@media print {
+    aside, nav, header, .fixed.bottom-0, .no-print { display: none !important; }
+    .print-only { display: block !important; }
+    body, main { background: white !important; color: black !important; }
+    .shadow { box-shadow: none !important; }
+    .p-6 { padding: 0 !important; }
+    table { font-size: 11px; }
+}
+</style>
+
 <div class="p-6">
 
-    <div class="flex items-start justify-between flex-wrap gap-4 mb-5">
+    <div class="print-only mb-4" style="display:none;">
+        <h1 class="text-xl font-bold">LSAF HR - Time Short</h1>
+        <p>{{ $month->format('F Y') }}{{ $selected ? ' - '.$selected->name : ' - all employees' }}</p>
+        <p>Printed on {{ now()->format('d M Y h:i A') }}</p>
+    </div>
+
+    <div class="flex items-start justify-between flex-wrap gap-4 mb-5 no-print">
         <div>
             <h2 class="text-2xl font-bold">Time Short</h2>
             <p class="text-sm text-gray-600 mt-1 max-w-3xl">
@@ -14,16 +31,40 @@
             </p>
         </div>
 
-        <form method="GET" class="flex items-end gap-2">
-            <div>
-                <label class="block text-xs text-gray-500 mb-1">Month</label>
-                <input type="month" name="month" value="{{ $month->format('Y-m') }}"
-                       class="border p-2 rounded">
-            </div>
-            <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
-                Show
+        <div class="flex items-end gap-2 flex-wrap">
+            <form method="GET" class="flex items-end gap-2 flex-wrap">
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">Month</label>
+                    <input type="month" name="month" value="{{ $month->format('Y-m') }}"
+                           class="border p-2 rounded">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">Employee</label>
+                    <select name="user_id" class="border p-2 rounded" style="min-width:200px;">
+                        <option value="">All employees</option>
+                        @foreach($everyone as $person)
+                            <option value="{{ $person->id }}"
+                                {{ $selected && $selected->id === $person->id ? 'selected' : '' }}>
+                                {{ $person->name }}{{ $person->employee_code ? ' ('.$person->employee_code.')' : '' }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
+                    Show
+                </button>
+            </form>
+
+            <button type="button" onclick="window.print()"
+                    class="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded text-sm">
+                Print
             </button>
-        </form>
+
+            <a href="{{ route('admin.attendance.shortfall.export', ['month' => $month->format('Y-m'), 'user_id' => $selected?->id]) }}"
+               class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm">
+                Export Excel
+            </a>
+        </div>
     </div>
 
     @if(session('success'))
@@ -48,6 +89,22 @@
             <a href="{{ route('admin.settings.index') }}" class="text-blue-600 underline">Settings</a>.
         </div>
     @endunless
+
+    {{-- Days before the start date are skipped; say so rather than let a
+         short list read as a clean month. --}}
+    @php $from = \App\Support\TimeShortfall::rulesFrom(); @endphp
+    @if($enabled && $from->gt($month->copy()->startOfMonth()))
+        <div class="bg-yellow-50 border border-yellow-200 rounded p-4 text-sm mb-6">
+            <strong>Only days from {{ $from->format('d M Y') }} are being counted.</strong>
+            Anything in {{ $month->format('F Y') }} before that is skipped, so
+            the figures below cover part of the month. To count the whole month,
+            set <em>Count time from this date onwards</em> to
+            {{ $month->copy()->startOfMonth()->format('d M Y') }} in
+            <a href="{{ route('admin.settings.index') }}" class="text-blue-600 underline">Settings</a>.
+            Earlier days with no clock-out marked will each count 4 hours, so
+            check the list before charging the month.
+        </div>
+    @endif
 
     {{-- Where the month stands --}}
     @php
@@ -92,7 +149,7 @@
     </div>
 
     {{-- Settling the month --}}
-    <div class="bg-white shadow rounded p-5 mb-6">
+    <div class="bg-white shadow rounded p-5 mb-6 no-print">
         @if(! $closed)
             <p class="text-sm text-gray-700">
                 <strong>{{ $month->format('F Y') }} is still running.</strong>
@@ -221,7 +278,45 @@
 
     </div>
 
-    <div class="bg-blue-50 border border-blue-200 rounded p-4 text-sm">
+    @if($selected && $rows->isNotEmpty())
+        <div class="bg-white shadow rounded p-5 mb-6">
+            <h3 class="text-lg font-semibold mb-1">{{ $selected->name }} - day by day</h3>
+            <p class="text-xs text-gray-500 mb-4">Only the days that cost time.</p>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead>
+                        <tr class="bg-gray-50 text-left">
+                            <th class="p-2">Date</th>
+                            <th class="p-2">Timing</th>
+                            <th class="p-2">Clock in</th>
+                            <th class="p-2">Clock out</th>
+                            <th class="p-2">What happened</th>
+                            <th class="p-2 text-right">Short by</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($rows->first()['days'] as $day)
+                            <tr class="border-t">
+                                <td class="p-2 whitespace-nowrap">{{ $day['date']->format('d M') }} {{ $day['day_name'] }}</td>
+                                <td class="p-2 text-xs">{{ $day['timing'] ?? '-' }}</td>
+                                <td class="p-2">{{ $day['clock_in'] ?? '-' }}</td>
+                                <td class="p-2">{{ $day['clock_out'] ?? 'not marked' }}</td>
+                                <td class="p-2 text-xs">
+                                    @if($day['late'] > 0) <div>Came {{ \App\Support\TimeShortfall::label($day['late']) }} late</div> @endif
+                                    @if($day['early'] > 0) <div>Left {{ \App\Support\TimeShortfall::label($day['early']) }} early</div> @endif
+                                    @if($day['missing'] > 0) <div>No clock-out - half the shift counted</div> @endif
+                                </td>
+                                <td class="p-2 text-right font-semibold">{{ \App\Support\TimeShortfall::label($day['minutes']) }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
+
+    <div class="no-print bg-blue-50 border border-blue-200 rounded p-4 text-sm">
         <strong>How the figure is reached</strong>
         <p class="mt-1 text-gray-700">
             Arriving past the shift's own grace counts the whole lateness from

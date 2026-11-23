@@ -130,6 +130,35 @@ class HalfDayCharge
         return true;
     }
 
+    /**
+     * Take back system charges on days an approved leave now covers.
+     *
+     * Returns how many were removed. Only what the system wrote itself is
+     * touched, and never the leave doing the covering.
+     */
+    public static function releaseCoveredBy(Leave $leave): int
+    {
+        $charged = Leave::where('user_id', $leave->user_id)
+            ->whereNotNull('auto_reason')
+            ->where('id', '!=', $leave->id)
+            ->whereDate('start_date', '>=', Carbon::parse($leave->start_date)->toDateString())
+            ->whereDate('start_date', '<=', Carbon::parse($leave->end_date)->toDateString())
+            ->get();
+
+        $restoreBalance = false;
+
+        foreach ($charged as $auto) {
+            $restoreBalance = $restoreBalance || $auto->type === 'annual';
+            $auto->delete();
+        }
+
+        if ($restoreBalance) {
+            self::recalculateBalance($leave->user_id);
+        }
+
+        return $charged->count();
+    }
+
     /** Has this day already been charged, for this reason or any other? */
     public static function existing(int $userId, Carbon $date, ?string $reason = null): ?Leave
     {

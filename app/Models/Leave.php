@@ -40,6 +40,25 @@ class Leave extends Model
     ];
 
     /** Charged by the system rather than applied for. */
+    /**
+     * An approved leave covers the day, so a half day the system charged for
+     * the same day is taken back.
+     *
+     * Somebody who applies for a half day and clocks out at one o'clock is
+     * leaving when they were given leave to. If the clock-out came before the
+     * approval, the system had already charged half a day for it, and the two
+     * stacked: the same hours paid for twice.
+     */
+    protected static function booted(): void
+    {
+        static::saved(function (Leave $leave) {
+
+            if ($leave->status === 'approved' && ! $leave->isAutoCharged()) {
+                \App\Support\HalfDayCharge::releaseCoveredBy($leave);
+            }
+        });
+    }
+
     public function isAutoCharged(): bool
     {
         return filled($this->auto_reason);
