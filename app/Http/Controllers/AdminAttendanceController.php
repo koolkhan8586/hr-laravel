@@ -1335,4 +1335,96 @@ protected function buildStaffLeaveReport(string $month, bool $includePayrollOnly
         ]);
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Time short over the month
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Where everybody stands on time this month.
+     *
+     * Minutes are counted every day but charged only once the month closes,
+     * so this screen has two jobs: during the month it is a warning anybody
+     * can still act on, and after it, it is the figure that was charged.
+     */
+    public function shortfall(Request $request)
+    {
+        $now = \Carbon\Carbon::now(\App\Support\AttendanceRules::TIMEZONE);
+
+        $month = \Carbon\Carbon::parse(
+            ($request->month ?? $now->format('Y-m')).'-01',
+            \App\Support\AttendanceRules::TIMEZONE
+        )->startOfMonth();
+
+        $users = \App\Models\User::where('role', 'employee')
+            ->employed()
+            ->tracked()
+            ->orderBy('name')
+            ->get();
+
+        $sheets = \App\Support\MonthlyShortfall::forUsers($users, $month->copy(), $now);
+
+        // Worst first: the point of the screen is who needs a word.
+        $rows = $users
+            ->map(fn ($user) => ['user' => $user] + $sheets[$user->id])
+            ->filter(fn ($row) => $row['minutes'] > 0 || $row['charge'])
+            ->sortByDesc('minutes')
+            ->values();
+
+        return view('admin.attendance.shortfall', [
+            'month'   => $month,
+            'rows'    => $rows,
+            'now'     => $now,
+            'closed'  => $month->copy()->endOfMonth()->lt($now->copy()->startOfDay()),
+            'enabled' => \App\Support\TimeShortfall::enabled(),
+            'charged' => $rows->filter(fn ($r) => (bool) $r['charge'])->count(),
+            'staffCount' => $users->count(),
+        ]);
+    }
+
+    /**
+     * Settle a closed month by hand, rather than waiting for the first.
+     */
+    public function chargeShortfall(Request $request)
+    {
+        $month = \Carbon\Carbon::parse(
+            $request->validate(['month' => 'required|date_format:Y-m'])['month'].'-01',
+            \App\Support\AttendanceRules::TIMEZONE
+        )->startOfMonth();
+
+        if (! \App\Support\TimeShortfall::enabled()) {
+            return back()->with('error',
+                'Time is not being counted. Switch it on under Settings first.');
+        }
+
+        $now = \Carbon\Carbon::now(\App\Support\AttendanceRules::TIMEZONE);
+
+        if ($month->copy()->endOfMonth()->gte($now->copy()->startOfDay())) {
+            return back()->with('error',
+                $month->format('F Y').' is not over yet, so there is nothing to settle.');
+        }
+
+        $users = \App\Models\User::where('role', 'employee')
+            ->employed()
+            ->tracked()
+            ->get();
+
+        $charged = 0;
+
+        foreach ($users as $user) {
+
+            $charge = \App\Support\MonthlyShortfall::charge($user, $month->copy(), $now);
+
+            // A month already settled is left exactly as it was.
+            if ($charge && $charge->wasRecentlyCreated) {
+                $charged++;
+            }
+        }
+
+        return back()->with('success', $charged > 0
+            ? $charged.' employee(s) charged for '.$month->format('F Y').'. Everybody has been told.'
+            : 'Nothing to charge for '.$month->format('F Y').' - either it was already settled, or nobody was short.');
+    }
+
 }

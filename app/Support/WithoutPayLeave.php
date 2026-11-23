@@ -24,6 +24,8 @@ use Illuminate\Support\Collection;
  *
  *  - an approved leave of type "without pay" covering that date,
  *  - a half day counting as half a day,
+ *  - time short over the month once it has been charged, for the part there
+ *    was no leave balance left to pay for,
  *  - but never a day the employee was not due in anyway. Their weekly off or
  *    a holiday inside a week of leave is not a day's pay lost, and charging
  *    for it would overstate the deduction.
@@ -47,7 +49,7 @@ class WithoutPayLeave
      * per employee, because the calendar draws forty rows at a time.
      *
      * @param  \Illuminate\Support\Collection<int, \App\Models\User>  $users
-     * @return array<int, array{days: float, leave_days: float, absent_days: float, rate: float, amount: float, basis_days: int, monthly: float, source: string}>
+     * @return array<int, array{days: float, leave_days: float, absent_days: float, shortfall_days: float, rate: float, amount: float, basis_days: int, monthly: float, source: string}>
      */
     public static function forMonth(Collection $users, Carbon $month, ?string $basis = null): array
     {
@@ -75,6 +77,11 @@ class WithoutPayLeave
 
         $deductAbsences = AttendanceRules::deductsAbsencesIn($start);
 
+        // Time short over the month, already charged and already turned into
+        // days. Only the part there was no leave balance left to pay for
+        // reaches the salary; the rest came off the balance.
+        $shortfall = MonthlyShortfall::unpaidDaysFor($userIds, $start);
+
         foreach ($users as $user) {
 
             $leaveDays = self::countDays(
@@ -92,16 +99,19 @@ class WithoutPayLeave
                 ? self::absentDays($user, $start)
                 : 0.0;
 
-            $days = $leaveDays + $absentDays;
+            $shortfallDays = (float) ($shortfall[$user->id] ?? 0);
+
+            $days = $leaveDays + $absentDays + $shortfallDays;
 
             [$monthly, $source] = $monthlyPay[$user->id] ?? [0.0, 'none'];
 
             $rate = $basisDays > 0 ? $monthly / $basisDays : 0.0;
 
             $result[$user->id] = [
-                'days'        => $days,
-                'leave_days'  => $leaveDays,
-                'absent_days' => $absentDays,
+                'days'           => $days,
+                'leave_days'     => $leaveDays,
+                'absent_days'    => $absentDays,
+                'shortfall_days' => $shortfallDays,
                 'rate'        => round($rate, 2),
                 // Whole rupees: this goes on a salary sheet, not a ledger.
                 'amount'      => (float) round($rate * $days),

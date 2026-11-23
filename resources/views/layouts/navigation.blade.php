@@ -127,6 +127,11 @@
                             Attendance Devices
                             </a>
 
+                            <a href="{{ route('admin.attendance.shortfall') }}"
+                            class="block px-4 py-2 hover:bg-gray-100">
+                            Time Short
+                            </a>
+
                             <a href="{{ route('admin.leave.index') }}"
                                class="block px-4 py-2 hover:bg-gray-100">
                                 Manage Leaves

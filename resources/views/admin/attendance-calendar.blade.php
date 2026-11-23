@@ -359,7 +359,7 @@ title="Absent - no leave applied for. Due in by the {{ $rosterSource }}.">✖</s
 @endfor
 
 @php
-    $wop = $withoutPay[$user->id] ?? ['days' => 0, 'leave_days' => 0, 'absent_days' => 0,
+    $wop = $withoutPay[$user->id] ?? ['days' => 0, 'leave_days' => 0, 'absent_days' => 0, 'shortfall_days' => 0,
         'amount' => 0, 'rate' => 0, 'basis_days' => 0, 'monthly' => 0, 'source' => 'none'];
 
     // Both kinds of unpaid day, so the figure can be taken apart.
@@ -371,6 +371,10 @@ title="Absent - no leave applied for. Due in by the {{ $rosterSource }}.">✖</s
 
     if (($wop['absent_days'] ?? 0) > 0) {
         $wopParts[] = \App\Support\WithoutPayLeave::niceDays($wop['absent_days']).' day(s) absent with no leave';
+    }
+
+    if (($wop['shortfall_days'] ?? 0) > 0) {
+        $wopParts[] = \App\Support\WithoutPayLeave::niceDays($wop['shortfall_days']).' day(s) time short over the month';
     }
 @endphp
 

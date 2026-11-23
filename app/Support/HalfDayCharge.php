@@ -58,6 +58,17 @@ class HalfDayCharge
             return null;
         }
 
+        /*
+        | Charging half a day - four hours of somebody's leave - because they
+        | left twenty-five minutes early takes more than is owed. With the
+        | time rule in force nothing is charged by the day any more: the
+        | minutes are counted on the day and the month is settled at the end
+        | of it, by MonthlyShortfall. This stands down entirely.
+        */
+        if (TimeShortfall::enabled()) {
+            return null;
+        }
+
         // The rules look forward only. Days before the date they were
         // switched on are left exactly as they are, whatever is on them.
         if (!AttendanceRules::rulesApplyOn($date)) {

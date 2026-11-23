@@ -351,24 +351,45 @@ if (!$attendance) {
 
     $charged = null;
 
-    // This employee's own allowance where they have one, else the company
-    // rule - somebody with a standing arrangement to leave earlier is not
-    // charged half a day for keeping to it.
-    $earlyLimit = \App\Support\AttendanceRules::earlyMinutesFor($attendance->user);
+    /*
+    | With the time rule in force nothing is charged today at all. The
+    | minutes go against the day and the month is settled at the end of it,
+    | so what the employee is told here is the figure, not a verdict - and
+    | they have the rest of the month to make it up.
+    */
+    $timeRule = \App\Support\TimeShortfall::enabled();
 
-    if ($earlyBy >= $earlyLimit) {
+    if ($timeRule) {
 
-        $charged = \App\Support\HalfDayCharge::charge(
-            $attendance,
-            \App\Support\AttendanceRules::EARLY_CLOCK_OUT
-        );
-
-    } else {
-
+        // A charge from before the rule changed is still taken back by
+        // clocking out, so nobody is left carrying an old half day for a day
+        // they did in fact close.
         \App\Support\HalfDayCharge::reverse(
             $attendance,
             \App\Support\AttendanceRules::MISSING_CLOCK_OUT
         );
+
+    } else {
+
+        // This employee's own allowance where they have one, else the company
+        // rule - somebody with a standing arrangement to leave earlier is not
+        // charged half a day for keeping to it.
+        $earlyLimit = \App\Support\AttendanceRules::earlyMinutesFor($attendance->user);
+
+        if ($earlyBy >= $earlyLimit) {
+
+            $charged = \App\Support\HalfDayCharge::charge(
+                $attendance,
+                \App\Support\AttendanceRules::EARLY_CLOCK_OUT
+            );
+
+        } else {
+
+            \App\Support\HalfDayCharge::reverse(
+                $attendance,
+                \App\Support\AttendanceRules::MISSING_CLOCK_OUT
+            );
+        }
     }
 
     $attendance->refresh();
@@ -387,6 +408,46 @@ if (!$attendance) {
     }
 
     $reply = 'Clock-out successful!';
+
+    /*
+    | Under the time rule: say what today cost in minutes, and where the
+    | month stands, so the figure is never a surprise at the end of it.
+    */
+    if ($timeRule) {
+
+        $today = \App\Support\TimeShortfall::forDay(
+            $attendance->user,
+            \Carbon\Carbon::parse($attendance->date ?: $now)->startOfDay(),
+            $attendance,
+            $now
+        );
+
+        if ($today['minutes'] > 0) {
+
+            $short = \App\Support\TimeShortfall::label($today['minutes']);
+
+            $month = \App\Support\MonthlyShortfall::forUser(
+                $attendance->user,
+                $now->copy()->startOfMonth(),
+                $now
+            );
+
+            $lines[] = '';
+            $lines[] = 'Time short today: '.$short.'.';
+            $lines[] = 'This month so far: '
+                .\App\Support\TimeShortfall::label($month['minutes']).'.';
+            $lines[] = 'Nothing is deducted today. At the end of the month the total is '
+                .'worked out - '.\App\Support\TimeShortfall::hoursPerHalfDay()
+                .' hours counts as half a day - and taken off your leave balance.';
+
+            $reply = 'Clock-out recorded. Time short today: '.$short
+                .'. This month so far: '.\App\Support\TimeShortfall::label($month['minutes']).'.';
+
+        } else {
+            $lines[] = '';
+            $lines[] = 'Full day completed. Nothing short today.';
+        }
+    }
 
     if ($charged) {
 

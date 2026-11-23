@@ -76,15 +76,121 @@
 
         <h3 class="text-lg font-semibold mb-1">Attendance Rules</h3>
         <p class="text-sm text-gray-500 mb-4">
-            Half a day is charged for leaving early or never marking a clock-out.
-            It comes off the annual leave balance, and when there is none left it
-            is taken without pay, which the salary sheet deducts under Extra
-            Leaves. The employee is told either way.
+            What a day that was not worked in full costs. It comes off the annual
+            leave balance, and when there is none left it is taken without pay,
+            which the salary sheet deducts under Extra Leaves. The employee is
+            told either way.
         </p>
 
         <form method="POST" action="{{ route('admin.settings.attendance-rules.save') }}"
               class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
             @csrf
+
+            {{-- Which rule is in force. Everything below reads differently
+                 depending on this, so it comes first. --}}
+            @php($timeRule = $attendanceRules['charge_mode'] === \App\Support\TimeShortfall::MODE_TIME)
+
+            <div class="md:col-span-2 border rounded p-4 bg-gray-50">
+
+                <h4 class="font-semibold text-sm mb-2">How short time is charged</h4>
+
+                <label class="flex items-start gap-2 text-sm mb-3">
+                    <input type="radio" name="charge_mode" value="time" class="mt-1"
+                           {{ $timeRule ? 'checked' : '' }}>
+                    <span>
+                        <strong>Count the time, settle at month end.</strong>
+                        Coming late past the shift's grace counts the whole
+                        lateness; leaving more than the early grace before the
+                        shift ends counts the whole of that; a day with no
+                        clock-out counts half the shift. Nothing is deducted on
+                        the day. At the end of the month the minutes are added
+                        up and turned into days.
+                        <span class="block text-xs text-gray-600 mt-1">
+                            Fairer, because what is taken is what was missed.
+                            Twenty-five minutes costs twenty-five minutes, not
+                            four hours of somebody's leave.
+                        </span>
+                    </span>
+                </label>
+
+                <label class="flex items-start gap-2 text-sm">
+                    <input type="radio" name="charge_mode" value="half_day" class="mt-1"
+                           {{ $timeRule ? '' : 'checked' }}>
+                    <span>
+                        <strong>Half a day each time (the old rule).</strong>
+                        Leaving early by more than the figure below, or never
+                        marking a clock-out, costs half a day there and then.
+                    </span>
+                </label>
+
+                {{-- The figures the time rule uses --}}
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 pt-4 border-t">
+
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">
+                            Leaving early is ignored under (minutes)
+                        </label>
+                        <input type="number" name="early_grace" min="0" max="480"
+                               value="{{ $attendanceRules['early_grace'] }}"
+                               class="border p-2 rounded w-full">
+                        <p class="text-xs text-gray-500 mt-1">
+                            The mirror of the shift's own grace at the other end
+                            of the day. Past it, the whole of the early leaving
+                            counts, not just the part beyond this.
+                        </p>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">
+                            Hours that make half a day
+                        </label>
+                        <input type="number" name="hours_per_half_day" step="0.5" min="0.5" max="12"
+                               value="{{ $attendanceRules['hours_per_half_day'] }}"
+                               class="border p-2 rounded w-full">
+                        <p class="text-xs text-gray-500 mt-1">
+                            So {{ $attendanceRules['hours_per_half_day'] * 2 }} hours is
+                            a full day and
+                            {{ $attendanceRules['hours_per_half_day'] * 4 }} hours is two.
+                            A month is rounded to the nearest half day.
+                        </p>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">
+                            Count time from this date onwards
+                        </label>
+                        <input type="date" name="time_rules_from"
+                               value="{{ $attendanceRules['time_rules_from'] }}"
+                               class="border p-2 rounded w-full">
+                        <p class="text-xs text-gray-500 mt-1">
+                            Days before this are never counted. Leave it on the
+                            day you switch the rule on, so nobody is billed for
+                            a month they were never told about.
+                        </p>
+                    </div>
+
+                </div>
+
+                <p class="text-xs text-gray-500 mt-3">
+                    Days absent with no leave are a separate rule, further down,
+                    and are not counted twice.
+                    <a href="{{ route('admin.attendance.shortfall') }}"
+                       class="text-blue-600 underline">See where everybody stands this month</a>.
+                </p>
+
+            </div>
+
+            <div class="md:col-span-2 {{ $timeRule ? 'opacity-60' : '' }}">
+                <p class="text-xs text-gray-500">
+                    @if($timeRule)
+                        The two figures below belong to the old half day rule and
+                        are not in use, except that the second one still decides
+                        how long after a shift ends a missing clock-out counts.
+                    @else
+                        The two figures the half day rule uses.
+                    @endif
+                </p>
+            </div>
 
             <div>
                 <label class="block text-xs text-gray-500 mb-1">
