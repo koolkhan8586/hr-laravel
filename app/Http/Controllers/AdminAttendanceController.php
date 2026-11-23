@@ -1350,6 +1350,79 @@ protected function buildStaffLeaveReport(string $month, bool $includePayrollOnly
      */
     public function shortfall(Request $request)
     {
+        return view('admin.attendance.shortfall', $this->buildShortfall($request));
+    }
+
+    /**
+     * The same figures as an Excel sheet, for the month and employee on screen.
+     * One row per employee, with the days that cost time spelled out in the
+     * last column the way the other staff reports do it.
+     */
+    public function exportShortfall(Request $request)
+    {
+        $data = $this->buildShortfall($request);
+
+        $rows = [];
+
+        foreach ($data['rows'] as $index => $row) {
+
+            $details = collect($row['days'])->map(function ($day) {
+
+                $parts = [];
+
+                if ($day['late'] > 0) {
+                    $parts[] = 'late '.\App\Support\TimeShortfall::label($day['late']);
+                }
+                if ($day['early'] > 0) {
+                    $parts[] = 'left early '.\App\Support\TimeShortfall::label($day['early']);
+                }
+                if ($day['missing'] > 0) {
+                    $parts[] = 'no clock-out';
+                }
+
+                return $day['date']->format('d M').' ('.implode(', ', $parts).')';
+
+            })->implode('; ');
+
+            $rows[] = [
+                $index + 1,
+                $row['user']->name,
+                $row['user']->employee_code ?? '-',
+                $row['user']->staff->department ?? '-',
+                \App\Support\TimeShortfall::label($row['late']),
+                \App\Support\TimeShortfall::label($row['early']),
+                \App\Support\TimeShortfall::label($row['missing']),
+                \App\Support\TimeShortfall::label($row['minutes']),
+                $row['days_charged'],
+                $row['from_balance'],
+                $row['without_pay'],
+                $row['charge'] ? 'Charged' : ($data['closed'] ? 'Not settled' : 'Month running'),
+                $details,
+            ];
+        }
+
+        $filename = 'time_short_'.$data['month']->format('Y-m')
+            .($data['selected'] ? '_'.\Illuminate\Support\Str::slug($data['selected']->name) : '')
+            .'.xlsx';
+
+        return Excel::download(
+            new StaffMonthlyReportExport(
+                ['#', 'Employee', 'Employee ID', 'Department', 'Late', 'Left Early',
+                 'No Clock-out', 'Total Short', 'Days', 'From Leave Balance',
+                 'Without Pay', 'Status', 'Days That Cost Time'],
+                $rows
+            ),
+            $filename
+        );
+    }
+
+    /**
+     * Everything the screen, the print view and the export share.
+     *
+     * @return array<string, mixed>
+     */
+    protected function buildShortfall(Request $request): array
+    {
         $now = \Carbon\Carbon::now(\App\Support\AttendanceRules::TIMEZONE);
 
         $month = \Carbon\Carbon::parse(
@@ -1357,11 +1430,19 @@ protected function buildStaffLeaveReport(string $month, bool $includePayrollOnly
             \App\Support\AttendanceRules::TIMEZONE
         )->startOfMonth();
 
-        $users = \App\Models\User::where('role', 'employee')
+        $everyone = \App\Models\User::where('role', 'employee')
             ->employed()
             ->tracked()
             ->orderBy('name')
             ->get();
+
+        // One employee, or all of them. An id that is not a tracked employee
+        // is ignored rather than showing an empty page.
+        $selected = $request->filled('user_id')
+            ? $everyone->firstWhere('id', (int) $request->user_id)
+            : null;
+
+        $users = $selected ? collect([$selected]) : $everyone;
 
         $sheets = \App\Support\MonthlyShortfall::forUsers($users, $month->copy(), $now);
 
@@ -1372,15 +1453,17 @@ protected function buildStaffLeaveReport(string $month, bool $includePayrollOnly
             ->sortByDesc('minutes')
             ->values();
 
-        return view('admin.attendance.shortfall', [
-            'month'   => $month,
-            'rows'    => $rows,
-            'now'     => $now,
-            'closed'  => $month->copy()->endOfMonth()->lt($now->copy()->startOfDay()),
-            'enabled' => \App\Support\TimeShortfall::enabled(),
-            'charged' => $rows->filter(fn ($r) => (bool) $r['charge'])->count(),
-            'staffCount' => $users->count(),
-        ]);
+        return [
+            'month'      => $month,
+            'rows'       => $rows,
+            'now'        => $now,
+            'closed'     => $month->copy()->endOfMonth()->lt($now->copy()->startOfDay()),
+            'enabled'    => \App\Support\TimeShortfall::enabled(),
+            'charged'    => $rows->filter(fn ($r) => (bool) $r['charge'])->count(),
+            'staffCount' => $everyone->count(),
+            'everyone'   => $everyone,
+            'selected'   => $selected,
+        ];
     }
 
     /**

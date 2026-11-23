@@ -155,7 +155,10 @@ class DutyRoster
             return $override->shift;
         }
 
-        return WeeklySchedule::forUser($user->id)[$date->format('l')]?->shift;
+        // No row for that weekday at all - a schedule filled in only for the
+        // days somebody works - means they were not due in, not an error.
+        // The nullsafe operator does not cover a missing array key.
+        return (WeeklySchedule::forUser($user->id)[$date->format('l')] ?? null)?->shift;
     }
 
     /**

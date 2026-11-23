@@ -639,8 +639,114 @@ class TimeShortfallTest extends TestCase
         $this->assertCount(1, $response->viewData('rows'));
 
         $response->assertSee('Abdul Ahid');
-        $response->assertDontSee('Ali Khawaja');
+
+        // Ali is in the employee dropdown but not among those who were short.
+        $this->assertSame(
+            ['Abdul Ahid'],
+            $response->viewData('rows')->map(fn ($r) => $r['user']->name)->all()
+        );
         $response->assertSee('Charge November 2026');
+    }
+
+    public function test_the_admin_screen_can_be_filtered_to_one_employee(): void
+    {
+        $one = $this->employee(name: 'Abdul Ahid');
+        $two = $this->employee(name: 'Kashif Vicky');
+
+        $this->shortBy($one, 120);
+        $this->shortBy($two, 180);
+
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $all = $this->actingAs($admin)
+            ->get(route('admin.attendance.shortfall', ['month' => $this->month]))
+            ->assertOk();
+
+        $this->assertCount(2, $all->viewData('rows'));
+
+        $filtered = $this->actingAs($admin)
+            ->get(route('admin.attendance.shortfall', ['month' => $this->month, 'user_id' => $one->id]))
+            ->assertOk();
+
+        $this->assertCount(1, $filtered->viewData('rows'));
+        $this->assertSame($one->id, $filtered->viewData('selected')->id);
+
+        // The dropdown still lists everybody, and one employee gets the days.
+        $filtered->assertSee('Kashif Vicky');
+        $filtered->assertSee('day by day');
+    }
+
+    public function test_an_unknown_employee_filter_falls_back_to_everybody(): void
+    {
+        $this->shortBy($this->employee(name: 'Abdul Ahid'), 120);
+
+        $response = $this->actingAs(User::factory()->create(['role' => 'admin']))
+            ->get(route('admin.attendance.shortfall', ['month' => $this->month, 'user_id' => 99999]))
+            ->assertOk();
+
+        $this->assertNull($response->viewData('selected'));
+        $this->assertCount(1, $response->viewData('rows'));
+    }
+
+    public function test_the_screen_can_be_printed_and_exported(): void
+    {
+        $this->shortBy($this->employee(name: 'Abdul Ahid'), 120);
+
+        $this->actingAs(User::factory()->create(['role' => 'admin']))
+            ->get(route('admin.attendance.shortfall', ['month' => $this->month]))
+            ->assertOk()
+            ->assertSee('window.print()', false)
+            ->assertSee('Export Excel');
+    }
+
+    public function test_the_export_downloads_an_excel_file_for_the_filter(): void
+    {
+        $one = $this->employee(name: 'Abdul Ahid');
+        $this->shortBy($one, 120);
+        $this->shortBy($this->employee(name: 'Kashif Vicky'), 180);
+
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $all = $this->actingAs($admin)
+            ->get(route('admin.attendance.shortfall.export', ['month' => $this->month]))
+            ->assertOk();
+
+        $this->assertStringContainsString('time_short_2026-11.xlsx', $all->headers->get('content-disposition'));
+
+        $one = $this->actingAs($admin)
+            ->get(route('admin.attendance.shortfall.export', ['month' => $this->month, 'user_id' => $one->id]))
+            ->assertOk();
+
+        $this->assertStringContainsString('time_short_2026-11_abdul-ahid.xlsx', $one->headers->get('content-disposition'));
+    }
+
+    public function test_an_employee_cannot_open_the_admin_time_short_screen(): void
+    {
+        $user = $this->employee();
+
+        $this->actingAs($user)
+            ->get(route('admin.attendance.shortfall'))
+            ->assertForbidden();
+
+        $this->actingAs($user)
+            ->get(route('admin.attendance.shortfall.export'))
+            ->assertForbidden();
+    }
+
+    public function test_an_employee_with_no_row_for_a_weekday_is_not_an_error(): void
+    {
+        $user = $this->employee();
+
+        // A schedule filled in only for the days somebody works.
+        WeeklySchedule::where('user_id', $user->id)
+            ->whereIn('day_of_week', ['Saturday', 'Sunday'])
+            ->delete();
+
+        $this->assertNull(\App\Support\DutyRoster::shiftFor($user, Carbon::parse('2026-11-01')));
+
+        $this->actingAs(User::factory()->create(['role' => 'admin']))
+            ->get(route('admin.attendance.shortfall', ['month' => $this->month]))
+            ->assertOk();
     }
 
     public function test_an_admin_can_settle_the_month_by_hand(): void

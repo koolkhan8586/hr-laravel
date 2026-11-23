@@ -392,6 +392,10 @@ Route::get('/time-short',
     [AdminAttendanceController::class,'shortfall']
 )->name('attendance.shortfall');
 
+Route::get('/time-short/export',
+    [AdminAttendanceController::class,'exportShortfall']
+)->name('attendance.shortfall.export');
+
 Route::post('/time-short/charge',
     [AdminAttendanceController::class,'chargeShortfall']
 )->name('attendance.shortfall.charge');
