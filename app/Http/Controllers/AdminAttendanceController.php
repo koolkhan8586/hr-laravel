@@ -241,20 +241,31 @@ $clockOut = $request->clock_out
         }
     }
 
+    $existing = Attendance::where('user_id', $request->user_id)
+        ->whereDate('date', $date)
+        ->first();
+
+    $values = [
+        'clock_in' => $clockIn,
+        'clock_out' => $clockOut,
+        'status' => $status,
+        'total_hours' => $totalHours,
+    ];
+
+    // Typed in by an admin: no position and no device, so say who did it. A
+    // day the employee did mark themselves keeps that, and only records that
+    // somebody changed the times afterwards.
+    // Rows from before marked_via existed carry a device instead; a day with
+    // either was the employee's own, and typing over it is an edit.
+    if ($existing && ($existing->marked_via === 'self' || $existing->device_kind)) {
+        $values += ['edited_by' => auth()->id(), 'edited_at' => now()];
+    } else {
+        $values += ['marked_via' => 'manual', 'marked_by' => auth()->id()];
+    }
+
     Attendance::updateOrCreate(
-
-        [
-            'user_id' => $request->user_id,
-            'date' => $date
-        ],
-
-        [
-            'clock_in' => $clockIn,
-            'clock_out' => $clockOut,
-            'status' => $status,
-            'total_hours' => $totalHours
-        ]
-
+        ['user_id' => $request->user_id, 'date' => $date],
+        $values
     );
 
     return back()->with('success','Attendance marked successfully.');
@@ -1323,7 +1334,91 @@ protected function buildStaffLeaveReport(string $month, bool $includePayrollOnly
             ->sortByDesc('marks')
             ->values();
 
+        /*
+        | One employee, mark by mark: how it was made, what it came from, where
+        | it was, and where they are allowed to be. This is the answer to "he
+        | was not on campus, so how did he mark".
+        */
+        $everyone = \App\Models\User::where('role', 'employee')->employed()->orderBy('name')->get(['id', 'name', 'employee_code']);
+
+        $selected = $request->filled('user_id')
+            ? \App\Models\User::where('role', 'employee')->find((int) $request->user_id)
+            : null;
+
+        $recordedSince = \App\Support\AttendanceDevice::recordedSince();
+
+        $adminNames = \App\Models\User::whereIn('id',
+                \App\Models\Attendance::whereBetween('date', [$start->toDateString(), $end->toDateString()])
+                    ->pluck('marked_by')->merge(
+                        \App\Models\Attendance::whereBetween('date', [$start->toDateString(), $end->toDateString()])->pluck('edited_by')
+                    )->filter()->unique()
+            )->pluck('name', 'id')->all();
+
+        $offices = \App\Models\OfficeLocation::all();
+
+        $enrich = function ($mark) use ($recordedSince, $adminNames, $offices) {
+
+            $nearest = null;
+
+            if (is_numeric($mark->clock_in_latitude) && is_numeric($mark->clock_in_longitude)) {
+
+                foreach ($offices as $office) {
+
+                    if (! is_numeric($office->latitude) || ! is_numeric($office->longitude)) {
+                        continue;
+                    }
+
+                    $metres = \App\Support\AttendanceLocation::distance(
+                        $mark->clock_in_latitude, $mark->clock_in_longitude,
+                        $office->latitude, $office->longitude
+                    );
+
+                    if (! $nearest || $metres < $nearest['metres']) {
+                        $nearest = ['office' => $office->name, 'metres' => $metres];
+                    }
+                }
+            }
+
+            return [
+                'mark'    => $mark,
+                'how'     => \App\Support\AttendanceDevice::how($mark, $recordedSince, $adminNames),
+                'nearest' => $nearest,
+            ];
+        };
+
+        $lookup = $selected
+            ? \App\Models\Attendance::where('user_id', $selected->id)
+                ->whereBetween('date', [$start->toDateString(), $end->toDateString()])
+                ->whereNotNull('clock_in')
+                ->orderByDesc('date')
+                ->get()
+                ->map($enrich)
+            : collect();
+
+        // Marks nobody made from the clock-in button, for the whole month:
+        // the ones typed in by an admin, with the name where there is one.
+        $byHand = \App\Models\Attendance::with('user:id,name,employee_code')
+            ->whereBetween('date', [$start->toDateString(), $end->toDateString()])
+            ->whereNotNull('clock_in')
+            ->where(function ($q) use ($recordedSince) {
+                $q->where('marked_via', 'manual')
+                  ->orWhere(function ($q) use ($recordedSince) {
+                      $q->whereNull('device_kind')
+                        ->whereNull('clock_in_latitude')
+                        ->when($recordedSince, fn ($q) => $q->whereDate('date', '>=', $recordedSince),
+                               fn ($q) => $q->whereRaw('1 = 0'));
+                  });
+            })
+            ->orderByDesc('date')
+            ->get()
+            ->map($enrich);
+
         return view('admin.attendance.devices', [
+            'everyone'     => $everyone,
+            'selected'     => $selected,
+            'lookup'       => $lookup,
+            'byHand'       => $byHand,
+            'whereAllowed' => $selected ? \App\Support\AttendanceDevice::whereAllowed($selected) : null,
             'month'        => $month,
             'devices'      => $devices,
             'fromComputer' => $fromComputer,

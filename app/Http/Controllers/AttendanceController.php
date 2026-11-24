@@ -164,7 +164,7 @@ class AttendanceController extends Controller
         $attendance->clock_in_longitude = $lng;
         $attendance->location_status = $locationStatus;
         $attendance->status = 'late';
-        $attendance->forceFill(self::deviceColumns($device))->save();
+        $attendance->forceFill(self::deviceColumns($device) + ['marked_via' => 'self'])->save();
 
         return response()->json([
             'success' => true,
@@ -195,6 +195,7 @@ class AttendanceController extends Controller
     $status = $lateAfter && $now->gt($lateAfter) ? 'late' : 'present';
 
     $attendance = Attendance::create(self::deviceColumns($device) + [
+        'marked_via' => 'self',
         'user_id' => $user->id,
         'date' => $today,
         'clock_in' => $now,
@@ -666,6 +667,11 @@ foreach ($attendances as $attendance) {
             'clock_out'   => $clockOut,
             'total_hours' => $totalHours,
             'status'      => $status,
+
+            // Said on the record, so a time that was typed in rather than
+            // marked can always be told apart, and traced to whoever did it.
+            'edited_by'   => auth()->id(),
+            'edited_at'   => now(),
         ]);
 
         return redirect()->route('admin.attendance.index')

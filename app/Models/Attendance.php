@@ -18,6 +18,10 @@ class Attendance extends Model
         'clock_in_longitude',
         'clock_out_latitude',
         'clock_out_longitude',
+        // inside | override | anywhere: why the location check let this mark
+        // through. It was never listed here, so create() quietly threw it
+        // away and every first clock-in was saved without it.
+        'location_status',
         'status',
         'total_hours',
         // Set by Allow Overtime: the day ends later than the shift says, so
@@ -32,6 +36,12 @@ class Attendance extends Model
         'device_kind',
         'device_ip',
         'device_agent',
+
+        // Who put it on the day: the employee themselves, or an admin by hand.
+        'marked_via',
+        'marked_by',
+        'edited_by',
+        'edited_at',
     ];
 
     /*
