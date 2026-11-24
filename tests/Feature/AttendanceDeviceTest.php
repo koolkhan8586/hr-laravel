@@ -393,6 +393,11 @@ class AttendanceDeviceTest extends TestCase
         // there is nothing to look at when somebody is suspected later.
         $this->assertSame('device-aaaaaaaa', $attendance->device_id);
         $this->assertSame('phone', $attendance->device_kind);
+
+        // How it was marked, and why the location check let it through. Both
+        // used to be thrown away: location_status was missing from fillable.
+        $this->assertSame('self', $attendance->marked_via);
+        $this->assertSame('anywhere', $attendance->location_status);
         $this->assertNotNull($attendance->device_agent);
     }
 
@@ -533,6 +538,148 @@ class AttendanceDeviceTest extends TestCase
                 'device_id'    => $deviceId,
                 'touch_points' => str_contains($agent, 'iPhone') ? 5 : 0,
             ]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | "He was not on campus, so how did he mark?"
+    |--------------------------------------------------------------------------
+    */
+
+    private function campus(): \App\Models\OfficeLocation
+    {
+        return \App\Models\OfficeLocation::create([
+            'name' => 'Main Campus', 'latitude' => 31.5204, 'longitude' => 74.3587, 'radius' => 100,
+        ]);
+    }
+
+    public function test_an_employee_with_no_office_can_mark_from_anywhere_and_the_lookup_says_so(): void
+    {
+        $this->campus();
+
+        $ali = User::factory()->create(['name' => 'Ali Khawaja', 'role' => 'employee']);
+
+        // An hour's drive away, and nothing in the way of it.
+        Attendance::create([
+            'user_id' => $ali->id, 'date' => '2026-11-23',
+            'clock_in' => '2026-11-23 09:00:00', 'status' => 'present',
+            'clock_in_latitude' => 31.9, 'clock_in_longitude' => 74.9,
+            'location_status' => 'anywhere', 'marked_via' => 'self',
+            'device_id' => 'phone-aaaaaaaaaa', 'device_kind' => 'phone',
+            'device_ip' => '203.0.113.7', 'device_agent' => self::PHONE,
+        ]);
+
+        $page = $this->actingAs(User::factory()->create(['role' => 'admin']))
+            ->get(route('admin.attendance.devices', ['month' => '2026-11', 'user_id' => $ali->id]))
+            ->assertOk();
+
+        // Why the location check never stopped him.
+        $page->assertSee('NO office is assigned');
+
+        // And how far from campus the mark actually was.
+        $page->assertSee('No office assigned, so allowed anywhere');
+        $page->assertSee('from Main Campus');
+        $page->assertSee('Own clock-in from a phone');
+    }
+
+    public function test_an_employee_with_an_override_is_told_so(): void
+    {
+        $ali = User::factory()->create(['role' => 'employee', 'allow_anywhere_attendance' => true]);
+
+        $this->assertStringContainsString('ANYWHERE', AttendanceDevice::whereAllowed($ali));
+        $this->assertStringContainsString('permanent override', AttendanceDevice::whereAllowed($ali));
+    }
+
+    public function test_an_employee_held_to_an_office_is_told_which(): void
+    {
+        $office = $this->campus();
+
+        $ali = User::factory()->create(['role' => 'employee']);
+        $ali->officeLocations()->attach($office->id);
+
+        $this->assertStringContainsString('Main Campus (100 m)', AttendanceDevice::whereAllowed($ali->fresh()));
+    }
+
+    public function test_a_manual_entry_records_who_typed_it_and_is_listed(): void
+    {
+        $ali   = User::factory()->create(['name' => 'Ali Khawaja', 'role' => 'employee']);
+        $admin = User::factory()->create(['name' => 'Office Admin', 'role' => 'admin']);
+
+        $this->actingAs($admin)->post(route('admin.attendance.manual'), [
+            'user_id' => $ali->id, 'date' => '2026-11-24',
+            'clock_in' => '09:00', 'clock_out' => '17:00',
+        ])->assertSessionHas('success');
+
+        $mark = Attendance::where('user_id', $ali->id)->firstOrFail();
+
+        $this->assertSame('manual', $mark->marked_via);
+        $this->assertSame($admin->id, $mark->marked_by);
+        $this->assertNull($mark->device_kind);
+        $this->assertNull($mark->clock_in_latitude);
+
+        Carbon::setTestNow(Carbon::parse('2026-11-24 12:00:00', 'Asia/Karachi'));
+
+        $page = $this->actingAs($admin)
+            ->get(route('admin.attendance.devices', ['month' => '2026-11']))
+            ->assertOk();
+
+        $this->assertCount(1, $page->viewData('byHand'));
+
+        $page->assertSee('Entered by hand');
+        $page->assertSee('Typed in by Office Admin');
+    }
+
+    public function test_editing_the_times_of_a_self_marked_day_says_who_changed_them(): void
+    {
+        $ali   = User::factory()->create(['role' => 'employee']);
+        $admin = User::factory()->create(['name' => 'Office Admin', 'role' => 'admin']);
+
+        $this->markFor($ali, 'phone-aaaaaaaaaa');
+
+        $this->actingAs($admin)->post(route('admin.attendance.manual'), [
+            'user_id' => $ali->id, 'date' => Carbon::now('Asia/Karachi')->toDateString(),
+            'clock_in' => '08:00', 'clock_out' => '17:00',
+        ]);
+
+        $mark = Attendance::where('user_id', $ali->id)->firstOrFail();
+
+        // Still his own clock-in, but the change is on the record.
+        $this->assertSame('self', $mark->marked_via ?? 'self');
+        $this->assertNull($mark->marked_by);
+        $this->assertSame($admin->id, $mark->edited_by);
+        $this->assertNotNull($mark->edited_at);
+    }
+
+    public function test_a_mark_with_no_device_after_recording_began_is_flagged_as_not_from_the_button(): void
+    {
+        // Devices have been recorded since the 20th.
+        $this->markFor(User::factory()->create(), 'phone-aaaaaaaaaa', Carbon::parse('2026-11-20'));
+
+        $ali = User::factory()->create(['name' => 'Ali Khawaja', 'role' => 'employee']);
+
+        // The 24th, no device, no position: it did not come from clock-in.
+        Attendance::create([
+            'user_id' => $ali->id, 'date' => '2026-11-24',
+            'clock_in' => '2026-11-24 09:00:00', 'status' => 'present',
+        ]);
+
+        // And one from before recording began, which says nothing either way.
+        Attendance::create([
+            'user_id' => $ali->id, 'date' => '2026-11-10',
+            'clock_in' => '2026-11-10 09:00:00', 'status' => 'present',
+        ]);
+
+        $page = $this->actingAs(User::factory()->create(['role' => 'admin']))
+            ->get(route('admin.attendance.devices', ['month' => '2026-11', 'user_id' => $ali->id]))
+            ->assertOk();
+
+        $page->assertSee('Entered by an admin (not recorded who)');
+        $page->assertSee('Before devices were recorded');
+
+        $byHand = $page->viewData('byHand');
+
+        $this->assertCount(1, $byHand);
+        $this->assertSame('2026-11-24', Carbon::parse($byHand->first()['mark']->date)->toDateString());
     }
 
     /** Mark attendance for somebody from a given device. */

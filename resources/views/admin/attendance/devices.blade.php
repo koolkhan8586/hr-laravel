@@ -22,6 +22,18 @@
                 <input type="month" name="month" value="{{ $month }}"
                        class="border p-2 rounded">
             </div>
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Look up an employee</label>
+                <select name="user_id" class="border p-2 rounded" style="min-width:200px;">
+                    <option value="">Nobody in particular</option>
+                    @foreach($everyone as $person)
+                        <option value="{{ $person->id }}"
+                            {{ $selected && $selected->id === $person->id ? 'selected' : '' }}>
+                            {{ $person->name }}{{ $person->employee_code ? ' ('.$person->employee_code.')' : '' }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
             <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
                 Show
             </button>
@@ -84,6 +96,146 @@
             </div>
         </div>
 
+    </div>
+
+    {{-- One employee, mark by mark --}}
+    @if($selected)
+        <div class="bg-white shadow rounded p-5 mb-6">
+
+            <h3 class="text-lg font-semibold mb-1">{{ $selected->name }} - every mark in {{ \Carbon\Carbon::parse($month.'-01')->format('F Y') }}</h3>
+
+            <p class="text-sm mb-1">
+                <strong>Allowed to mark:</strong> {{ $whereAllowed }}
+            </p>
+            <p class="text-xs text-gray-500 mb-4">
+                This is what lets an employee mark from off campus. Where it says
+                anywhere or no office, the location check never ran for them.
+                Change it under Staff Management &rarr; edit.
+            </p>
+
+            @if($lookup->isEmpty())
+                <p class="text-sm text-gray-500">No attendance marked this month.</p>
+            @else
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm">
+                        <thead>
+                            <tr class="bg-gray-50 text-left">
+                                <th class="p-2">Date</th>
+                                <th class="p-2">In / Out</th>
+                                <th class="p-2">How it was marked</th>
+                                <th class="p-2">Where</th>
+                                <th class="p-2">Device</th>
+                                <th class="p-2">Photo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($lookup as $row)
+                                @php $m = $row['mark']; @endphp
+                                <tr class="border-t {{ $row['how']['flag'] ? 'bg-red-50' : '' }}">
+                                    <td class="p-2 whitespace-nowrap align-top">{{ \Carbon\Carbon::parse($m->date)->format('d M Y') }}</td>
+                                    <td class="p-2 whitespace-nowrap align-top">
+                                        {{ \Carbon\Carbon::parse($m->clock_in)->format('h:i A') }}
+                                        - {{ $m->clock_out ? \Carbon\Carbon::parse($m->clock_out)->format('h:i A') : 'not marked' }}
+                                    </td>
+                                    <td class="p-2 align-top">
+                                        <div class="{{ $row['how']['flag'] ? 'text-red-700 font-semibold' : '' }}">{{ $row['how']['label'] }}</div>
+                                        @if($row['how']['detail'])
+                                            <div class="text-xs text-gray-600">{{ $row['how']['detail'] }}</div>
+                                        @endif
+                                    </td>
+                                    <td class="p-2 align-top text-xs">
+                                        <div>{{ \App\Support\AttendanceDevice::locationLabel($m->location_status) }}</div>
+                                        @if($row['nearest'])
+                                            <div class="text-gray-600">
+                                                {{ \App\Support\AttendanceLocation::readable($row['nearest']['metres']) }}
+                                                from {{ $row['nearest']['office'] }}
+                                                <a class="text-blue-600 underline" target="_blank" rel="noopener"
+                                                   href="https://www.google.com/maps?q={{ $m->clock_in_latitude }},{{ $m->clock_in_longitude }}">map</a>
+                                            </div>
+                                        @else
+                                            <div class="text-gray-500">No position recorded</div>
+                                        @endif
+                                    </td>
+                                    <td class="p-2 align-top text-xs text-gray-600">
+                                        @if($m->device_kind)
+                                            {{ \App\Support\AttendanceDevice::kindLabel($m->device_kind) }},
+                                            {{ \App\Support\AttendanceDevice::agentLabel($m->device_agent) }}
+                                            <div>{{ $m->device_ip }}</div>
+                                        @else
+                                            None recorded
+                                        @endif
+                                    </td>
+                                    <td class="p-2 align-top">
+                                        @if($m->selfie_path)
+                                            <a href="{{ route('admin.attendance.selfie', $m->id) }}" target="_blank" rel="noopener">
+                                                <img src="{{ route('admin.attendance.selfie', $m->id) }}"
+                                                     alt="Clock-in photo" loading="lazy"
+                                                     style="width:64px; height:64px; object-fit:cover; border-radius:6px; border:1px solid #d1d5db;">
+                                            </a>
+                                        @elseif($m->selfie_deleted_at)
+                                            <span class="text-xs text-gray-500">
+                                                Deleted {{ $m->selfie_deleted_at->format('d M Y') }}
+                                                ({{ \App\Support\AttendanceSelfie::retentionDays() }}-day rule)
+                                            </span>
+                                        @elseif($selected->selfie_required)
+                                            <span class="text-xs text-red-700">None taken</span>
+                                        @else
+                                            <span class="text-xs text-gray-400">-</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </div>
+    @endif
+
+    {{-- Typed in by an admin --}}
+    <div class="bg-white shadow rounded p-5 mb-6">
+        <h3 class="text-lg font-semibold mb-1">Entered by hand</h3>
+        <p class="text-xs text-gray-500 mb-4">
+            The Manual Mark form and the Edit screen write a clock-in with no
+            position and no device. These are the marks this month that did not
+            come from the employee's own clock-in. From today it also says which
+            admin typed it; earlier ones cannot say.
+        </p>
+
+        @if($byHand->isEmpty())
+            <p class="text-sm text-green-700">
+                Nothing this month was entered by hand.
+            </p>
+        @else
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead>
+                        <tr class="bg-gray-50 text-left">
+                            <th class="p-2">Employee</th>
+                            <th class="p-2">Date</th>
+                            <th class="p-2">In / Out</th>
+                            <th class="p-2">Who</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($byHand as $row)
+                            @php $m = $row['mark']; @endphp
+                            <tr class="border-t">
+                                <td class="p-2">{{ $m->user->name ?? 'Unknown' }}
+                                    @if($m->user?->employee_code)<span class="text-xs text-gray-500">({{ $m->user->employee_code }})</span>@endif
+                                </td>
+                                <td class="p-2 whitespace-nowrap">{{ \Carbon\Carbon::parse($m->date)->format('d M Y') }}</td>
+                                <td class="p-2 whitespace-nowrap">
+                                    {{ \Carbon\Carbon::parse($m->clock_in)->format('h:i A') }}
+                                    - {{ $m->clock_out ? \Carbon\Carbon::parse($m->clock_out)->format('h:i A') : 'not marked' }}
+                                </td>
+                                <td class="p-2 text-xs">{{ $row['how']['detail'] }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
     </div>
 
     {{-- One device, several names: the thing worth looking at --}}

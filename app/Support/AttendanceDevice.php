@@ -215,6 +215,100 @@ class AttendanceDevice
         return $browser.' on '.$system;
     }
 
+    /**
+     * The first day a device was ever recorded.
+     *
+     * A mark with no device on a day before this tells us nothing; one on or
+     * after it was not made through the clock-in button.
+     */
+    public static function recordedSince(): ?string
+    {
+        $date = Attendance::whereNotNull('device_kind')->min('date');
+
+        return $date ? Carbon::parse($date)->toDateString() : null;
+    }
+
+    /**
+     * How a mark got onto the day, in a few words, and whether to look twice.
+     *
+     * @return array{label: string, detail: ?string, flag: bool}
+     */
+    public static function how(Attendance $mark, ?string $recordedSince, ?array $names = null): array
+    {
+        $names ??= [];
+
+        $by = fn ($id) => $id ? ($names[$id] ?? 'user #'.$id) : null;
+
+        $edited = $mark->edited_by
+            ? 'Times changed by '.$by($mark->edited_by).($mark->edited_at ? ' on '.Carbon::parse($mark->edited_at)->format('d M, h:i A') : '')
+            : null;
+
+        if ($mark->marked_via === 'manual') {
+            return [
+                'label'  => 'Entered by an admin',
+                'detail' => 'Typed in by '.($by($mark->marked_by) ?? 'an admin (not recorded)').' - no device, no location.',
+                'flag'   => true,
+            ];
+        }
+
+        if ($mark->device_kind) {
+            return [
+                'label'  => 'Own clock-in from a '.strtolower(self::kindLabel($mark->device_kind)),
+                'detail' => $edited,
+                'flag'   => $mark->device_kind === 'computer' || (bool) $mark->edited_by,
+            ];
+        }
+
+        $afterRollout = $recordedSince
+            && $mark->date
+            && Carbon::parse($mark->date)->toDateString() >= $recordedSince;
+
+        if ($afterRollout && $mark->clock_in && blank($mark->clock_in_latitude)) {
+            return [
+                'label'  => 'Entered by an admin (not recorded who)',
+                'detail' => 'Marked after devices were being recorded, with no device and no location, so it did not come from the clock-in button.'
+                    .($edited ? ' '.$edited : ''),
+                'flag'   => true,
+            ];
+        }
+
+        return ['label' => 'Before devices were recorded', 'detail' => $edited, 'flag' => false];
+    }
+
+    /** "Inside campus", "Allowed anywhere"... from what the mark stored. */
+    public static function locationLabel(?string $status): string
+    {
+        return match ($status) {
+            'inside'   => 'Inside campus',
+            'override' => 'Allowed anywhere (override on the employee)',
+            'anywhere' => 'No office assigned, so allowed anywhere',
+            default    => 'Not recorded',
+        };
+    }
+
+    /** Where this employee is allowed to mark from, in one sentence. */
+    public static function whereAllowed(User $user): string
+    {
+        if ($user->allow_anywhere_attendance) {
+            return 'Allowed to mark attendance from ANYWHERE (permanent override on the staff record).';
+        }
+
+        if ($user->attendance_override_until && now()->lessThan($user->attendance_override_until)) {
+            return 'Allowed to mark from ANYWHERE until '
+                .Carbon::parse($user->attendance_override_until)->format('d M Y, h:i A').'.';
+        }
+
+        $offices = $user->attendanceOffices();
+
+        if ($offices->isEmpty()) {
+            return 'NO office is assigned, so there is no location check at all - attendance can be marked from anywhere.';
+        }
+
+        return 'Only within range of '.$offices->map(
+            fn ($o) => $o->name.' ('.AttendanceLocation::radiusOf($o).' m)'
+        )->implode(', ').'.';
+    }
+
     protected static function pass(string $reason): array
     {
         return ['allowed' => true, 'message' => null, 'reason' => $reason];

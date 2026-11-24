@@ -45,6 +45,7 @@ class SettingsController extends Controller
             'auto_clock_out'  => \App\Support\AttendanceRules::autoClockOutEnabled(),
             'require_mobile'  => \App\Support\AttendanceDevice::requiresMobile(),
             'one_per_device'  => \App\Support\AttendanceDevice::onePerDevice(),
+            'selfie_days'     => \App\Support\AttendanceSelfie::retentionDays(),
 
             // Half a day per offence, or the time actually missed.
             'charge_mode'        => \App\Support\TimeShortfall::mode(),
@@ -85,6 +86,7 @@ class SettingsController extends Controller
             'auto_clock_out'  => 'nullable|boolean',
             'require_mobile'  => 'nullable|boolean',
             'one_per_device'  => 'nullable|boolean',
+            'selfie_days'     => 'nullable|integer|min:7|max:3650',
             'charge_mode'        => 'nullable|in:half_day,time',
             'early_grace'        => 'nullable|integer|min:0|max:480',
             'hours_per_half_day' => 'nullable|numeric|min:0.5|max:12',
@@ -129,6 +131,8 @@ class SettingsController extends Controller
             // through a remote desktop session on an office computer.
             \App\Support\AttendanceDevice::REQUIRE_MOBILE => $request->boolean('require_mobile') ? 1 : 0,
             \App\Support\AttendanceDevice::ONE_PER_DEVICE => $request->boolean('one_per_device') ? 1 : 0,
+            \App\Support\AttendanceSelfie::RETENTION_DAYS => (int) ($data['selfie_days']
+                ?? \App\Support\AttendanceSelfie::retentionDays()),
 
             // How a short day is paid for: half a day on the spot, or the
             // minutes counted and the month settled at the end of it.

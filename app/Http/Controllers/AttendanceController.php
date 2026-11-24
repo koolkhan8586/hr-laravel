@@ -123,6 +123,22 @@ class AttendanceController extends Controller
         ], 403);
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | A PHOTO, WHERE THE EMPLOYEE HAS TO GIVE ONE
+    |--------------------------------------------------------------------------
+    | Checked here, not just in the page: a page can be skipped. Refused before
+    | anything is written, so a clock-in without a photo leaves no trace.
+    */
+    $selfie = \App\Support\AttendanceSelfie::fromRequest($user, $request);
+
+    if (!$selfie['ok']) {
+        return response()->json([
+            'success' => false,
+            'message' => $selfie['message'],
+        ], 422);
+    }
+
     $locationStatus = $location['reason'] === 'inside'
         ? 'inside'
         : ($location['reason'] === 'override' ? 'override' : 'anywhere');
@@ -164,7 +180,7 @@ class AttendanceController extends Controller
         $attendance->clock_in_longitude = $lng;
         $attendance->location_status = $locationStatus;
         $attendance->status = 'late';
-        $attendance->forceFill(self::deviceColumns($device))->save();
+        $attendance->forceFill(self::deviceColumns($device) + ['marked_via' => 'self'] + self::selfieColumn($user, $selfie, $now))->save();
 
         return response()->json([
             'success' => true,
@@ -194,7 +210,8 @@ class AttendanceController extends Controller
     // No start time on the shift means there is nothing to be late for.
     $status = $lateAfter && $now->gt($lateAfter) ? 'late' : 'present';
 
-    $attendance = Attendance::create(self::deviceColumns($device) + [
+    $attendance = Attendance::create(self::deviceColumns($device) + self::selfieColumn($user, $selfie, $now) + [
+        'marked_via' => 'self',
         'user_id' => $user->id,
         'date' => $today,
         'clock_in' => $now,
@@ -241,6 +258,16 @@ class AttendanceController extends Controller
      * @param  array{id: ?string, kind: string, ip: ?string, agent: ?string}  $device
      * @return array<string, ?string>
      */
+    /** The saved photo's path, when there is one to save. */
+    protected static function selfieColumn(\App\Models\User $user, array $selfie, \Carbon\Carbon $at): array
+    {
+        if (!$selfie['bytes']) {
+            return [];
+        }
+
+        return ['selfie_path' => \App\Support\AttendanceSelfie::store($user, $selfie['bytes'], $at)];
+    }
+
     protected static function deviceColumns(array $device): array
     {
         return [
@@ -666,6 +693,11 @@ foreach ($attendances as $attendance) {
             'clock_out'   => $clockOut,
             'total_hours' => $totalHours,
             'status'      => $status,
+
+            // Said on the record, so a time that was typed in rather than
+            // marked can always be told apart, and traced to whoever did it.
+            'edited_by'   => auth()->id(),
+            'edited_at'   => now(),
         ]);
 
         return redirect()->route('admin.attendance.index')

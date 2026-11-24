@@ -347,6 +347,22 @@
                             attendance that device already marked.
                         </span>
                     </label>
+
+                    <div class="mt-4">
+                        <label class="block text-xs text-gray-500 mb-1">
+                            Delete clock-in photos after this many days
+                        </label>
+                        <input type="number" name="selfie_days" min="7" max="3650"
+                               value="{{ $attendanceRules['selfie_days'] }}"
+                               class="border p-2 rounded" style="width:120px;">
+                        <p class="text-xs text-gray-500 mt-1">
+                            For the employees who take a photo to clock in. A photo
+                            of a person is kept only as long as there is a reason
+                            to look at it. Checked every night; the day itself
+                            stays on record and says its photo was deleted.
+                            Between 7 days and 10 years.
+                        </p>
+                    </div>
                 </div>
 
             </div>
