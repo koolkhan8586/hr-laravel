@@ -31,6 +31,25 @@ class AttendanceSelfie
 
     public const MIN_SIDE = 100;
 
+    /** Setting: how many days a photo is kept. */
+    public const RETENTION_DAYS = 'attendance_selfie_retention_days';
+
+    public const DEFAULT_RETENTION_DAYS = 90;
+
+    /**
+     * How long a photo is kept, in days.
+     *
+     * A photo of a person is kept only as long as there is a reason to look at
+     * it. Never less than a week, so a mistake in the setting cannot wipe the
+     * photos before anybody has had the chance to look.
+     */
+    public static function retentionDays(): int
+    {
+        $days = (int) \App\Models\AppSetting::get(self::RETENTION_DAYS, self::DEFAULT_RETENTION_DAYS);
+
+        return max(7, min(3650, $days ?: self::DEFAULT_RETENTION_DAYS));
+    }
+
     public static function requiredFor(?User $user): bool
     {
         return (bool) $user?->selfie_required;

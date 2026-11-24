@@ -45,7 +45,17 @@ class Attendance extends Model
 
         // A photo taken at clock-in, where the employee is required to give one.
         'selfie_path',
+        'selfie_deleted_at',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            // Read as dates, so the screens can format them.
+            'edited_at'         => 'datetime',
+            'selfie_deleted_at' => 'datetime',
+        ];
+    }
 
     /*
     |--------------------------------------------------------------------------

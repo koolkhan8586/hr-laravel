@@ -130,3 +130,17 @@ Schedule::command('attendance:charge-shortfall')
     ->monthlyOn(1, '02:30')
     ->timezone('Asia/Karachi')
     ->withoutOverlapping();
+
+
+/*
+|--------------------------------------------------------------------------
+| Delete Old Clock-In Photos
+|--------------------------------------------------------------------------
+| A photo of a person is kept only as long as there is a reason to look at
+| it - 90 days unless Settings says otherwise. Once a day, in the quiet hours.
+*/
+
+Schedule::command('attendance:prune-selfies')
+    ->dailyAt('03:15')
+    ->timezone('Asia/Karachi')
+    ->withoutOverlapping();

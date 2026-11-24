@@ -172,6 +172,11 @@
                                                      alt="Clock-in photo" loading="lazy"
                                                      style="width:64px; height:64px; object-fit:cover; border-radius:6px; border:1px solid #d1d5db;">
                                             </a>
+                                        @elseif($m->selfie_deleted_at)
+                                            <span class="text-xs text-gray-500">
+                                                Deleted {{ $m->selfie_deleted_at->format('d M Y') }}
+                                                ({{ \App\Support\AttendanceSelfie::retentionDays() }}-day rule)
+                                            </span>
                                         @elseif($selected->selfie_required)
                                             <span class="text-xs text-red-700">None taken</span>
                                         @else
