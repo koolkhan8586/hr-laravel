@@ -59,8 +59,17 @@ class MarkAbsent extends Command
                 continue;
             }
 
-            // Not rostered today: nothing to be absent from.
-            if (!DutyRoster::shiftFor($user, $now)) {
+            /*
+            | Not rostered today: nothing to be absent from.
+            |
+            | The roster, not the weekly pattern alone. Sunday is off for
+            | everybody and Saturdays are decided date by date, but a couple of
+            | employees have Sunday sitting in their weekly pattern, so asking
+            | only "does the pattern have a shift today?" wrote an absent row
+            | for them every Sunday - a row the calendar then showed as an
+            | absence and the daily report listed by name.
+            */
+            if (!(DutyRoster::workingDatesFor([$user], $now, $now)[$user->id]['rostered'][$today] ?? false)) {
                 continue;
             }
 
