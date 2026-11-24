@@ -319,7 +319,9 @@ title="Full Day Leave (paid)">🌴</span>
 
 @endif
 
-@elseif($record)
+{{-- A row with no clock-in on a day they were not due in is not an absence:
+     an old "absent" row left on a Sunday must not read as one. --}}
+@elseif($record && !(!$record->clock_in && $isOffDay))
 
 @if($record->status == 'present')
 

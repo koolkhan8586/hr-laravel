@@ -138,7 +138,9 @@ class SendClockOutReminder extends Command
         }
 
         try {
-            $waha->sendToMobile($user->mobile, $body."\n\n- LSAF HR");
+            if (! $waha->sendToMobile($user->mobile, $body."\n\n- LSAF HR")) {
+                Log::warning('Clock-out reminder WhatsApp was not delivered', ['user_id' => $user->id]);
+            }
         } catch (\Throwable $e) {
             Log::error('Clock-out reminder WhatsApp failed', [
                 'user_id' => $user->id,
@@ -160,8 +162,18 @@ class SendClockOutReminder extends Command
 
         $date = HalfDayCharge::dateOf($attendance);
 
-        // Only mention the charge where it actually applies to that day.
-        if ($date && AttendanceRules::rulesApplyOn($date)) {
+        // Under the time rule nothing is charged on the day: a day with no
+        // clock-out counts half the shift, added up with the rest of the
+        // month. Say that, not a half day that is no longer charged.
+        if ($date && \App\Support\TimeShortfall::enabled()) {
+
+            if (\App\Support\TimeShortfall::appliesOn($date)) {
+                $lines[] = '';
+                $lines[] = 'If it is not marked, this day counts as time short - half your shift -'
+                    .' which is added up at the end of the month. Marking it now avoids that.';
+            }
+
+        } elseif ($date && AttendanceRules::rulesApplyOn($date)) {
 
             $chargeAt = $endsAt->copy()->addMinutes(AttendanceRules::missingMinutes());
 
