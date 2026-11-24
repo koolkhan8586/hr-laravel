@@ -41,6 +41,8 @@ class User extends Authenticatable
         // Let through the phone-only and one-device-one-employee rules, for
         // somebody who genuinely marks from a shared office computer.
         'attendance_device_exempt',
+        // Must take a live photo to clock in. Off for everybody by default.
+        'selfie_required',
 
         // Payroll / salary sheet details
         'salary_category',
@@ -91,6 +93,7 @@ class User extends Authenticatable
             'can_manage_salary' => 'boolean',
             'can_manage_loan' => 'boolean',
             'attendance_device_exempt' => 'boolean',
+            'selfie_required' => 'boolean',
         ];
     }
 

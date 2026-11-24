@@ -125,6 +125,7 @@
                                 <th class="p-2">How it was marked</th>
                                 <th class="p-2">Where</th>
                                 <th class="p-2">Device</th>
+                                <th class="p-2">Photo</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -162,6 +163,19 @@
                                             <div>{{ $m->device_ip }}</div>
                                         @else
                                             None recorded
+                                        @endif
+                                    </td>
+                                    <td class="p-2 align-top">
+                                        @if($m->selfie_path)
+                                            <a href="{{ route('admin.attendance.selfie', $m->id) }}" target="_blank" rel="noopener">
+                                                <img src="{{ route('admin.attendance.selfie', $m->id) }}"
+                                                     alt="Clock-in photo" loading="lazy"
+                                                     style="width:64px; height:64px; object-fit:cover; border-radius:6px; border:1px solid #d1d5db;">
+                                            </a>
+                                        @elseif($selected->selfie_required)
+                                            <span class="text-xs text-red-700">None taken</span>
+                                        @else
+                                            <span class="text-xs text-gray-400">-</span>
                                         @endif
                                     </td>
                                 </tr>

@@ -374,6 +374,10 @@ Route::post('/allow-overtime',
 |
 */
 
+Route::get('/attendance-selfie/{attendance}',
+    [AdminAttendanceController::class,'selfie']
+)->name('attendance.selfie');
+
 Route::get('/attendance-devices',
     [AdminAttendanceController::class,'devices']
 )->name('attendance.devices');

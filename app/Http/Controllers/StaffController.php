@@ -220,6 +220,7 @@ class StaffController extends Controller
         'office_location_ids.*' => 'integer|exists:office_locations,id',
         'early_leave_allowance_minutes' => 'nullable|integer|min:1|max:480',
         'attendance_device_exempt' => 'nullable|boolean',
+        'selfie_required' => 'nullable|boolean',
     ]);
 
     /*
@@ -266,6 +267,9 @@ class StaffController extends Controller
         // Let this one past the device rules - a shared gate computer, or
         // somebody with no phone of their own.
         'attendance_device_exempt' => $request->boolean('attendance_device_exempt'),
+
+        // Must take a live photo to clock in. Switched on one person at a time.
+        'selfie_required' => $request->boolean('selfie_required'),
     ]);
 
     $staff->user->role = $request->role;

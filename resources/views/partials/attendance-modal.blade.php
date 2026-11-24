@@ -32,7 +32,100 @@
     </div>
 </div>
 
+{{-- The live photo, for the employees it is switched on for. Camera only:
+     there is deliberately no way to choose a picture already on the phone. --}}
+<div id="selfieModal"
+     class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 px-4">
+
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md text-center p-6">
+
+        <h3 class="text-xl font-bold mb-1 text-gray-800">Take your photo</h3>
+        <p class="text-sm text-gray-600 mb-4">
+            A photo is taken when you clock in. Look at the camera.
+        </p>
+
+        <video id="selfieVideo" autoplay playsinline muted
+               class="w-full rounded-lg bg-black mb-4"
+               style="transform: scaleX(-1); max-height: 55vh; object-fit: cover;"></video>
+
+        <canvas id="selfieCanvas" class="hidden"></canvas>
+
+        <div class="flex gap-3">
+            <button type="button" id="selfieCancel"
+                    class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-3 rounded-lg">
+                Cancel
+            </button>
+            <button type="button" id="selfieTake"
+                    class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-semibold">
+                Take photo and clock in
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
+// Whether this employee has to give a photo to clock in. The server decides
+// again, so this only decides whether to ask for the camera.
+const SELFIE_REQUIRED = @json((bool) auth()->user()?->selfie_required);
+
+/**
+ * Open the front camera and resolve with a small JPEG, or null if the
+ * employee cancelled. Rejects with a readable message if the camera cannot
+ * be used.
+ */
+function captureSelfie() {
+
+    return new Promise((resolve, reject) => {
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            reject('This browser cannot open the camera, which is needed to clock in.');
+            return;
+        }
+
+        navigator.mediaDevices
+            .getUserMedia({ video: { facingMode: 'user' }, audio: false })
+            .then(stream => {
+
+                const modal  = document.getElementById('selfieModal');
+                const video  = document.getElementById('selfieVideo');
+                const canvas = document.getElementById('selfieCanvas');
+
+                video.srcObject = stream;
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+
+                const finish = (result) => {
+                    stream.getTracks().forEach(t => t.stop());
+                    video.srcObject = null;
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                    resolve(result);
+                };
+
+                document.getElementById('selfieCancel').onclick = () => finish(null);
+
+                document.getElementById('selfieTake').onclick = () => {
+
+                    if (!video.videoWidth) {
+                        return; // the camera has not produced a picture yet
+                    }
+
+                    // Shrunk before it is sent: a phone photo is several
+                    // megabytes, and a face needs far fewer pixels than that.
+                    const width  = Math.min(480, video.videoWidth);
+                    const height = Math.round(video.videoHeight * (width / video.videoWidth));
+
+                    canvas.width  = width;
+                    canvas.height = height;
+                    canvas.getContext('2d').drawImage(video, 0, 0, width, height);
+
+                    finish(canvas.toDataURL('image/jpeg', 0.7));
+                };
+            })
+            .catch(() => reject('The camera is switched off. Please allow camera access for this site and try again.'));
+    });
+}
+
 function showAttendanceModal(ok, message, showLocationLink) {
 
     const modal = document.getElementById('attendanceModal');
@@ -102,6 +195,25 @@ function attendanceDeviceId() {
  */
 function attendanceAction(url, button) {
 
+    // Clocking out never needs a photo; clocking in does for some employees.
+    if (SELFIE_REQUIRED && /clock-in/.test(url)) {
+
+        captureSelfie()
+            .then(photo => {
+                if (photo) {
+                    sendAttendance(url, button, photo);
+                }
+            })
+            .catch(message => showAttendanceModal(false, message, false));
+
+        return;
+    }
+
+    sendAttendance(url, button, null);
+}
+
+function sendAttendance(url, button, selfie) {
+
     if (!navigator.geolocation) {
         showAttendanceModal(false, 'This device cannot provide a location, which is needed to mark attendance.', false);
         return;
@@ -140,6 +252,7 @@ function attendanceAction(url, button) {
                     // A phone has a touch screen; a desktop browser
                     // dressed as one usually forgets to say so.
                     touch_points: navigator.maxTouchPoints ?? 0,
+                    selfie: selfie,
                 }),
             })
             .then(res => res.json().catch(() => ({

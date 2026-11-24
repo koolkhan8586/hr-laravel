@@ -42,6 +42,9 @@ class Attendance extends Model
         'marked_by',
         'edited_by',
         'edited_at',
+
+        // A photo taken at clock-in, where the employee is required to give one.
+        'selfie_path',
     ];
 
     /*

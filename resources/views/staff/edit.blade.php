@@ -359,6 +359,29 @@
 
 </div>
 
+<div class="mt-3">
+
+    <!-- 📸 A live photo at clock-in -->
+    <label class="flex items-start gap-2">
+        <input type="checkbox"
+               name="selfie_required"
+               value="1"
+               class="mt-1"
+               {{ $staff->user->selfie_required ? 'checked' : '' }}>
+        <span>
+            <strong>Must take a photo to clock in</strong>
+            <span class="block text-xs text-gray-500 mt-1">
+                Off for almost everybody. When ticked, this employee's phone
+                opens the camera at clock-in and the photo is saved with the
+                time, position and device. Admins can view it under Attendance
+                Devices. It is a photo of a person: tell the employee, and use
+                it for one who needs it rather than for everybody.
+            </span>
+        </span>
+    </label>
+
+</div>
+
         </div>
 
         <div class="mt-8">

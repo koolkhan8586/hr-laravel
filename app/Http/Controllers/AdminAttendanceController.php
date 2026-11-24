@@ -1448,6 +1448,28 @@ protected function buildStaffLeaveReport(string $month, bool $includePayrollOnly
         return view('admin.attendance.shortfall', $this->buildShortfall($request));
     }
 
+    /**
+     * A clock-in photo, for an admin.
+     *
+     * Streamed from the private disk rather than linked, so the file is never
+     * reachable by its address and never cached by a browser or a proxy.
+     */
+    public function selfie(\App\Models\Attendance $attendance)
+    {
+        $path = $attendance->selfie_path;
+
+        abort_unless(
+            $path && \Illuminate\Support\Facades\Storage::disk(\App\Support\AttendanceSelfie::DISK)->exists($path),
+            404
+        );
+
+        return \Illuminate\Support\Facades\Storage::disk(\App\Support\AttendanceSelfie::DISK)
+            ->response($path, null, [
+                'Content-Type'  => 'image/jpeg',
+                'Cache-Control' => 'private, no-store',
+            ]);
+    }
+
     /** One employee's own page, as the office sees it. */
     public function shortfallEmployee(Request $request, \App\Models\User $user)
     {
