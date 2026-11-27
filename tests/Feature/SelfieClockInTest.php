@@ -39,8 +39,11 @@ class SelfieClockInTest extends TestCase
     /** A real JPEG, as a data URL the way the browser sends it. */
     private function photo(int $side = 200): string
     {
+        // A plain colour is exactly what the quality check refuses, so the
+        // test photo has a background and a lighter face-shaped patch in it.
         $img = imagecreatetruecolor($side, $side);
-        imagefill($img, 0, 0, imagecolorallocate($img, 120, 160, 200));
+        imagefill($img, 0, 0, imagecolorallocate($img, 60, 70, 90));
+        imagefilledellipse($img, intdiv($side, 2), intdiv($side, 2), intdiv($side, 2), intdiv($side * 3, 4), imagecolorallocate($img, 190, 150, 130));
 
         ob_start();
         imagejpeg($img, null, 70);
@@ -155,6 +158,104 @@ class SelfieClockInTest extends TestCase
         $huge = 'data:image/jpeg;base64,'.base64_encode(str_repeat('a', AttendanceSelfie::MAX_BYTES + 10));
 
         $this->clockIn($ali, ['selfie' => $huge])->assertStatus(422);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | A covered camera is not a photo
+    |--------------------------------------------------------------------------
+    */
+
+    private function dataUrl($img): string
+    {
+        ob_start();
+        imagejpeg($img, null, 70);
+
+        return 'data:image/jpeg;base64,'.base64_encode(ob_get_clean());
+    }
+
+    /** What a lens with a finger over it looks like: dark red, black at the edges. */
+    private function coveredLens()
+    {
+        $img = imagecreatetruecolor(480, 640);
+
+        for ($y = 0; $y < 640; $y++) {
+            for ($x = 0; $x < 480; $x++) {
+                $d = sqrt((($x - 240) / 240) ** 2 + (($y - 320) / 320) ** 2);
+                $r = max(0, (int) (70 * (1 - $d)));
+                imagesetpixel($img, $x, $y, imagecolorallocate($img, $r, 0, intdiv($r, 6)));
+            }
+        }
+
+        return $img;
+    }
+
+    public function test_a_covered_camera_is_refused(): void
+    {
+        $ali = $this->employee(true);
+
+        $response = $this->clockIn($ali, ['selfie' => $this->dataUrl($this->coveredLens())])
+            ->assertStatus(422);
+
+        $this->assertStringContainsString('too dark or the camera is covered', $response->json('message'));
+
+        // Refused means nothing was written, and nothing was kept.
+        $this->assertDatabaseMissing('attendances', ['user_id' => $ali->id]);
+        $this->assertSame([], Storage::disk(AttendanceSelfie::DISK)->allFiles());
+    }
+
+    public function test_a_black_frame_and_a_blank_white_frame_are_refused(): void
+    {
+        $ali = $this->employee(true);
+
+        $black = imagecreatetruecolor(480, 640);
+
+        $white = imagecreatetruecolor(480, 640);
+        imagefill($white, 0, 0, imagecolorallocate($white, 250, 250, 250));
+
+        $this->clockIn($ali, ['selfie' => $this->dataUrl($black)])->assertStatus(422);
+        $this->clockIn($ali, ['selfie' => $this->dataUrl($white)])->assertStatus(422);
+
+        $this->assertDatabaseMissing('attendances', ['user_id' => $ali->id]);
+    }
+
+    public function test_a_dim_but_real_looking_photo_is_still_accepted(): void
+    {
+        $ali = $this->employee(true);
+
+        // A dark room: dark background, a lighter face, dark eyes.
+        $img = imagecreatetruecolor(480, 640);
+        imagefill($img, 0, 0, imagecolorallocate($img, 40, 45, 55));
+        imagefilledellipse($img, 240, 300, 260, 340, imagecolorallocate($img, 150, 110, 95));
+        imagefilledellipse($img, 190, 260, 30, 18, imagecolorallocate($img, 30, 25, 25));
+        imagefilledellipse($img, 290, 260, 30, 18, imagecolorallocate($img, 30, 25, 25));
+
+        $this->clockIn($ali, ['selfie' => $this->dataUrl($img)])->assertOk();
+
+        $this->assertNotNull(Attendance::where('user_id', $ali->id)->value('selfie_path'));
+    }
+
+    public function test_the_measures_tell_a_covered_lens_from_a_photo(): void
+    {
+        $covered = AttendanceSelfie::quality(base64_decode(substr($this->dataUrl($this->coveredLens()), 23)));
+        $real    = AttendanceSelfie::quality(base64_decode(substr($this->photo(), 23)));
+
+        $this->assertFalse($covered['ok']);
+        $this->assertLessThan(AttendanceSelfie::MIN_BRIGHTNESS, $covered['brightness']);
+
+        $this->assertTrue($real['ok']);
+        $this->assertGreaterThanOrEqual(AttendanceSelfie::MIN_BRIGHTNESS, $real['brightness']);
+        $this->assertGreaterThanOrEqual(AttendanceSelfie::MIN_DETAIL, $real['detail']);
+    }
+
+    public function test_the_page_checks_the_photo_before_sending_it(): void
+    {
+        $this->actingAs($this->employee(true))
+            ->get(route('attendance.index'))
+            ->assertOk()
+            ->assertSee('selfieLooksUsable', false)
+            ->assertSee('id="selfieError"', false)
+            ->assertSee('mean >= '.AttendanceSelfie::MIN_BRIGHTNESS, false);
     }
 
     public function test_clocking_out_never_needs_a_photo(): void

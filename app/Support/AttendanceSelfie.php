@@ -50,6 +50,66 @@ class AttendanceSelfie
         return max(7, min(3650, $days ?: self::DEFAULT_RETENTION_DAYS));
     }
 
+    /** Average brightness (0-255) below which the photo is too dark to show anybody. */
+    public const MIN_BRIGHTNESS = 30;
+
+    /** Spread of brightness below which the photo is a flat blank, with nothing in it. */
+    public const MIN_DETAIL = 10;
+
+    /**
+     * Whether the picture is plausibly of something, rather than a lens with a
+     * finger over it.
+     *
+     * A covered camera gives a dark, flat, usually reddish frame - light
+     * coming through skin - and it is a perfectly valid JPEG, so every other
+     * check passes it. This measures the picture itself: how bright it is on
+     * average, and how much it varies. It runs on a 32 by 32 thumbnail, so it
+     * is instant and nothing leaves the server.
+     *
+     * What it cannot do is tell a face from a wall. It catches the lazy ways
+     * round the camera, not a determined one; an admin looking at the photos
+     * is still the check on who is in them.
+     *
+     * @return array{ok: bool, brightness: float, detail: float}
+     */
+    public static function quality(string $bytes): array
+    {
+        if (! function_exists('imagecreatefromstring')) {
+            return ['ok' => true, 'brightness' => -1.0, 'detail' => -1.0];
+        }
+
+        $src = @imagecreatefromstring($bytes);
+
+        if (! $src) {
+            return ['ok' => true, 'brightness' => -1.0, 'detail' => -1.0];
+        }
+
+        $size = 32;
+        $thumb = imagecreatetruecolor($size, $size);
+        imagecopyresampled($thumb, $src, 0, 0, 0, 0, $size, $size, imagesx($src), imagesy($src));
+
+        $values = [];
+
+        for ($y = 0; $y < $size; $y++) {
+            for ($x = 0; $x < $size; $x++) {
+                $rgb = imagecolorat($thumb, $x, $y);
+                $values[] = 0.299 * (($rgb >> 16) & 0xFF)
+                          + 0.587 * (($rgb >> 8) & 0xFF)
+                          + 0.114 * ($rgb & 0xFF);
+            }
+        }
+
+        $mean = array_sum($values) / count($values);
+        $variance = array_sum(array_map(fn ($v) => ($v - $mean) ** 2, $values)) / count($values);
+        $detail = sqrt($variance);
+
+        return [
+            'ok'         => $mean >= self::MIN_BRIGHTNESS && $detail >= self::MIN_DETAIL,
+            'brightness' => round($mean, 1),
+            'detail'     => round($detail, 1),
+        ];
+    }
+
     public static function requiredFor(?User $user): bool
     {
         return (bool) $user?->selfie_required;
@@ -93,6 +153,10 @@ class AttendanceSelfie
             || $info[0] < self::MIN_SIDE
             || $info[1] < self::MIN_SIDE) {
             return $fail('That photo could not be used. Please take it again.');
+        }
+
+        if (! self::quality($bytes)['ok']) {
+            return $fail('The photo is too dark or the camera is covered. Uncover the camera, face the light, and take it again.');
         }
 
         return ['ok' => true, 'message' => null, 'bytes' => $bytes];
