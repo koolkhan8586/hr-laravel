@@ -50,6 +50,8 @@
 
         <canvas id="selfieCanvas" class="hidden"></canvas>
 
+        <p id="selfieError" class="hidden text-sm text-red-700 bg-red-50 rounded-lg p-3 mb-4"></p>
+
         <div class="flex gap-3">
             <button type="button" id="selfieCancel"
                     class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-3 rounded-lg">
@@ -67,6 +69,35 @@
 // Whether this employee has to give a photo to clock in. The server decides
 // again, so this only decides whether to ask for the camera.
 const SELFIE_REQUIRED = @json((bool) auth()->user()?->selfie_required);
+
+/**
+ * Is there anything in the picture? The same two measures the server uses:
+ * how bright it is on average, and how much it varies, worked out on a 32 by
+ * 32 thumbnail. Keep the two numbers in step with AttendanceSelfie.php.
+ */
+function selfieLooksUsable(canvas) {
+
+    const size  = 32;
+    const thumb = document.createElement('canvas');
+    thumb.width = size;
+    thumb.height = size;
+
+    const ctx = thumb.getContext('2d');
+    ctx.drawImage(canvas, 0, 0, size, size);
+
+    const data = ctx.getImageData(0, 0, size, size).data;
+    const lum  = [];
+
+    for (let i = 0; i < data.length; i += 4) {
+        lum.push(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
+    }
+
+    const mean = lum.reduce((a, b) => a + b, 0) / lum.length;
+    const detail = Math.sqrt(lum.reduce((a, b) => a + (b - mean) ** 2, 0) / lum.length);
+
+    return mean >= {{ \App\Support\AttendanceSelfie::MIN_BRIGHTNESS }}
+        && detail >= {{ \App\Support\AttendanceSelfie::MIN_DETAIL }};
+}
 
 /**
  * Open the front camera and resolve with a small JPEG, or null if the
@@ -118,6 +149,20 @@ function captureSelfie() {
                     canvas.width  = width;
                     canvas.height = height;
                     canvas.getContext('2d').drawImage(video, 0, 0, width, height);
+
+                    // A finger over the lens gives a dark, flat frame. Say so
+                    // here, with the camera still open, instead of sending it
+                    // and being refused. The server checks again regardless.
+                    const error = document.getElementById('selfieError');
+
+                    if (!selfieLooksUsable(canvas)) {
+                        error.textContent = 'The photo is too dark or the camera is covered. '
+                            + 'Uncover the camera, face the light, and try again.';
+                        error.classList.remove('hidden');
+                        return;
+                    }
+
+                    error.classList.add('hidden');
 
                     finish(canvas.toDataURL('image/jpeg', 0.7));
                 };
